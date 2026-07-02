@@ -160,6 +160,16 @@ class MainActivity : ComponentActivity() {
                                     }
                                 )
                             } else if (compileState is CompileState.Error) {
+                                // Navigate when compile finishes successfully
+                                LaunchedEffect(compileState) {
+                                    if (compileState is CompileState.Success) {
+                                        val pdfUrl = (compileState as CompileState.Success).pdfFile.absolutePath
+                                        if (pdfUrl.isNotEmpty()) {
+                                            selectedPdfForViewer = pdfUrl
+                                            viewModel.resetState()
+                                        }
+                                    }
+                                }
                                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                                     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(16.dp)) {
                                         Text("Error: ${(compileState as CompileState.Error).message}", color = MaterialTheme.colorScheme.error)
@@ -171,7 +181,20 @@ class MainActivity : ComponentActivity() {
                                 }
                             } else {
                                 val isCompileLoading = compileState is CompileState.Loading
-                                when (currentScreen) {
+                                // State-driven navigation
+                            LaunchedEffect(schemaState) {
+                                if (schemaState is SchemaState.Success) {
+                                    currentScreen = "co_author"
+                                }
+                            }
+
+                            LaunchedEffect(latexState) {
+                                if (latexState is LatexState.Success) {
+                                    currentScreen = "latex_notebook"
+                                }
+                            }
+
+                            when (currentScreen) {
                                     "onboarding" -> OnboardingScreen(
                                         onVerifyClicked = { key ->
                                             isVerifying = true

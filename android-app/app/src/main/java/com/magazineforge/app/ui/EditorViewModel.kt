@@ -19,6 +19,7 @@ import java.io.FileOutputStream
 import java.util.UUID
 import com.magazineforge.app.models.GenerateSchemaRequest
 import com.magazineforge.app.models.GenerateLatexRequest
+import com.magazineforge.app.models.GenerateRawLatexRequest
 import com.magazineforge.app.models.CompileRawRequest
 import kotlinx.coroutines.flow.asStateFlow
 
@@ -51,7 +52,10 @@ class EditorViewModel : ViewModel() {
     val latexState = _latexState.asStateFlow()
 
     private val _compileState = MutableStateFlow<CompileState>(CompileState.Idle)
-    val compileState: StateFlow<CompileState> = _compileState.asStateFlow()
+    val compileState: StateFlow<CompileState> = _compileState
+
+    private val _aiRawLatexState = MutableStateFlow<LatexState>(LatexState.Idle)
+    val aiRawLatexState: StateFlow<LatexState> = _aiRawLatexState.asStateFlow()
     
     private var currentTopic: String = ""
     private var currentVariant: String = ""
@@ -120,6 +124,29 @@ class EditorViewModel : ViewModel() {
                 }
             } catch (e: Exception) {
                 _latexState.value = LatexState.Error(e.message ?: "Unknown network error")
+            }
+        }
+    }
+
+    fun generateRawLatex(apiKey: String, prompt: String) {
+        _aiRawLatexState.value = LatexState.Loading
+        
+        viewModelScope.launch {
+            try {
+                val request = GenerateRawLatexRequest(prompt = prompt)
+                val response = ApiClient.retrofitService.generateRawLatex(apiKey, request)
+                if (response.isSuccessful) {
+                    val latex = response.body()?.latexCode
+                    if (latex != null) {
+                        _aiRawLatexState.value = LatexState.Success(latex)
+                    } else {
+                        _aiRawLatexState.value = LatexState.Error("Received empty latex")
+                    }
+                } else {
+                    _aiRawLatexState.value = LatexState.Error("Error: ${response.code()}")
+                }
+            } catch (e: Exception) {
+                _aiRawLatexState.value = LatexState.Error(e.message ?: "Unknown network error")
             }
         }
     }

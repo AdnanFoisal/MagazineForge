@@ -315,18 +315,19 @@ class MainActivity : ComponentActivity() {
                                         }
                                     }
                                     "latex_notebook" -> {
-                                        if (latexState is LatexState.Success) {
-                                            LatexNotebookScreen(
-                                                initialLatex = (latexState as LatexState.Success).latexCode,
-                                                isCompiling = compileState is CompileState.Loading,
-                                                onCompile = { latex ->
-                                                    viewModel.compileRaw(this@MainActivity, latex)
-                                                },
-                                                onBack = {
-                                                    currentScreen = "co_author"
-                                                }
-                                            )
-                                        }
+                                        val aiRawLatexState by viewModel.aiRawLatexState.collectAsState()
+                                        LatexNotebookScreen(
+                                            initialLatex = initialLatex,
+                                            isCompiling = isCompileLoading,
+                                            aiRawState = aiRawLatexState,
+                                            onGenerateRawLatex = { prompt ->
+                                                viewModel.generateRawLatex(apiKey, prompt)
+                                            },
+                                            onCompile = { code ->
+                                                viewModel.compileRaw(applicationContext, code)
+                                            },
+                                            onBack = { currentScreen = "gallery" }
+                                        )
                                     }
                                     "library" -> MyMagazinesScreen(
                                         onBack = {

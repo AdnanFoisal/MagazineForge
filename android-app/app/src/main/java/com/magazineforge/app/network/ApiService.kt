@@ -45,6 +45,12 @@ interface ApiService {
         @Body request: com.magazineforge.app.models.GenerateLatexRequest
     ): Response<com.magazineforge.app.models.GenerateLatexResponse>
 
+    @POST("generate-raw-latex")
+    suspend fun generateRawLatex(
+        @Header("Authorization") geminiKey: String,
+        @Body request: com.magazineforge.app.models.GenerateRawLatexRequest
+    ): Response<com.magazineforge.app.models.GenerateRawLatexResponse>
+
     @POST("compile-raw")
     suspend fun compileRaw(
         @Body request: com.magazineforge.app.models.CompileRawRequest

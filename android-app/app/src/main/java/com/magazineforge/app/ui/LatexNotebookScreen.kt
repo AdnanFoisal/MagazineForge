@@ -25,10 +25,22 @@ import androidx.compose.ui.unit.sp
 fun LatexNotebookScreen(
     initialLatex: String,
     isCompiling: Boolean,
+    aiRawState: LatexState,
+    onGenerateRawLatex: (String) -> Unit,
     onCompile: (String) -> Unit,
     onBack: () -> Unit
 ) {
     var latexCode by remember { mutableStateOf(initialLatex) }
+    var showAiDialog by remember { mutableStateOf(false) }
+    var aiPrompt by remember { mutableStateOf("") }
+    
+    // Auto-update editor when AI finishes
+    LaunchedEffect(aiRawState) {
+        if (aiRawState is LatexState.Success) {
+            latexCode = aiRawState.latexCode
+            showAiDialog = false
+        }
+    }
     
     val bgCream = Color(0xFFFDFCEB)
     val gutterColor = Color(0xFFEFEFEF)
@@ -144,6 +156,62 @@ fun LatexNotebookScreen(
                     cursorBrush = androidx.compose.ui.graphics.SolidColor(tabGreen)
                 )
             }
+        }
+        
+        // AI Generation FAB
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(16.dp),
+            contentAlignment = Alignment.BottomEnd
+        ) {
+            FloatingActionButton(
+                onClick = { showAiDialog = true },
+                containerColor = Color(0xFFC5A059),
+                contentColor = Color.White
+            ) {
+                Icon(Icons.Default.AutoAwesome, contentDescription = "AI Generate")
+            }
+        }
+        
+        // AI Prompt Dialog
+        if (showAiDialog) {
+            AlertDialog(
+                onDismissRequest = { showAiDialog = false },
+                title = { Text("AI Raw Generation") },
+                text = {
+                    Column {
+                        Text("Describe the magazine you want to generate. The AI will write the complete LuaLaTeX code from scratch.")
+                        Spacer(modifier = Modifier.height(8.dp))
+                        OutlinedTextField(
+                            value = aiPrompt,
+                            onValueChange = { aiPrompt = it },
+                            placeholder = { Text("e.g. A 4-page travel magazine about the Swiss Alps...") },
+                            modifier = Modifier.fillMaxWidth().height(120.dp)
+                        )
+                        if (aiRawState is LatexState.Loading) {
+                            Spacer(modifier = Modifier.height(16.dp))
+                            CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+                        } else if (aiRawState is LatexState.Error) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(aiRawState.message, color = MaterialTheme.colorScheme.error)
+                        }
+                    }
+                },
+                confirmButton = {
+                    TextButton(
+                        onClick = { onGenerateRawLatex(aiPrompt) },
+                        enabled = aiRawState !is LatexState.Loading && aiPrompt.isNotBlank()
+                    ) {
+                        Text("Generate")
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showAiDialog = false }) {
+                        Text("Cancel")
+                    }
+                }
+            )
         }
     }
 }

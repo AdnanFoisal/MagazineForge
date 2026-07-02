@@ -36,7 +36,8 @@ data class TemplateModel(
     val category: String,
     val description: String,
     val thumbnailUrl: String,
-    val texTemplate: String
+    val texTemplate: String,
+    val samplePdfUrl: String
 )
 
 fun loadTemplates(context: Context): List<TemplateModel> {
@@ -52,7 +53,8 @@ fun loadTemplates(context: Context): List<TemplateModel> {
                 category = obj.getString("category"),
                 description = obj.getString("description"),
                 thumbnailUrl = obj.getString("thumbnailUrl"),
-                texTemplate = obj.getString("texTemplate")
+                texTemplate = obj.getString("texTemplate"),
+                samplePdfUrl = obj.optString("samplePdfUrl", "")
             )
         )
     }
@@ -229,9 +231,14 @@ fun TemplateCard(template: TemplateModel, onClick: () -> Unit) {
                 color = Color(0xFFA1A1AA),
                 maxLines = 2
             )
+            val uriHandler = androidx.compose.ui.platform.LocalUriHandler.current
             Spacer(modifier = Modifier.height(8.dp))
             OutlinedButton(
-                onClick = { /* TODO: Open sample PDF */ },
+                onClick = {
+                    if (template.samplePdfUrl.isNotEmpty()) {
+                        uriHandler.openUri(template.samplePdfUrl)
+                    }
+                },
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFC5A059)),
                 border = BorderStroke(1.dp, Color(0xFFC5A059))

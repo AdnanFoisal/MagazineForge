@@ -562,11 +562,11 @@ fun TemplatePreview(template: TemplateModel, modifier: Modifier = Modifier) {
                         val y = height * (0.2f + i * 0.18f)
                         val veinLeft = Path().apply {
                             moveTo(width * 0.5f, y)
-                            quadraticTo(width * 0.3f, y - height * 0.08f, width * 0.15f, y - height * 0.05f)
+                            quadraticBezierTo(width * 0.3f, y - height * 0.08f, width * 0.15f, y - height * 0.05f)
                         }
                         val veinRight = Path().apply {
                             moveTo(width * 0.5f, y)
-                            quadraticTo(width * 0.7f, y - height * 0.08f, width * 0.85f, y - height * 0.05f)
+                            quadraticBezierTo(width * 0.7f, y - height * 0.08f, width * 0.85f, y - height * 0.05f)
                         }
                         drawPath(veinLeft, color = veinColor, style = Stroke(width = 1.5.dp.toPx()))
                         drawPath(veinRight, color = veinColor, style = Stroke(width = 1.5.dp.toPx()))

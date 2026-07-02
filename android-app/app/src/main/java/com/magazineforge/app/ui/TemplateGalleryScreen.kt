@@ -65,7 +65,8 @@ fun loadTemplates(context: Context): List<TemplateModel> {
 fun TemplateGalleryScreen(
     onTemplateSelected: (String) -> Unit,
     onPreviewSelected: (String) -> Unit,
-    onLibraryClicked: () -> Unit
+    onLibraryClicked: () -> Unit,
+    onPublishClicked: () -> Unit
 ) {
     val context = LocalContext.current
     val templates = remember { loadTemplates(context) }
@@ -85,8 +86,8 @@ fun TemplateGalleryScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = {}) {
-                        Icon(Icons.Default.Add, contentDescription = "Add", tint = EditorialGold)
+                    IconButton(onClick = onPublishClicked) {
+                        Icon(Icons.Default.Add, contentDescription = "Publish", tint = EditorialGold)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = PitchBlack)

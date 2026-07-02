@@ -27,6 +27,8 @@ import com.magazineforge.app.ui.ShowcaseScreen
 import com.magazineforge.app.ui.SettingsScreen
 import com.magazineforge.app.ui.ProgressTrackerDialog
 import com.magazineforge.app.ui.FloatingProgressTracker
+import com.magazineforge.app.ui.AuthScreen
+import com.google.firebase.auth.FirebaseAuth
 import com.magazineforge.app.utils.SecureStorage
 import com.magazineforge.app.network.ApiClient
 import com.magazineforge.app.models.VerifyKeyRequest
@@ -237,6 +239,23 @@ class MainActivity : ComponentActivity() {
                                         },
                                         onLibraryClicked = {
                                             currentScreen = "library"
+                                        },
+                                        onPublishClicked = {
+                                            if (FirebaseAuth.getInstance().currentUser != null) {
+                                                // Ideally, upload PDF to Firebase Storage here.
+                                                // For v2.0.0 frontend UI, we route to Showcase.
+                                                currentScreen = "showcase"
+                                            } else {
+                                                currentScreen = "auth"
+                                            }
+                                        }
+                                    )
+                                    "auth" -> AuthScreen(
+                                        onAuthSuccess = {
+                                            currentScreen = "showcase"
+                                        },
+                                        onBack = {
+                                            currentScreen = "gallery"
                                         }
                                     )
                                     "editor" -> EditorScreen(

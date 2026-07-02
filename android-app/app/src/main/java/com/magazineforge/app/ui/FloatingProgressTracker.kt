@@ -46,6 +46,11 @@ fun FloatingProgressTracker(
         else -> "Working..."
     }
 
+    val currentProgress = when (compileState) {
+        is CompileState.Loading -> (compileState as CompileState.Loading).progress / 100f
+        else -> -1f // Indeterminate
+    }
+
     Box(
         modifier = Modifier
             .fillMaxSize()
@@ -79,6 +84,20 @@ fun FloatingProgressTracker(
                             style = LuxeTypography.bodyMedium.copy(color = Color.White),
                             lineHeight = 20.sp
                         )
+                        if (currentProgress >= 0f) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            LinearProgressIndicator(
+                                progress = currentProgress,
+                                modifier = Modifier.fillMaxWidth().height(4.dp),
+                                color = EditorialGold,
+                                trackColor = Color.DarkGray
+                            )
+                            Text(
+                                text = "${(currentProgress * 100).toInt()}%",
+                                style = LuxeTypography.labelSmall.copy(color = EditorialGold),
+                                modifier = Modifier.align(Alignment.End).padding(top = 4.dp)
+                            )
+                        }
                     }
                 }
             }
@@ -93,16 +112,22 @@ fun FloatingProgressTracker(
                     .clickable { isExpanded = !isExpanded }
             ) {
                 Box(contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(48.dp),
-                        color = Color.Black.copy(alpha = 0.2f),
-                        strokeWidth = 3.dp
-                    )
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(48.dp),
-                        color = Color.Black,
-                        strokeWidth = 3.dp
-                    )
+                    if (currentProgress >= 0f) {
+                        CircularProgressIndicator(
+                            progress = currentProgress,
+                            modifier = Modifier.size(48.dp),
+                            color = Color.Black,
+                            strokeWidth = 3.dp
+                        )
+                    } else {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(48.dp),
+                            color = Color.Black.copy(alpha = 0.5f),
+                            strokeWidth = 3.dp
+                        )
+                    }
+                    // Inner icon or dot
+                    Box(modifier = Modifier.size(12.dp).clip(CircleShape).background(Color.Black))
                 }
             }
         }

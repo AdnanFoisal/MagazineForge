@@ -21,6 +21,7 @@ import com.magazineforge.app.ui.EditorScreen
 import com.magazineforge.app.ui.EditorViewModel
 import com.magazineforge.app.ui.OnboardingScreen
 import com.magazineforge.app.ui.PdfViewerScreen
+import com.magazineforge.app.ui.TemplateGalleryScreen
 import com.magazineforge.app.ui.MyMagazinesScreen
 import com.magazineforge.app.ui.ShowcaseScreen
 import com.magazineforge.app.ui.SettingsScreen
@@ -32,7 +33,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
-import com.magazineforge.app.ui.theme.LuxeEditorialNoirTheme
 import androidx.activity.compose.BackHandler
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close

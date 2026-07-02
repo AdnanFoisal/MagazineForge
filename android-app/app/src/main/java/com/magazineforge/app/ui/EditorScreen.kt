@@ -12,6 +12,7 @@ import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.runtime.*
@@ -32,18 +33,24 @@ data class PageBlock(
     val id: String = java.util.UUID.randomUUID().toString(),
     var type: String = "article",
     var topic: String = "",
-    var imageUrl: String = ""
+    var imageUrl: String = "",
+    var tone: String = "Professional",
+    var colorPalette: String = "Dark Mode",
+    var imageStyle: String = "Photorealistic",
+    var layoutDensity: String = "Balanced",
+    var targetAudience: String = "General"
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditorScreen(
     templateVariant: String,
+    initialPrompt: String = "",
     isCompileLoading: Boolean,
     onCompileClicked: (String, List<PageBlock>) -> Unit,
     onBack: () -> Unit
 ) {
-    var prompt by remember { mutableStateOf("") }
+    var prompt by remember { mutableStateOf(initialPrompt) }
     var selectedTabIndex by remember { mutableStateOf(0) }
     val pages = remember { mutableStateListOf<PageBlock>() }
     
@@ -212,6 +219,16 @@ fun PageBlockCard(
     onUpdate: (PageBlock) -> Unit,
     onDelete: () -> Unit
 ) {
+    var showCustomizer by remember { mutableStateOf(false) }
+
+    if (showCustomizer) {
+        CustomizerBottomSheet(
+            page = page,
+            onDismiss = { showCustomizer = false },
+            onSave = { onUpdate(it) }
+        )
+    }
+
     Card(
         colors = CardDefaults.cardColors(containerColor = DarkSurface),
         border = BorderStroke(1.dp, BorderDark),
@@ -221,8 +238,14 @@ fun PageBlockCard(
         Column(modifier = Modifier.padding(16.dp)) {
             Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
                 Text(page.type.uppercase(), style = LuxeTypography.labelMedium.copy(color = EditorialGold))
-                IconButton(onClick = onDelete, modifier = Modifier.size(24.dp)) {
-                    Icon(Icons.Default.Delete, contentDescription = "Delete", tint = Color.Red.copy(alpha = 0.7f))
+                Row {
+                    IconButton(onClick = { showCustomizer = true }, modifier = Modifier.size(24.dp)) {
+                        Icon(Icons.Default.Settings, contentDescription = "Customize", tint = GhostWhite.copy(alpha = 0.7f))
+                    }
+                    Spacer(modifier = Modifier.width(8.dp))
+                    IconButton(onClick = onDelete, modifier = Modifier.size(24.dp)) {
+                        Icon(Icons.Default.Delete, contentDescription = "Delete", tint = Color.Red.copy(alpha = 0.7f))
+                    }
                 }
             }
             

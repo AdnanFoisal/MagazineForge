@@ -6,6 +6,7 @@ android-app/local.properties
 android-app/.idea/
 android-app/*.iml
 android-app/app/*.iml
+android-app/app/google-services.json
 
 # Backend
 backend/__pycache__/

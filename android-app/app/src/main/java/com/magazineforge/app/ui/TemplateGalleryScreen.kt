@@ -12,6 +12,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -63,10 +64,11 @@ fun loadTemplates(context: Context): List<TemplateModel> {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TemplateGalleryScreen(
-    onTemplateSelected: (String) -> Unit,
+    onTemplateSelected: (String, String) -> Unit,
     onPreviewSelected: (String) -> Unit,
     onLibraryClicked: () -> Unit,
-    onPublishClicked: () -> Unit
+    onPublishClicked: () -> Unit,
+    onEditorClicked: () -> Unit
 ) {
     val context = LocalContext.current
     val templates = remember { loadTemplates(context) }
@@ -86,6 +88,9 @@ fun TemplateGalleryScreen(
                     }
                 },
                 actions = {
+                    IconButton(onClick = onEditorClicked) {
+                        Icon(Icons.Default.Edit, contentDescription = "Raw Editor", tint = EditorialGold)
+                    }
                     IconButton(onClick = onPublishClicked) {
                         Icon(Icons.Default.Add, contentDescription = "Publish", tint = EditorialGold)
                     }
@@ -134,7 +139,7 @@ fun TemplateGalleryScreen(
                 items(filteredTemplates) { template ->
                     TemplateMasonryCard(
                         template = template, 
-                        onClick = { onTemplateSelected(template.texTemplate) },
+                        onClick = { onTemplateSelected(template.texTemplate, template.description) },
                         onPreview = { onPreviewSelected(template.texTemplate) }
                     )
                 }

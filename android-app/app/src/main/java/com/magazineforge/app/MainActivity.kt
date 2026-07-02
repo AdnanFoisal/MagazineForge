@@ -75,6 +75,7 @@ class MainActivity : ComponentActivity() {
                 ) {
                     var currentScreen by remember { mutableStateOf(if (savedKey != null) "showcase" else "onboarding") }
                     var selectedTemplate by remember { mutableStateOf("") }
+                    var initialEditorPrompt by remember { mutableStateOf("") }
                     var apiKey by remember { mutableStateOf(savedKey ?: "") }
                     var selectedPdfForViewer by remember { mutableStateOf<String?>(null) }
                     
@@ -230,8 +231,9 @@ class MainActivity : ComponentActivity() {
                                         }
                                     )
                                     "gallery" -> TemplateGalleryScreen(
-                                        onTemplateSelected = { template ->
+                                        onTemplateSelected = { template, description ->
                                             selectedTemplate = template
+                                            initialEditorPrompt = description
                                             currentScreen = "editor"
                                         },
                                         onPreviewSelected = { templateVariant ->
@@ -248,6 +250,9 @@ class MainActivity : ComponentActivity() {
                                             } else {
                                                 currentScreen = "auth"
                                             }
+                                        },
+                                        onEditorClicked = {
+                                            currentScreen = "latex_notebook"
                                         }
                                     )
                                     "auth" -> AuthScreen(
@@ -260,15 +265,26 @@ class MainActivity : ComponentActivity() {
                                     )
                                     "editor" -> EditorScreen(
                                         templateVariant = selectedTemplate,
+                                        initialPrompt = initialEditorPrompt,
                                         isCompileLoading = isCompileLoading,
                                         onCompileClicked = { magazineTopic, pages ->
                                             val finalTopic = if (pages.isEmpty()) {
                                                 magazineTopic
                                             } else {
-                                                val pagesStr = pages.joinToString("\n") { 
-                                                    "Page Type: ${it.type}, Topic: ${it.topic}, Target Image URL: ${it.imageUrl}" 
+                                                val pagesStr = pages.joinToString("\n\n") { 
+                                                    """
+                                                    Page Type: ${it.type.uppercase()}
+                                                    Topic: ${it.topic}
+                                                    Target Image URL: ${it.imageUrl}
+                                                    [CUSTOMIZATION CONFIGURATION]:
+                                                    - Writing Tone: ${it.tone}
+                                                    - Color Palette: ${it.colorPalette}
+                                                    - Image Style: ${it.imageStyle}
+                                                    - Layout Density: ${it.layoutDensity}
+                                                    - Target Audience: ${it.targetAudience}
+                                                    """.trimIndent()
                                                 }
-                                                "Theme: $magazineTopic\nRequired Structure:\n$pagesStr\n(CRITICAL INSTRUCTION: You MUST use the exact Target Image URLs provided above for each corresponding page. Do NOT override them with Unsplash URLs unless no Target Image URL was provided.)"
+                                                "Theme: $magazineTopic\n\nRequired Structure:\n$pagesStr\n\n(CRITICAL INSTRUCTION: You MUST strictly adhere to the [CUSTOMIZATION CONFIGURATION] for each page. Adapt your language, formatting, and generation to perfectly match the requested Tone, Color Palette, Image Style, Layout Density, and Target Audience. You MUST also use the exact Target Image URLs provided above for each corresponding page. Do NOT override them with Unsplash URLs unless no Target Image URL was provided.)"
                                             }
                                             viewModel.generateSchema(apiKey, finalTopic, selectedTemplate)
                                         },

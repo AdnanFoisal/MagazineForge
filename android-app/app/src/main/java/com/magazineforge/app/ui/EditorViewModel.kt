@@ -200,7 +200,7 @@ class EditorViewModel : ViewModel() {
                     
                     if (!isFromShowcase) {
                         try {
-                            val currentLatex = (_latexState.value as? LatexState.Success)?.latex ?: ""
+                            val currentLatex = (_latexState.value as? LatexState.Success)?.latexCode ?: ""
                             
                             // Publish to showcase with the raw latex code
                             val showcaseItem = com.magazineforge.app.models.ShowcaseItem(

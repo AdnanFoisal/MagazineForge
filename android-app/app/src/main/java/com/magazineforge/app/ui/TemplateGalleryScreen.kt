@@ -157,30 +157,15 @@ fun TemplateMasonryCard(template: TemplateModel, onClick: () -> Unit, onPreview:
             .background(Color(0xFF1A1A1A))
             .clickable(onClick = onClick)
     ) {
-        val gradientColor1 = remember(template.id) { 
-            androidx.compose.ui.graphics.Color((0xFF000000..0xFFFFFFFF).random()) 
-        }
-        val gradientColor2 = remember(template.id) { 
-            androidx.compose.ui.graphics.Color((0xFF000000..0xFFFFFFFF).random()) 
-        }
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    brush = androidx.compose.ui.graphics.Brush.linearGradient(
-                        colors = listOf(gradientColor1, gradientColor2)
-                    )
-                ),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                text = template.name.take(2).uppercase(),
-                style = LuxeTypography.displayMedium.copy(
-                    color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.5f),
-                    fontWeight = FontWeight.Black
-                )
-            )
-        }
+        AsyncImage(
+            model = ImageRequest.Builder(LocalContext.current)
+                .data(template.thumbnailUrl)
+                .crossfade(true)
+                .build(),
+            contentDescription = template.name,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize()
+        )
         
         // Gradient overlay for text readability
         Box(

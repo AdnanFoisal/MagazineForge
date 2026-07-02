@@ -24,15 +24,15 @@ import com.magazineforge.app.ui.theme.LuxeTypography
 
 @Composable
 fun FloatingProgressTracker(
-    schemaState: EditorViewModel.SchemaState,
-    latexState: EditorViewModel.LatexState,
-    compileState: EditorViewModel.CompileState
+    schemaState: SchemaState,
+    latexState: LatexState,
+    compileState: CompileState
 ) {
     var isExpanded by remember { mutableStateOf(false) }
 
-    val isActive = schemaState is EditorViewModel.SchemaState.Loading ||
-            latexState is EditorViewModel.LatexState.Loading ||
-            compileState is EditorViewModel.CompileState.Loading
+    val isActive = schemaState is SchemaState.Loading ||
+            latexState is LatexState.Loading ||
+            compileState is CompileState.Loading
 
     if (!isActive) {
         isExpanded = false
@@ -40,9 +40,9 @@ fun FloatingProgressTracker(
     }
 
     val currentMessage = when {
-        schemaState is EditorViewModel.SchemaState.Loading -> "Brainstorming Magazine Structure..."
-        latexState is EditorViewModel.LatexState.Loading -> "Drafting Articles & Injecting Images..."
-        compileState is EditorViewModel.CompileState.Loading -> (compileState as EditorViewModel.CompileState.Loading).message
+        schemaState is SchemaState.Loading -> "Brainstorming Magazine Structure..."
+        latexState is LatexState.Loading -> "Drafting Articles & Injecting Images..."
+        compileState is CompileState.Loading -> (compileState as CompileState.Loading).message
         else -> "Working..."
     }
 

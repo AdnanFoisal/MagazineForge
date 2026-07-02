@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>MagazineForge - The Library</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Space+Grotesk:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "surface-variant": "#343535",
+                        "on-tertiary-container": "#454544",
+                        "inverse-primary": "#735c00",
+                        "error": "#ffb4ab",
+                        "on-surface-variant": "#d0c5af",
+                        "on-surface": "#e3e2e2",
+                        "on-primary-fixed": "#241a00",
+                        "inverse-on-surface": "#303031",
+                        "surface": "#121414",
+                        "primary-fixed-dim": "#e9c349",
+                        "inverse-surface": "#e3e2e2",
+                        "tertiary-fixed-dim": "#c8c6c5",
+                        "secondary-fixed": "#e2e2e2",
+                        "on-tertiary": "#313030",
+                        "error-container": "#93000a",
+                        "surface-container-high": "#292a2a",
+                        "outline": "#99907c",
+                        "on-secondary-fixed-variant": "#454747",
+                        "secondary-fixed-dim": "#c6c6c7",
+                        "on-tertiary-fixed-variant": "#474746",
+                        "on-background": "#e3e2e2",
+                        "primary-fixed": "#ffe088",
+                        "on-error": "#690005",
+                        "on-secondary-container": "#b4b5b5",
+                        "tertiary-fixed": "#e5e2e1",
+                        "tertiary-container": "#b4b2b2",
+                        "surface-container-lowest": "#0d0e0f",
+                        "on-primary-container": "#554300",
+                        "surface-tint": "#e9c349",
+                        "surface-container-highest": "#343535",
+                        "tertiary": "#d0cdcd",
+                        "background": "#121414",
+                        "surface-container-low": "#1b1c1c",
+                        "secondary": "#c6c6c7",
+                        "on-primary-fixed-variant": "#574500",
+                        "on-error-container": "#ffdad6",
+                        "primary-container": "#d4af37",
+                        "on-secondary-fixed": "#1a1c1c",
+                        "on-primary": "#3c2f00",
+                        "outline-variant": "#4d4635",
+                        "surface-container": "#1f2020",
+                        "primary": "#f2ca50",
+                        "secondary-container": "#454747",
+                        "on-secondary": "#2f3131",
+                        "surface-dim": "#121414",
+                        "surface-bright": "#383939",
+                        "on-tertiary-fixed": "#1c1b1b"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    spacing: {
+                        "stack-lg": "40px",
+                        "stack-xl": "64px",
+                        "stack-sm": "12px",
+                        "margin-page": "24px",
+                        "stack-md": "24px",
+                        "gutter": "16px"
+                    },
+                    fontFamily: {
+                        "display-lg-mobile": ["Space Grotesk"],
+                        "body-lg": ["Inter"],
+                        "display-lg": ["Space Grotesk"],
+                        "body-md": ["Inter"],
+                        "label-md": ["Inter"],
+                        "headline-md": ["Space Grotesk"],
+                        "label-sm": ["Inter"],
+                        "headline-sm": ["Space Grotesk"]
+                    },
+                    fontSize: {
+                        "display-lg-mobile": ["36px", { lineHeight: "40px", letterSpacing: "-0.03em", fontWeight: "700" }],
+                        "body-lg": ["18px", { lineHeight: "30px", letterSpacing: "0em", fontWeight: "400" }],
+                        "display-lg": ["48px", { lineHeight: "52px", letterSpacing: "-0.04em", fontWeight: "700" }],
+                        "body-md": ["16px", { lineHeight: "26px", letterSpacing: "0em", fontWeight: "400" }],
+                        "label-md": ["14px", { lineHeight: "20px", letterSpacing: "0.05em", fontWeight: "600" }],
+                        "headline-md": ["32px", { lineHeight: "38px", letterSpacing: "-0.02em", fontWeight: "600" }],
+                        "label-sm": ["12px", { lineHeight: "16px", letterSpacing: "0.02em", fontWeight: "500" }],
+                        "headline-sm": ["24px", { lineHeight: "30px", letterSpacing: "-0.01em", fontWeight: "600" }]
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="bg-black text-on-surface antialiased pt-16 pb-24 min-h-screen">
+<!-- TopAppBar -->
+<header class="bg-surface dark:bg-surface fixed top-0 w-full z-50 flat no shadows flex justify-between items-center px-margin-page h-16 w-full">
+<button class="text-primary dark:text-primary hover:opacity-80 transition-opacity active:scale-95 transition-transform">
+<span class="material-symbols-outlined">menu</span>
+</button>
+<h1 class="font-display-lg-mobile text-display-lg-mobile text-primary tracking-tighter uppercase text-center w-full absolute left-0 -z-10">MagazineForge</h1>
+<div class="w-8 h-8 rounded-full bg-surface-container overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="A sophisticated black and white portrait of a person in a sleek studio setting, conveying high-end editorial luxury and precise lighting." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBvMan-gtNZhgCmAKF3YFEfuTCrexiqTRlJN1G2O3Vah5pPEHefYx3Q6eaUHXfzG1ODnYGT1R1r43FGub6t39Nnnir5pGzY7cOLe8upntHALnxLCxQ9q5I6BJPNGnpT_8GUXK8cl6V7TwLYF7IrvlVvSx1r6cBhw1WzqYMd7KmMzZEI0UGj50qSf6gY0UMTEgn7Ie_gBzo4Gtvk1nqaOIZ0ey9biNt7j2cHggZxsnpHg91-NA-Jj6-A2MAb706lty0PfXXIQVRKdqQ"/>
+</div>
+</header>
+<!-- Main Canvas -->
+<main class="px-margin-page py-stack-xl flex flex-col gap-stack-lg max-w-7xl mx-auto">
+<!-- Collection Header -->
+<section class="flex justify-between items-end border-b border-[#2A2A2A] pb-4">
+<div>
+<h2 class="font-display-lg-mobile text-display-lg-mobile md:font-display-lg md:text-display-lg text-on-surface">The Library</h2>
+<p class="font-body-md text-body-md text-on-surface-variant mt-2">Curated volumes of distinct aesthetic narratives.</p>
+</div>
+<span class="material-symbols-outlined text-primary text-3xl hidden md:block">collections_bookmark</span>
+</section>
+<!-- Bento Grid / Cards -->
+<section class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-gutter">
+<!-- Card 1 -->
+<article class="bg-[#1A1A1A] rounded-lg border border-[#2A2A2A] overflow-hidden flex flex-col group cursor-pointer">
+<div class="h-96 w-full overflow-hidden relative">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-in-out" src="https://lh3.googleusercontent.com/aida-public/AB6AXuD_oqKQZGx268HLvt2BSSgzHiVeUbgsROLo7Dj94T5ujkw3dme4KEpEyz4sNwUCpeZBpDL4_o8FhZ-McGyccDHLy-uNTnpr2YTmGeqPigeN7cTNWYPfbAQgUGm9ARk9ixLaJWavO55ipdCL4NsTi3AwParUmdj2VNkoA9pDUYHcYRwDE3j21neqcezmbYZVBdssKuAXHkPZEwHePjxcy6qIS4jt_JX3sPry104Bv2FcoZGfJRRDcRVt0BNxwZx2Rs6K2PxE6-0kq54"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+</div>
+<div class="p-stack-md flex flex-col justify-between flex-grow">
+<div>
+<h3 class="font-headline-sm text-headline-sm-mobile md:font-headline-md md:text-headline-md text-on-surface mb-2">The Avant-Garde</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">Exploring the limits of form.</p>
+</div>
+</div>
+</article>
+<!-- Card 2 -->
+<article class="bg-[#1A1A1A] rounded-lg border border-[#2A2A2A] overflow-hidden flex flex-col group cursor-pointer">
+<div class="h-96 w-full overflow-hidden relative">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-in-out" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAd2DRJKnJnMZWWVOfRLQXzU7tfHZCnKR4Laf9cnRGRWKDccCe9t1ZuhmjfFea7C8jesJ70DGGLkubT87-YWIsr69RmJGIc8kZ4WbG3he6CaHPflj2NS13thCZX3gDZrXsNXgnjOdZU6j8loMXZi5MjuYNenR7TXodrYXu2aqBmGueoO1wKFMBDndF0Rc4lzxRTwuhH0cvX85sDXydkZQqBmjGH8c-DmVlljLCWlheI53fkw0fSRCm3aCTX3EhZaIqcH1-qI5h3chc"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+</div>
+<div class="p-stack-md flex flex-col justify-between flex-grow">
+<div>
+<h3 class="font-headline-sm text-headline-sm-mobile md:font-headline-md md:text-headline-md text-on-surface mb-2">Concrete Visions</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">The beauty of brutalism.</p>
+</div>
+</div>
+</article>
+<!-- Card 3 -->
+<article class="bg-[#1A1A1A] rounded-lg border border-[#2A2A2A] overflow-hidden flex flex-col group cursor-pointer md:col-span-2 lg:col-span-1">
+<div class="h-96 w-full overflow-hidden relative">
+<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-in-out" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAGom2cDy0hAkS9R9_DNCe_rkc3GHHAvegSPH2tV7tVkqsYGjb3rX6Y5_-rabKy1Qxc41OLx0Q1lhzhRUS_-Ka4xXTzsWe4XXlIc-QIlVcnWfc0q8HRN_mQNzsSuMtNygZcG4d_D6Xn1xnvy1OWnVUxm5p2FqNwA8cWeshaBqDFd2rCgfJvQOk92tfDzBsO6pauXhyVEYp6nqm0kHS6spKSojRRsKrBjK9PdWAFDqdHdJQwh6YZ0Ug1c1u-Udfr-JJpTeJkR2SNCfc"/>
+<div class="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent"></div>
+</div>
+<div class="p-stack-md flex flex-col justify-between flex-grow">
+<div>
+<h3 class="font-headline-sm text-headline-sm-mobile md:font-headline-md md:text-headline-md text-on-surface mb-2">Digital Alchemy</h3>
+<p class="font-body-md text-body-md text-on-surface-variant">The intersection of art and AI.</p>
+</div>
+</div>
+</article>
+</section>
+<!-- CTA Action -->
+<div class="flex justify-center mt-stack-md">
+<button class="bg-primary-container text-black font-label-md text-label-md uppercase tracking-widest px-8 py-4 rounded-full hover:opacity-90 transition-opacity flex items-center gap-2">
+                See All Collections
+                <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">arrow_forward</span>
+</button>
+</div>
+</main>
+<!-- BottomNavBar -->
+<nav class="bg-surface/80 dark:bg-surface/80 backdrop-blur-xl fixed bottom-0 w-full z-50 flat no shadows fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 pb-6 pt-3 md:hidden">
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-colors active:scale-90 transition-transform gap-1" href="#">
+<span class="material-symbols-outlined">edit_note</span>
+<span class="font-label-sm text-label-sm uppercase tracking-widest">Studio</span>
+</a>
+<a class="flex flex-col items-center justify-center text-primary font-bold hover:text-primary transition-colors active:scale-90 transition-transform gap-1" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">auto_stories</span>
+<span class="font-label-sm text-label-sm uppercase tracking-widest">Library</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-colors active:scale-90 transition-transform gap-1" href="#">
+<span class="material-symbols-outlined">dashboard_customize</span>
+<span class="font-label-sm text-label-sm uppercase tracking-widest">Templates</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-colors active:scale-90 transition-transform gap-1" href="#">
+<span class="material-symbols-outlined">settings</span>
+<span class="font-label-sm text-label-sm uppercase tracking-widest">Settings</span>
+</a>
+</nav>
+<!-- Desktop Sidebar (Hidden on Mobile) -->
+<aside class="hidden md:flex flex-col fixed top-16 left-0 h-full w-24 bg-black border-r border-[#2A2A2A] z-40 py-stack-md items-center gap-stack-lg">
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-colors active:scale-90 transition-transform gap-2" href="#">
+<span class="material-symbols-outlined text-3xl">edit_note</span>
+<span class="font-label-sm text-label-sm uppercase tracking-widest opacity-0 hover:opacity-100 transition-opacity absolute left-20 bg-surface px-2 py-1 rounded border border-[#2A2A2A]">Studio</span>
+</a>
+<a class="flex flex-col items-center justify-center text-primary font-bold hover:text-primary transition-colors active:scale-90 transition-transform gap-2 relative" href="#">
+<span class="material-symbols-outlined text-3xl" style="font-variation-settings: 'FILL' 1;">auto_stories</span>
+<div class="absolute -left-1 w-1 h-8 bg-primary rounded-r-full"></div>
+<span class="font-label-sm text-label-sm uppercase tracking-widest opacity-0 hover:opacity-100 transition-opacity absolute left-20 bg-surface px-2 py-1 rounded border border-[#2A2A2A]">Library</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-colors active:scale-90 transition-transform gap-2" href="#">
+<span class="material-symbols-outlined text-3xl">dashboard_customize</span>
+<span class="font-label-sm text-label-sm uppercase tracking-widest opacity-0 hover:opacity-100 transition-opacity absolute left-20 bg-surface px-2 py-1 rounded border border-[#2A2A2A]">Templates</span>
+</a>
+<div class="flex-grow"></div>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-primary transition-colors active:scale-90 transition-transform gap-2 pb-24" href="#">
+<span class="material-symbols-outlined text-3xl">settings</span>
+<span class="font-label-sm text-label-sm uppercase tracking-widest opacity-0 hover:opacity-100 transition-opacity absolute left-20 bg-surface px-2 py-1 rounded border border-[#2A2A2A]">Settings</span>
+</a>
+</aside>
+</body></html>

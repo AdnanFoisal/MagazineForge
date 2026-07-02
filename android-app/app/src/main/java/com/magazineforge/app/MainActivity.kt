@@ -141,18 +141,8 @@ class MainActivity : ComponentActivity() {
                         }
                     ) { innerPadding ->
                         Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
-                            if (showProgressCard) {
-                                val stageText = when {
-                                    schemaState is SchemaState.Loading -> "Designing Layout..."
-                                    latexState is LatexState.Loading -> "Writing Content & Typesetting..."
-                                    compileState is CompileState.Loading -> "Compiling PDF..."
-                                    else -> "Processing..."
-                                }
-                                ProgressTrackerDialog(
-                                    currentStage = stageText,
-                                    onDismiss = { showProgressCard = false }
-                                )
-                            }
+                            // FloatingProgressTracker added to the Box holding NavHost
+
 
                             if (selectedPdfForViewer != null) {
                                 PdfViewerScreen(
@@ -217,6 +207,9 @@ class MainActivity : ComponentActivity() {
                                         onTemplateSelected = { template ->
                                             selectedTemplate = template
                                             currentScreen = "editor"
+                                        },
+                                        onPreviewSelected = { templateVariant ->
+                                            viewModel.generateSchema(apiKey, "Magazine Preview", templateVariant)
                                         },
                                         onLibraryClicked = {
                                             currentScreen = "library"

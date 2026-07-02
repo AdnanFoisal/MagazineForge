@@ -4,32 +4,34 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Image
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.magazineforge.app.ui.theme.LuxeTypography
-import com.magazineforge.app.ui.theme.PitchBlack
+import com.magazineforge.app.ui.theme.BorderDark
 import com.magazineforge.app.ui.theme.DarkSurface
 import com.magazineforge.app.ui.theme.EditorialGold
-import com.magazineforge.app.ui.theme.BorderDark
 import com.magazineforge.app.ui.theme.GhostWhite
+import com.magazineforge.app.ui.theme.LuxeTypography
+import com.magazineforge.app.ui.theme.PitchBlack
 
 data class PageBlock(
     val id: String = java.util.UUID.randomUUID().toString(),
-    val type: String = "article",
-    val topic: String = "",
-    val imageUrl: String = ""
+    var type: String = "article",
+    var topic: String = "",
+    var imageUrl: String = ""
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -41,6 +43,9 @@ fun EditorScreen(
     onBack: () -> Unit
 ) {
     var prompt by remember { mutableStateOf("") }
+    var selectedTabIndex by remember { mutableStateOf(0) }
+    val pages = remember { mutableStateListOf<PageBlock>() }
+    
     val obsidian = PitchBlack
     val darkSurface = DarkSurface
     val gold = EditorialGold
@@ -51,16 +56,11 @@ fun EditorScreen(
         topBar = {
             TopAppBar(
                 title = { 
-                    Text("MagazineForge", color = gold, style = LuxeTypography.headlineMedium) 
+                    Text("The Studio", color = gold, style = LuxeTypography.headlineMedium) 
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
                         Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = gold)
-                    }
-                },
-                actions = {
-                    IconButton(onClick = { /* Add functionality */ }) {
-                        Icon(Icons.Default.Add, contentDescription = "Add", tint = gold)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = obsidian)
@@ -73,84 +73,131 @@ fun EditorScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // Top 60%: Massive prompt input field
-            Box(
-                modifier = Modifier
-                    .weight(0.6f)
-                    .fillMaxWidth()
-                    .padding(24.dp)
-            ) {
-                TextField(
-                    value = prompt,
-                    onValueChange = { prompt = it },
-                    placeholder = { 
-                        Text("What are we publishing today?", color = ivory.copy(alpha = 0.4f), style = LuxeTypography.headlineMedium) 
-                    },
-                    modifier = Modifier.fillMaxSize(),
-                    textStyle = LuxeTypography.headlineMedium.copy(color = ivory),
-                    colors = TextFieldDefaults.colors(
-                        focusedContainerColor = Color.Transparent,
-                        unfocusedContainerColor = Color.Transparent,
-                        focusedIndicatorColor = Color.Transparent,
-                        unfocusedIndicatorColor = Color.Transparent,
-                        cursorColor = gold
+            TabRow(
+                selectedTabIndex = selectedTabIndex,
+                containerColor = obsidian,
+                contentColor = gold,
+                indicator = { tabPositions ->
+                    TabRowDefaults.Indicator(
+                        modifier = Modifier.tabIndicatorOffset(tabPositions[selectedTabIndex]),
+                        color = gold
                     )
+                }
+            ) {
+                Tab(
+                    selected = selectedTabIndex == 0,
+                    onClick = { selectedTabIndex = 0 },
+                    text = { Text("Full AI Mode") }
+                )
+                Tab(
+                    selected = selectedTabIndex == 1,
+                    onClick = { selectedTabIndex = 1 },
+                    text = { Text("Assisted Mode") }
                 )
             }
 
-            // Bottom 40%: Anchored Tool Panel
-            Column(
-                modifier = Modifier
-                    .weight(0.4f)
-                    .fillMaxWidth()
-                    .background(darkSurface)
-                    .padding(24.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                // Row 1: Tools Icons
-                LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    item { ToolButton("image", "ATTACH IMAGE") }
-                    item { ToolButton("view_quilt", "TEMPLATE") }
-                    item { ToolButton("text_fields", "TYPOGRAPHY") }
-                    item { ToolButton("palette", "PALETTE") }
-                }
-
-                // Row 2: Typography Cards
-                LazyRow(
-                    modifier = Modifier.weight(1f),
-                    horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    item { TypographyCard("Grotesk", true) }
-                    item { TypographyCard("Playfair", false) }
-                    item { TypographyCard("Mono", false) }
-                    item { TypographyCard("Inter", false) }
-                }
-
-                // Row 3: Generate Button
-                Button(
-                    onClick = {
-                        val dummyPages = listOf(
-                            PageBlock(type = "cover", topic = prompt),
-                            PageBlock(type = "toc"),
-                            PageBlock(type = "article", topic = "Main Article")
+            if (selectedTabIndex == 0) {
+                // FULL AI MODE
+                Column(modifier = Modifier.weight(1f).padding(24.dp)) {
+                    TextField(
+                        value = prompt,
+                        onValueChange = { prompt = it },
+                        placeholder = { 
+                            Text("What are we publishing today?", color = ivory.copy(alpha = 0.4f), style = LuxeTypography.headlineMedium) 
+                        },
+                        modifier = Modifier.weight(1f).fillMaxWidth(),
+                        textStyle = LuxeTypography.headlineMedium.copy(color = ivory),
+                        colors = TextFieldDefaults.colors(
+                            focusedContainerColor = Color.Transparent,
+                            unfocusedContainerColor = Color.Transparent,
+                            focusedIndicatorColor = Color.Transparent,
+                            unfocusedIndicatorColor = Color.Transparent,
+                            cursorColor = gold
                         )
-                        onCompileClicked(prompt, dummyPages)
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(56.dp),
-                    shape = RoundedCornerShape(8.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = gold,
-                        contentColor = obsidian
-                    ),
-                    enabled = prompt.isNotBlank() && !isCompileLoading
-                ) {
-                    if (isCompileLoading) {
-                        CircularProgressIndicator(color = obsidian, modifier = Modifier.size(24.dp))
-                    } else {
-                        Text("Generate Issue", style = LuxeTypography.bodyLarge.copy(fontWeight = FontWeight.Bold))
+                    )
+                    
+                    Button(
+                        onClick = {
+                            val dummyPages = listOf(
+                                PageBlock(type = "cover", topic = prompt),
+                                PageBlock(type = "toc"),
+                                PageBlock(type = "article", topic = "Main Feature")
+                            )
+                            onCompileClicked(prompt, dummyPages)
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = gold, contentColor = obsidian),
+                        enabled = prompt.isNotBlank() && !isCompileLoading
+                    ) {
+                        if (isCompileLoading) {
+                            CircularProgressIndicator(color = obsidian, modifier = Modifier.size(24.dp))
+                        } else {
+                            Text("Generate Issue", style = LuxeTypography.bodyLarge.copy(fontWeight = FontWeight.Bold))
+                        }
+                    }
+                }
+            } else {
+                // ASSISTED MODE
+                Column(modifier = Modifier.weight(1f).padding(16.dp)) {
+                    OutlinedTextField(
+                        value = prompt,
+                        onValueChange = { prompt = it },
+                        label = { Text("Magazine Overall Theme") },
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = gold,
+                            focusedLabelColor = gold,
+                            unfocusedTextColor = ivory,
+                            focusedTextColor = ivory
+                        )
+                    )
+
+                    LazyColumn(modifier = Modifier.weight(1f)) {
+                        items(pages) { page ->
+                            PageBlockCard(
+                                page = page,
+                                onUpdate = { updatedPage ->
+                                    val index = pages.indexOfFirst { it.id == updatedPage.id }
+                                    if (index != -1) pages[index] = updatedPage
+                                },
+                                onDelete = {
+                                    pages.remove(page)
+                                }
+                            )
+                            Spacer(modifier = Modifier.height(12.dp))
+                        }
+                        item {
+                            OutlinedButton(
+                                onClick = { pages.add(PageBlock()) },
+                                modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+                                colors = ButtonDefaults.outlinedButtonColors(contentColor = gold),
+                                border = BorderStroke(1.dp, gold)
+                            ) {
+                                Icon(Icons.Default.Add, contentDescription = "Add Page")
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Add Page Block")
+                            }
+                        }
+                    }
+                    
+                    Button(
+                        onClick = { onCompileClicked(prompt, pages) },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp)
+                            .padding(top = 8.dp),
+                        shape = RoundedCornerShape(8.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = gold, contentColor = obsidian),
+                        enabled = prompt.isNotBlank() && pages.isNotEmpty() && !isCompileLoading
+                    ) {
+                        if (isCompileLoading) {
+                            CircularProgressIndicator(color = obsidian, modifier = Modifier.size(24.dp))
+                        } else {
+                            Text("Generate Custom Issue", style = LuxeTypography.bodyLarge.copy(fontWeight = FontWeight.Bold))
+                        }
                     }
                 }
             }
@@ -159,40 +206,62 @@ fun EditorScreen(
 }
 
 @Composable
-fun ToolButton(iconName: String, label: String) {
-    Surface(
-        shape = RoundedCornerShape(50),
-        border = BorderStroke(1.dp, BorderDark.copy(alpha = 0.3f)),
-        color = PitchBlack,
-        modifier = Modifier.clickable { }
-    ) {
-        Row(
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(label, style = LuxeTypography.labelSmall.copy(color = GhostWhite))
-        }
-    }
-}
-
-@Composable
-fun TypographyCard(name: String, isSelected: Boolean) {
-    val borderColor = if (isSelected) EditorialGold.copy(alpha = 0.5f) else BorderDark.copy(alpha = 0.3f)
-    Surface(
+fun PageBlockCard(
+    page: PageBlock,
+    onUpdate: (PageBlock) -> Unit,
+    onDelete: () -> Unit
+) {
+    Card(
+        colors = CardDefaults.cardColors(containerColor = DarkSurface),
+        border = BorderStroke(1.dp, BorderDark),
         shape = RoundedCornerShape(8.dp),
-        border = BorderStroke(1.dp, borderColor),
-        color = PitchBlack,
-        modifier = Modifier
-            .size(96.dp)
-            .clickable { }
+        modifier = Modifier.fillMaxWidth()
     ) {
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.Center,
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text("Aa", style = LuxeTypography.headlineMedium.copy(color = GhostWhite))
-            Text(name.uppercase(), style = LuxeTypography.labelSmall.copy(color = GhostWhite.copy(alpha = 0.6f), fontSize = 10.sp))
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
+                Text(page.type.uppercase(), style = LuxeTypography.labelMedium.copy(color = EditorialGold))
+                IconButton(onClick = onDelete, modifier = Modifier.size(24.dp)) {
+                    Icon(Icons.Default.Delete, contentDescription = "Delete", tint = Color.Red.copy(alpha = 0.7f))
+                }
+            }
+            
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            OutlinedTextField(
+                value = page.topic,
+                onValueChange = { onUpdate(page.copy(topic = it)) },
+                placeholder = { Text("What is this page about?") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = EditorialGold,
+                    unfocusedTextColor = GhostWhite,
+                    focusedTextColor = GhostWhite
+                )
+            )
+            
+            Spacer(modifier = Modifier.height(8.dp))
+            
+            OutlinedTextField(
+                value = page.imageUrl,
+                onValueChange = { newValue -> 
+                    // Auto verify and convert Google Drive links
+                    val driveRegex = Regex("https://drive\\.google\\.com/file/d/([a-zA-Z0-9_-]+)/view.*")
+                    val convertedUrl = driveRegex.replace(newValue) { result ->
+                        "https://drive.google.com/uc?export=download&id=${result.groupValues[1]}"
+                    }
+                    onUpdate(page.copy(imageUrl = convertedUrl))
+                },
+                placeholder = { Text("Image URL or Google Drive Link") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                leadingIcon = { Icon(Icons.Default.Image, contentDescription = "Image") },
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = EditorialGold,
+                    unfocusedTextColor = GhostWhite,
+                    focusedTextColor = GhostWhite
+                )
+            )
         }
     }
 }

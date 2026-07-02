@@ -12,6 +12,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -63,6 +64,7 @@ fun loadTemplates(context: Context): List<TemplateModel> {
 @Composable
 fun TemplateGalleryScreen(
     onTemplateSelected: (String) -> Unit,
+    onPreviewSelected: (String) -> Unit,
     onLibraryClicked: () -> Unit
 ) {
     val context = LocalContext.current
@@ -129,7 +131,11 @@ fun TemplateGalleryScreen(
                 verticalItemSpacing = 16.dp
             ) {
                 items(filteredTemplates) { template ->
-                    TemplateMasonryCard(template, onClick = { onTemplateSelected(template.texTemplate) })
+                    TemplateMasonryCard(
+                        template = template, 
+                        onClick = { onTemplateSelected(template.texTemplate) },
+                        onPreview = { onPreviewSelected(template.texTemplate) }
+                    )
                 }
             }
         }
@@ -137,7 +143,7 @@ fun TemplateGalleryScreen(
 }
 
 @Composable
-fun TemplateMasonryCard(template: TemplateModel, onClick: () -> Unit) {
+fun TemplateMasonryCard(template: TemplateModel, onClick: () -> Unit, onPreview: () -> Unit) {
     // Generate a somewhat random aspect ratio based on ID length to simulate masonry
     val aspectRatio = if (template.id.length % 2 == 0) 0.75f else 1.2f
     
@@ -150,15 +156,30 @@ fun TemplateMasonryCard(template: TemplateModel, onClick: () -> Unit) {
             .background(Color(0xFF1A1A1A))
             .clickable(onClick = onClick)
     ) {
-        AsyncImage(
-            model = ImageRequest.Builder(LocalContext.current)
-                .data(template.thumbnailUrl)
-                .crossfade(true)
-                .build(),
-            contentDescription = template.name,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier.fillMaxSize()
-        )
+        val gradientColor1 = remember(template.id) { 
+            androidx.compose.ui.graphics.Color((0xFF000000..0xFFFFFFFF).random()) 
+        }
+        val gradientColor2 = remember(template.id) { 
+            androidx.compose.ui.graphics.Color((0xFF000000..0xFFFFFFFF).random()) 
+        }
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    brush = androidx.compose.ui.graphics.Brush.linearGradient(
+                        colors = listOf(gradientColor1, gradientColor2)
+                    )
+                ),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = template.name.take(2).uppercase(),
+                style = LuxeTypography.displayMedium.copy(
+                    color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.5f),
+                    fontWeight = FontWeight.Black
+                )
+            )
+        }
         
         // Gradient overlay for text readability
         Box(
@@ -173,11 +194,15 @@ fun TemplateMasonryCard(template: TemplateModel, onClick: () -> Unit) {
         )
         
         // Text Info at bottom
-        Column(
+        Row(
             modifier = Modifier
                 .align(Alignment.BottomStart)
-                .padding(12.dp)
+                .fillMaxWidth()
+                .padding(12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
         ) {
+            Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = template.name,
                 style = LuxeTypography.titleMedium.copy(color = GhostWhite, fontWeight = FontWeight.Bold)
@@ -186,6 +211,20 @@ fun TemplateMasonryCard(template: TemplateModel, onClick: () -> Unit) {
                 text = "@${template.id.replace("_", "")}",
                 style = LuxeTypography.labelSmall.copy(color = GhostWhite.copy(alpha = 0.7f), letterSpacing = 1.sp)
             )
+            }
+            IconButton(
+                onClick = onPreview,
+                modifier = Modifier
+                    .size(32.dp)
+                    .background(Color.Black.copy(alpha = 0.4f), RoundedCornerShape(16.dp))
+            ) {
+                Icon(
+                    androidx.compose.material.icons.Icons.Default.PlayArrow,
+                    contentDescription = "Preview",
+                    tint = EditorialGold,
+                    modifier = Modifier.size(20.dp)
+                )
+            }
         }
     }
 }

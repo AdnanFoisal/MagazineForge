@@ -8,12 +8,17 @@ import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.magazineforge.app.ui.theme.ThemeState
 import com.magazineforge.app.ui.theme.ThemeVariant
@@ -25,6 +30,7 @@ fun SettingsScreen(
     onSaveApiKey: (String) -> Unit
 ) {
     var apiKeyInput by remember { mutableStateOf(currentApiKey) }
+    var passwordVisible by remember { mutableStateOf(false) }
     val currentTheme by ThemeState.currentTheme.collectAsState()
     
     Column(
@@ -51,6 +57,14 @@ fun SettingsScreen(
                     onValueChange = { apiKeyInput = it },
                     modifier = Modifier.fillMaxWidth(),
                     label = { Text("API Key") },
+                    visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                    trailingIcon = {
+                        val image = if (passwordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff
+                        val description = if (passwordVisible) "Hide API Key" else "Show API Key"
+                        IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                            Icon(imageVector = image, contentDescription = description)
+                        }
+                    },
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = MaterialTheme.colorScheme.primary,
                         focusedLabelColor = MaterialTheme.colorScheme.primary

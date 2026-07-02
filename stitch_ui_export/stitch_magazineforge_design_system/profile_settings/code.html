@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Profile &amp; Settings - MagazineForge</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&amp;family=Space+Grotesk:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "surface-variant": "#343535",
+                        "surface-dim": "#121414",
+                        "on-tertiary-fixed": "#1c1b1b",
+                        "on-background": "#e3e2e2",
+                        "surface-container-highest": "#343535",
+                        "on-tertiary-fixed-variant": "#474746",
+                        "inverse-on-surface": "#303031",
+                        "on-primary-fixed": "#241a00",
+                        "on-error": "#690005",
+                        "on-error-container": "#ffdad6",
+                        "surface-container-low": "#1b1c1c",
+                        "error-container": "#93000a",
+                        "surface-container-lowest": "#0d0e0f",
+                        "on-primary-fixed-variant": "#574500",
+                        "tertiary": "#d0cdcd",
+                        "surface-container": "#1f2020",
+                        "on-tertiary-container": "#454544",
+                        "tertiary-container": "#b4b2b2",
+                        "secondary-container": "#454747",
+                        "secondary": "#c6c6c7",
+                        "on-tertiary": "#313030",
+                        "surface": "#121414",
+                        "primary-container": "#d4af37",
+                        "outline-variant": "#4d4635",
+                        "inverse-primary": "#735c00",
+                        "on-primary-container": "#554300",
+                        "error": "#ffb4ab",
+                        "surface-container-high": "#292a2a",
+                        "inverse-surface": "#e3e2e2",
+                        "on-secondary-fixed-variant": "#454747",
+                        "on-surface": "#e3e2e2",
+                        "background": "#121414",
+                        "primary-fixed": "#ffe088",
+                        "on-secondary": "#2f3131",
+                        "secondary-fixed-dim": "#c6c6c7",
+                        "secondary-fixed": "#e2e2e2",
+                        "on-secondary-fixed": "#1a1c1c",
+                        "on-secondary-container": "#b4b5b5",
+                        "tertiary-fixed": "#e5e2e1",
+                        "surface-bright": "#383939",
+                        "on-primary": "#3c2f00",
+                        "tertiary-fixed-dim": "#c8c6c5",
+                        "primary": "#f2ca50",
+                        "on-surface-variant": "#d0c5af",
+                        "outline": "#99907c",
+                        "surface-tint": "#e9c349",
+                        "primary-fixed-dim": "#e9c349"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "stack-sm": "12px",
+                        "stack-md": "24px",
+                        "stack-xl": "64px",
+                        "stack-lg": "40px",
+                        "margin-page": "24px",
+                        "gutter": "16px"
+                    },
+                    "fontFamily": {
+                        "label-sm": ["Inter"],
+                        "headline-md": ["Space Grotesk"],
+                        "headline-sm": ["Space Grotesk"],
+                        "display-lg-mobile": ["Space Grotesk"],
+                        "body-md": ["Inter"],
+                        "body-lg": ["Inter"],
+                        "label-md": ["Inter"],
+                        "display-lg": ["Space Grotesk"]
+                    },
+                    "fontSize": {
+                        "label-sm": ["12px", { "lineHeight": "16px", "letterSpacing": "0.02em", "fontWeight": "500" }],
+                        "headline-md": ["32px", { "lineHeight": "38px", "letterSpacing": "-0.02em", "fontWeight": "600" }],
+                        "headline-sm": ["24px", { "lineHeight": "30px", "letterSpacing": "-0.01em", "fontWeight": "600" }],
+                        "display-lg-mobile": ["36px", { "lineHeight": "40px", "letterSpacing": "-0.03em", "fontWeight": "700" }],
+                        "body-md": ["16px", { "lineHeight": "26px", "letterSpacing": "0em", "fontWeight": "400" }],
+                        "body-lg": ["18px", { "lineHeight": "30px", "letterSpacing": "0em", "fontWeight": "400" }],
+                        "label-md": ["14px", { "lineHeight": "20px", "letterSpacing": "0.05em", "fontWeight": "600" }],
+                        "display-lg": ["48px", { "lineHeight": "52px", "letterSpacing": "-0.04em", "fontWeight": "700" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-background text-on-background min-h-screen font-body-md pb-24 md:pb-0 pt-16 md:pt-0 flex md:flex-row">
+<!-- Mobile Top App Bar (From Shared Components JSON) -->
+<header class="fixed top-0 w-full z-50 bg-background dark:bg-background border-b border-surface-container-highest md:hidden flex justify-between items-center px-margin-page h-16">
+<button class="text-on-surface-variant hover:text-primary transition-colors active:opacity-70 flex items-center justify-center">
+<span class="material-symbols-outlined" data-icon="menu">menu</span>
+</button>
+<h1 class="font-display-lg-mobile text-display-lg-mobile tracking-tighter text-primary dark:text-primary">MONOLITH</h1>
+<div class="w-8 h-8 rounded-full overflow-hidden border border-primary/20">
+<img alt="Profile Avatar" class="w-full h-full object-cover" data-alt="A striking, high-contrast black and white portrait of a sophisticated person with striking features. The lighting is dramatic and moody, reminiscent of a high-end fashion magazine editorial. The background is pure pitch black, isolating the subject completely. The image should convey authority and creative vision." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBjHa5F3i6wBjNqwQxxgcw3EOEfBNPFKKeOWBpPOKQv-OVoyD4Z8WqsYAre5qqQuhHxd4fPMpfnWSbEGlyiZy5LgY83qQPSE7crU6TWu4_vksHV__PyUMkvEZTHSGmpGyobV-SDcRflLEBzmLHw3Hux5f2mNKhtBW_WBtF2PlyKKNJPt2oWk6JRrgHmG4lNNbDa4x1CqRx3qvlqRcD_1SSr81q0fBEGJ15mdBoKFrsmKjshVtiEZi0Ngg4LvZ_vh__6tDMO-9M6cRw"/>
+</div>
+</header>
+<!-- Desktop Side Drawer (From Shared Components JSON - adapted for persistent layout) -->
+<aside class="hidden md:flex flex-col h-screen w-80 bg-surface-dim dark:bg-surface-dim border-r border-surface-container-highest p-margin-page sticky top-0 flex-shrink-0">
+<!-- Header Profile -->
+<div class="mb-stack-lg flex items-center space-x-4">
+<div class="w-12 h-12 rounded-full overflow-hidden border border-primary/20 flex-shrink-0">
+<img alt="User Profile" class="w-full h-full object-cover" data-alt="A striking, high-contrast black and white portrait of a sophisticated person with striking features. The lighting is dramatic and moody, reminiscent of a high-end fashion magazine editorial. The background is pure pitch black, isolating the subject completely. The image should convey authority and creative vision." src="https://lh3.googleusercontent.com/aida-public/AB6AXuAkW1JOo0PXM2j5BxMnCpqSxeaiZ8UMz8GMftqOJirA2zbSd7EBmO3S9kjmQstRZ7r7hzPM0YkV_J5HwVJqFAFe0SqE92VPniPL6Lw_F0n74ujXuyXbSRXfisMAsh06-haU_ciAuILpfRdZkoOSpzfvOy3HdBlwQgPbZhr6cU4Am8WQayfxBhAc7acq-dU0YYSJ5flombwCtRVKDthYmjmuKBvtPo_TTVJvhrjze6Z4_N3kFjP89gj0Ezp157Lotbpe03L5tC6aSmU"/>
+</div>
+<div>
+<h2 class="font-label-md text-label-md text-primary">Editorial Director</h2>
+<p class="font-label-sm text-label-sm text-on-surface-variant uppercase">Premium Member</p>
+</div>
+<div class="ml-auto">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Vol. IV</span>
+</div>
+</div>
+<h1 class="font-display-lg text-display-lg text-primary mb-stack-xl tracking-tighter">MONOLITH</h1>
+<!-- Navigation List -->
+<nav class="flex-1 space-y-2">
+<!-- Active State -->
+<a class="flex items-center space-x-3 px-4 py-3 rounded-DEFAULT text-primary font-bold bg-surface-container-high transition-transform active:translate-x-1 group" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span class="font-body-md text-body-md">Settings</span>
+</a>
+<!-- Inactive States -->
+<a class="flex items-center space-x-3 px-4 py-3 rounded-DEFAULT text-on-surface-variant hover:bg-surface-container transition-all active:translate-x-1 group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary transition-colors" data-icon="inventory_2">inventory_2</span>
+<span class="font-body-md text-body-md">Archive</span>
+</a>
+<a class="flex items-center space-x-3 px-4 py-3 rounded-DEFAULT text-on-surface-variant hover:bg-surface-container transition-all active:translate-x-1 group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary transition-colors" data-icon="stars">stars</span>
+<span class="font-body-md text-body-md">Subscribers</span>
+</a>
+<a class="flex items-center space-x-3 px-4 py-3 rounded-DEFAULT text-on-surface-variant hover:bg-surface-container transition-all active:translate-x-1 group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary transition-colors" data-icon="diversity_3">diversity_3</span>
+<span class="font-body-md text-body-md">Curators</span>
+</a>
+<a class="flex items-center space-x-3 px-4 py-3 rounded-DEFAULT text-on-surface-variant hover:bg-surface-container transition-all active:translate-x-1 group" href="#">
+<span class="material-symbols-outlined group-hover:text-primary transition-colors" data-icon="gavel">gavel</span>
+<span class="font-body-md text-body-md">Legal</span>
+</a>
+</nav>
+</aside>
+<!-- Main Content Canvas -->
+<main class="flex-1 w-full max-w-[1200px] mx-auto p-margin-page">
+<!-- Profile Header Section -->
+<section class="flex flex-col items-center justify-center pt-stack-md md:pt-stack-xl pb-stack-lg border-b border-surface-container-highest">
+<div class="relative w-32 h-32 md:w-40 md:h-40 rounded-full overflow-hidden border-2 border-primary mb-stack-sm shadow-[0_0_15px_rgba(242,202,80,0.15)]">
+<img alt="Julian Thorne" class="w-full h-full object-cover" data-alt="A striking, high-contrast black and white portrait of a sophisticated person with striking features. The lighting is dramatic and moody, reminiscent of a high-end fashion magazine editorial. The background is pure pitch black, isolating the subject completely. The image should convey authority and creative vision." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBMX2qluviwWr_flgGa3GWj7RwMFvhBPoZUnH19vPP2--qpTqHESq3R4uX1sS1fkz31Fagfhq1ls0i0K82JM54cxkBklGCnn6wNi0XfGLh9TktnB6DXh1wzDjIjV-TccvlZqzXh7b-ifjzFVltgHtNUTlCiwPXags6Idr2da_3P4ovjdM6abCL9sxk5OMCiEHBArioiXmymNov4-6fQfcZkCjX4KiooVzBOehWq797huIXm3GFfLLCRLg2FAgRtwjWbVurmScOfoaE"/>
+<button class="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 hover:opacity-100 transition-opacity backdrop-blur-sm">
+<span class="material-symbols-outlined text-primary" data-icon="photo_camera">photo_camera</span>
+</button>
+</div>
+<h1 class="font-headline-md text-headline-md md:font-display-lg-mobile md:text-display-lg-mobile text-on-surface text-center mb-2">Julian Thorne</h1>
+<p class="font-label-md text-label-md text-primary tracking-widest uppercase text-center mb-stack-md">Editorial Director</p>
+<button class="px-6 py-2 border border-secondary text-on-surface font-label-md text-label-md uppercase rounded-DEFAULT hover:bg-surface-container transition-colors tracking-widest">
+                Edit Profile
+            </button>
+</section>
+<!-- Engagement Metrics Grid -->
+<section class="py-stack-lg">
+<div class="grid grid-cols-1 md:grid-cols-3 gap-0 border-y md:border border-surface-container-highest rounded-lg bg-surface/50 overflow-hidden backdrop-blur-sm">
+<!-- Metric 1 -->
+<div class="p-6 md:p-8 flex flex-col items-center justify-center text-center border-b md:border-b-0 md:border-r border-surface-container-highest relative group">
+<div class="absolute inset-0 bg-gradient-to-b from-transparent to-primary/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+<span class="font-headline-md text-headline-md text-on-surface mb-2 font-light tracking-tight">124</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest">Articles Read</span>
+</div>
+<!-- Metric 2 -->
+<div class="p-6 md:p-8 flex flex-col items-center justify-center text-center border-b md:border-b-0 md:border-r border-surface-container-highest relative group">
+<div class="absolute inset-0 bg-gradient-to-b from-transparent to-primary/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+<span class="font-headline-md text-headline-md text-on-surface mb-2 font-light tracking-tight">48h</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest">Reading Time</span>
+</div>
+<!-- Metric 3 -->
+<div class="p-6 md:p-8 flex flex-col items-center justify-center text-center relative group">
+<div class="absolute inset-0 bg-gradient-to-b from-transparent to-primary/5 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+<span class="font-headline-md text-headline-md text-on-surface mb-2 font-light tracking-tight">12</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-widest">Saved Issues</span>
+</div>
+</div>
+</section>
+<!-- Settings List -->
+<section class="pb-stack-xl max-w-3xl mx-auto">
+<h2 class="font-headline-sm text-headline-sm text-on-surface mb-stack-md font-light">Preferences</h2>
+<div class="flex flex-col space-y-1">
+<!-- Setting Item 1 -->
+<a class="flex items-center justify-between p-4 group hover:bg-surface-container rounded-lg transition-colors border-b border-surface-container-highest/50 last:border-0" href="#">
+<div class="flex items-center space-x-4">
+<div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant group-hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="person">person</span>
+</div>
+<span class="font-body-lg text-body-lg text-on-surface">Account Preferences</span>
+</div>
+<span class="material-symbols-outlined text-surface-variant group-hover:text-on-surface transition-colors" data-icon="chevron_right">chevron_right</span>
+</a>
+<!-- Setting Item 2 -->
+<a class="flex items-center justify-between p-4 group hover:bg-surface-container rounded-lg transition-colors border-b border-surface-container-highest/50 last:border-0" href="#">
+<div class="flex items-center space-x-4">
+<div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant group-hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="workspace_premium">workspace_premium</span>
+</div>
+<div>
+<span class="font-body-lg text-body-lg text-on-surface block">Subscription</span>
+<span class="font-label-sm text-label-sm text-primary uppercase tracking-widest">Premium Active</span>
+</div>
+</div>
+<span class="material-symbols-outlined text-surface-variant group-hover:text-on-surface transition-colors" data-icon="chevron_right">chevron_right</span>
+</a>
+<!-- Setting Item 3 -->
+<a class="flex items-center justify-between p-4 group hover:bg-surface-container rounded-lg transition-colors border-b border-surface-container-highest/50 last:border-0" href="#">
+<div class="flex items-center space-x-4">
+<div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant group-hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="shield_lock">shield_lock</span>
+</div>
+<span class="font-body-lg text-body-lg text-on-surface">Privacy &amp; Security</span>
+</div>
+<span class="material-symbols-outlined text-surface-variant group-hover:text-on-surface transition-colors" data-icon="chevron_right">chevron_right</span>
+</a>
+<!-- Setting Item 4 -->
+<a class="flex items-center justify-between p-4 group hover:bg-surface-container rounded-lg transition-colors border-b border-surface-container-highest/50 last:border-0" href="#">
+<div class="flex items-center space-x-4">
+<div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant group-hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="notifications">notifications</span>
+</div>
+<span class="font-body-lg text-body-lg text-on-surface">Notifications</span>
+</div>
+<span class="material-symbols-outlined text-surface-variant group-hover:text-on-surface transition-colors" data-icon="chevron_right">chevron_right</span>
+</a>
+<!-- Setting Item 5 -->
+<a class="flex items-center justify-between p-4 group hover:bg-surface-container rounded-lg transition-colors border-b border-surface-container-highest/50 last:border-0" href="#">
+<div class="flex items-center space-x-4">
+<div class="w-10 h-10 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant group-hover:text-primary transition-colors">
+<span class="material-symbols-outlined" data-icon="vpn_key">vpn_key</span>
+</div>
+<span class="font-body-lg text-body-lg text-on-surface">Connected Art Director Keys</span>
+</div>
+<span class="material-symbols-outlined text-surface-variant group-hover:text-on-surface transition-colors" data-icon="chevron_right">chevron_right</span>
+</a>
+</div>
+<div class="mt-stack-lg pt-stack-sm border-t border-surface-container-highest">
+<button class="flex items-center space-x-2 text-error hover:text-error-container transition-colors font-label-md text-label-md uppercase tracking-widest px-4 py-3 w-full justify-start rounded-lg hover:bg-surface-container">
+<span class="material-symbols-outlined" data-icon="logout">logout</span>
+<span>Sign Out</span>
+</button>
+</div>
+</section>
+</main>
+<!-- Mobile Bottom Navigation Bar (From Shared Components JSON) -->
+<nav class="md:hidden fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-4 py-3 pb-safe bg-surface/80 dark:bg-surface/80 backdrop-blur-xl border-t border-surface-container-highest">
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-on-surface transition-colors active:scale-95 duration-200" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="auto_stories">auto_stories</span>
+<span class="font-label-sm text-label-sm uppercase" style="font-size: 10px;">NEWSSTAND</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-on-surface transition-colors active:scale-95 duration-200" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="edit_note">edit_note</span>
+<span class="font-label-sm text-label-sm uppercase" style="font-size: 10px;">STUDIO</span>
+</a>
+<a class="flex flex-col items-center justify-center text-on-surface-variant hover:text-on-surface transition-colors active:scale-95 duration-200" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="menu_book">menu_book</span>
+<span class="font-label-sm text-label-sm uppercase" style="font-size: 10px;">READER</span>
+</a>
+<a class="flex flex-col items-center justify-center text-primary font-bold hover:text-on-surface transition-colors active:scale-95 duration-200" href="#">
+<span class="material-symbols-outlined mb-1" data-icon="blur_on" style="font-variation-settings: 'FILL' 1;">blur_on</span>
+<span class="font-label-sm text-label-sm uppercase" style="font-size: 10px;">DARKROOM</span>
+</a>
+</nav>
+</body></html>

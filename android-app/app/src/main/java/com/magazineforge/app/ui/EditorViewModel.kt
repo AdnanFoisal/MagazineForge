@@ -90,7 +90,7 @@ class EditorViewModel : ViewModel() {
                     if (schema != null) {
                         _schemaState.value = SchemaState.Success(schema)
                     } else {
-                        _schemaState.value = SchemaState.Error("Received empty schema")
+                        _schemaState.value = SchemaState.Loading
                     }
                 } else {
                     _schemaState.value = SchemaState.Error("Error: ${response.code()}")
@@ -128,7 +128,7 @@ class EditorViewModel : ViewModel() {
         this.currentTopic = topic
         this.currentVariant = variant
         this.isFromShowcase = fromShowcase
-        _compileState.value = CompileState.Loading(0, "Starting compile job...")
+        _compileState.value = CompileState.Loading(0, "Compiling PDF on Cloud...")
         
         viewModelScope.launch {
             try {

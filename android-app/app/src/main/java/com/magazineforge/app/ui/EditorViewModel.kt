@@ -3,8 +3,6 @@ package com.magazineforge.app.ui
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import com.magazineforge.app.models.JobRequest
-import com.magazineforge.app.models.PageRequest
 import com.magazineforge.app.network.ApiClient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
@@ -54,6 +52,16 @@ class EditorViewModel : ViewModel() {
     var currentTopic: String = "Untitled"
     private var currentVariant: String = "a"
     private var currentApiKey: String = ""
+
+    private fun normalizeTemplateVariant(templateName: String): String {
+        val candidate = when {
+            templateName.startsWith("cover_template_") -> templateName.removePrefix("cover_template_")
+            templateName in setOf("a", "b", "c") -> templateName
+            else -> templateName.split("_").lastOrNull().orEmpty()
+        }.lowercase()
+
+        return candidate.takeIf { it in setOf("a", "b", "c") } ?: "a"
+    }
     
     fun resetState() {
         _schemaState.value = SchemaState.Idle
@@ -64,7 +72,7 @@ class EditorViewModel : ViewModel() {
     fun generateSchema(geminiKey: String, magazineTopic: String, templateName: String) {
         currentTopic = magazineTopic
         currentApiKey = geminiKey
-        currentVariant = templateName.split("_").lastOrNull() ?: "a"
+        currentVariant = normalizeTemplateVariant(templateName)
         
         _schemaState.value = SchemaState.Loading
         

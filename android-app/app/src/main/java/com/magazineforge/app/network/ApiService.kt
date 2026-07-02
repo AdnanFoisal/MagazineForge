@@ -1,7 +1,5 @@
 package com.magazineforge.app.network
 
-import com.magazineforge.app.models.JobRequest
-import com.magazineforge.app.models.JobResponse
 import com.magazineforge.app.models.JobStatusResponse
 import okhttp3.ResponseBody
 import retrofit2.Response
@@ -19,12 +17,6 @@ interface ApiService {
     suspend fun verifyKey(
         @Body request: com.magazineforge.app.models.VerifyKeyRequest
     ): Response<com.magazineforge.app.models.VerifyKeyResponse>
-
-    @POST("job")
-    suspend fun createJob(
-        @Header("Authorization") geminiKey: String,
-        @Body request: JobRequest
-    ): Response<JobResponse>
 
     @GET("job/{job_id}/status")
     suspend fun getJobStatus(

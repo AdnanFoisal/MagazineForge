@@ -11,6 +11,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModelProvider
 import com.magazineforge.app.ui.CompileState
+import com.magazineforge.app.ui.SchemaState
+import com.magazineforge.app.ui.LatexState
+import com.magazineforge.app.ui.CoAuthorScreen
+import com.magazineforge.app.ui.LatexNotebookScreen
 import com.magazineforge.app.ui.EditorScreen
 import com.magazineforge.app.ui.EditorViewModel
 import com.magazineforge.app.ui.OnboardingScreen
@@ -64,9 +68,27 @@ class MainActivity : ComponentActivity() {
                     var isVerifying by remember { mutableStateOf(false) }
                     var verifyError by remember { mutableStateOf<String?>(null) }
                     
+                    val schemaState by viewModel.schemaState.collectAsState()
+                    val latexState by viewModel.latexState.collectAsState()
                     val compileState by viewModel.compileState.collectAsState()
                     var showExitDialog by remember { mutableStateOf(false) }
                     var showProgressCard by remember { mutableStateOf(false) }
+                    
+                    LaunchedEffect(schemaState) {
+                        if (schemaState is SchemaState.Success) {
+                            currentScreen = "co_author"
+                        } else if (schemaState is SchemaState.Loading) {
+                            showProgressCard = true
+                        }
+                    }
+
+                    LaunchedEffect(latexState) {
+                        if (latexState is LatexState.Success) {
+                            currentScreen = "latex_notebook"
+                        } else if (latexState is LatexState.Loading) {
+                            showProgressCard = true
+                        }
+                    }
 
                     LaunchedEffect(compileState) {
                         if (compileState is CompileState.Loading) {
@@ -141,12 +163,41 @@ class MainActivity : ComponentActivity() {
                                     templateVariant = selectedTemplate,
                                     isCompileLoading = isCompileLoading,
                                     onCompileClicked = { magazineTopic, pages ->
-                                        viewModel.compileMagazine(this@MainActivity, apiKey, magazineTopic, pages, selectedTemplate)
+                                        viewModel.generateSchema(apiKey, magazineTopic, selectedTemplate)
                                     },
                                     onBack = {
                                         currentScreen = "gallery"
                                     }
                                 )
+                                "co_author" -> {
+                                    if (schemaState is SchemaState.Success) {
+                                        CoAuthorScreen(
+                                            initialSchema = (schemaState as SchemaState.Success).schema,
+                                            isGeneratingLatex = latexState is LatexState.Loading,
+                                            onGenerateLatex = { schema ->
+                                                viewModel.generateLatex(schema)
+                                            },
+                                            onBack = {
+                                                viewModel.resetState()
+                                                currentScreen = "editor"
+                                            }
+                                        )
+                                    }
+                                }
+                                "latex_notebook" -> {
+                                    if (latexState is LatexState.Success) {
+                                        LatexNotebookScreen(
+                                            initialLatex = (latexState as LatexState.Success).latexCode,
+                                            isCompiling = compileState is CompileState.Loading,
+                                            onCompile = { latex ->
+                                                viewModel.compileRaw(this@MainActivity, latex)
+                                            },
+                                            onBack = {
+                                                currentScreen = "co_author"
+                                            }
+                                        )
+                                    }
+                                }
                                 "library" -> MyMagazinesScreen(
                                     onBack = {
                                         currentScreen = "gallery"
@@ -230,6 +281,13 @@ class MainActivity : ComponentActivity() {
                                 when (currentScreen) {
                                     "editor", "library" -> {
                                         currentScreen = "gallery"
+                                    }
+                                    "co_author" -> {
+                                        viewModel.resetState()
+                                        currentScreen = "editor"
+                                    }
+                                    "latex_notebook" -> {
+                                        currentScreen = "co_author"
                                     }
                                     "gallery", "onboarding" -> {
                                         showExitDialog = true

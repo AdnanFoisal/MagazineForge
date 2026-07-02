@@ -14,6 +14,25 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
+import com.magazineforge.app.models.GenerateSchemaRequest
+import com.magazineforge.app.models.GenerateLatexRequest
+import com.magazineforge.app.models.CompileRawRequest
+import com.magazineforge.app.models.MagazineSchema
+import kotlinx.coroutines.flow.asStateFlow
+
+sealed class SchemaState {
+    object Idle : SchemaState()
+    object Loading : SchemaState()
+    data class Success(val schema: MagazineSchema) : SchemaState()
+    data class Error(val message: String) : SchemaState()
+}
+
+sealed class LatexState {
+    object Idle : LatexState()
+    object Loading : LatexState()
+    data class Success(val latexCode: String) : LatexState()
+    data class Error(val message: String) : LatexState()
+}
 
 sealed class CompileState {
     object Idle : CompileState()
@@ -23,46 +42,91 @@ sealed class CompileState {
 }
 
 class EditorViewModel : ViewModel() {
+    private val _schemaState = MutableStateFlow<SchemaState>(SchemaState.Idle)
+    val schemaState = _schemaState.asStateFlow()
+
+    private val _latexState = MutableStateFlow<LatexState>(LatexState.Idle)
+    val latexState = _latexState.asStateFlow()
+
     private val _compileState = MutableStateFlow<CompileState>(CompileState.Idle)
-    val compileState: StateFlow<CompileState> = _compileState
+    val compileState = _compileState.asStateFlow()
     
     var currentTopic: String = "Untitled"
+    private var currentVariant: String = "a"
+    private var currentApiKey: String = ""
     
     fun resetState() {
+        _schemaState.value = SchemaState.Idle
+        _latexState.value = LatexState.Idle
         _compileState.value = CompileState.Idle
     }
 
-    fun compileMagazine(
-        context: Context,
-        geminiKey: String,
-        magazineTopic: String,
-        pages: List<PageBlock>,
-        templateName: String
-    ) {
+    fun generateSchema(geminiKey: String, magazineTopic: String, templateName: String) {
         currentTopic = magazineTopic
-        _compileState.value = CompileState.Loading(0, "Starting job...")
+        currentApiKey = geminiKey
+        currentVariant = templateName.split("_").lastOrNull() ?: "a"
         
-        // Extract variant from templateName (e.g. "cover_template_a" -> "a")
-        val variant = templateName.split("_").lastOrNull() ?: "a"
-        
-        val pageRequests = pages.map { 
-            PageRequest(type = it.type, topic = it.topic, imageUrl = it.imageUrl.takeIf { url -> url.isNotBlank() })
-        }
-        val jobRequest = JobRequest(magazineTopic, variant, pageRequests)
+        _schemaState.value = SchemaState.Loading
         
         viewModelScope.launch {
             try {
-                val response = ApiClient.retrofitService.createJob(geminiKey, jobRequest)
+                val request = GenerateSchemaRequest(topic = magazineTopic, templateVariant = currentVariant)
+                val response = ApiClient.retrofitService.generateSchema(geminiKey, request)
                 if (response.isSuccessful) {
-                    val jobId = response.body()?.job_id
+                    val schema = response.body()
+                    if (schema != null) {
+                        _schemaState.value = SchemaState.Success(schema)
+                    } else {
+                        _schemaState.value = SchemaState.Error("Received empty schema")
+                    }
+                } else {
+                    _schemaState.value = SchemaState.Error("Error: ${response.code()}")
+                }
+            } catch (e: Exception) {
+                _schemaState.value = SchemaState.Error(e.message ?: "Unknown network error")
+            }
+        }
+    }
+
+    fun generateLatex(schema: MagazineSchema) {
+        _latexState.value = LatexState.Loading
+        
+        viewModelScope.launch {
+            try {
+                val request = GenerateLatexRequest(schema = schema, templateVariant = currentVariant)
+                val response = ApiClient.retrofitService.generateLatex(currentApiKey, request)
+                if (response.isSuccessful) {
+                    val latex = response.body()?.latexCode
+                    if (latex != null) {
+                        _latexState.value = LatexState.Success(latex)
+                    } else {
+                        _latexState.value = LatexState.Error("Received empty latex")
+                    }
+                } else {
+                    _latexState.value = LatexState.Error("Error: ${response.code()}")
+                }
+            } catch (e: Exception) {
+                _latexState.value = LatexState.Error(e.message ?: "Unknown network error")
+            }
+        }
+    }
+
+    fun compileRaw(context: Context, latexCode: String) {
+        _compileState.value = CompileState.Loading(0, "Starting compile job...")
+        
+        viewModelScope.launch {
+            try {
+                val request = CompileRawRequest(latexCode = latexCode)
+                val response = ApiClient.retrofitService.compileRaw(request)
+                if (response.isSuccessful) {
+                    val jobId = response.body()?.jobId
                     if (jobId != null) {
                         pollJobStatus(context, jobId)
                     } else {
                         _compileState.value = CompileState.Error("Invalid job ID received")
                     }
                 } else {
-                    val errorMsg = response.errorBody()?.string() ?: response.message()
-                    _compileState.value = CompileState.Error("Job Creation Error: ${response.code()} $errorMsg")
+                    _compileState.value = CompileState.Error("Compile Error: ${response.code()}")
                 }
             } catch (e: Exception) {
                 _compileState.value = CompileState.Error(e.message ?: "Unknown network error")

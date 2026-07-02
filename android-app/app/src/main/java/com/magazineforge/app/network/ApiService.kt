@@ -35,4 +35,21 @@ interface ApiService {
     suspend fun downloadJob(
         @Path("job_id") jobId: String
     ): Response<ResponseBody>
+
+    @POST("generate/schema")
+    suspend fun generateSchema(
+        @Header("Authorization") geminiKey: String,
+        @Body request: com.magazineforge.app.models.GenerateSchemaRequest
+    ): Response<com.magazineforge.app.models.MagazineSchema>
+
+    @POST("generate/latex")
+    suspend fun generateLatex(
+        @Header("Authorization") geminiKey: String,
+        @Body request: com.magazineforge.app.models.GenerateLatexRequest
+    ): Response<com.magazineforge.app.models.GenerateLatexResponse>
+
+    @POST("compile/raw")
+    suspend fun compileRaw(
+        @Body request: com.magazineforge.app.models.CompileRawRequest
+    ): Response<com.magazineforge.app.models.CompileRawResponse>
 }

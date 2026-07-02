@@ -13,6 +13,7 @@ val GoldBright = Color(0xFFF2CA50)
 val GhostWhite = Color(0xFFE3E2E2)
 val AshGrey = Color(0xFF888888)
 val ErrorRed = Color(0xFF93000A)
+val BorderLight = Color(0xFFE0E0E0)
 val OnSurfaceVariant = Color(0xFFD0C5AF)
 
 // Brutalist Dark

@@ -16,6 +16,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.magazineforge.app.models.ShowcaseItem
 import com.magazineforge.app.network.ShowcaseRepository
@@ -160,13 +161,12 @@ fun ShowcaseCard(item: ShowcaseItem, onClick: () -> Unit) {
                 modifier = Modifier.padding(bottom = 4.dp)
             )
             Text(
-                text = "@${item.templateVariant.replace("_", "")}",
+                text = "@${item.templateVariant.replace("_", "")}".uppercase(),
                 style = LuxeTypography.labelSmall.copy(
                     color = AshGrey, 
                     letterSpacing = 1.sp,
                     fontWeight = androidx.compose.ui.text.font.FontWeight.Medium
-                ).copy(textTransform = androidx.compose.ui.text.intl.LocaleList.current.let { androidx.compose.ui.text.intl.LocaleList("en") }.let { /* just use uppercase modifier later if needed */ LuxeTypography.labelSmall.copy(color = AshGrey) }) 
-                // We'll just use String.uppercase() in the text instead
+                )
             )
         }
     }

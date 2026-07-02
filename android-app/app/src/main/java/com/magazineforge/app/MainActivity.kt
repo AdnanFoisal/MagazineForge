@@ -345,7 +345,7 @@ class MainActivity : ComponentActivity() {
                             if (showExitDialog) {
                                 AlertDialog(
                                     onDismissRequest = { showExitDialog = false },
-                                    title = { Text("Exit MagBoy", style = LuxeTypography.headlineSmall) },
+                                    title = { Text("Exit MagazineForge", style = LuxeTypography.headlineSmall) },
                                     text = { Text("Are you sure you want to exit the application?", style = LuxeTypography.bodyMedium) },
                                     confirmButton = {
                                         TextButton(onClick = { finish() }) {

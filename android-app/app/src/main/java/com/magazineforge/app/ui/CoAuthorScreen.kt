@@ -232,27 +232,38 @@ fun ExpandableSection(title: String, content: @Composable () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(vertical = 8.dp),
-        colors = CardDefaults.cardColors(containerColor = DarkSurface)
+            .padding(vertical = 12.dp),
+        colors = CardDefaults.cardColors(containerColor = com.magazineforge.app.ui.theme.SurfaceContainerLow),
+        border = BorderStroke(1.dp, com.magazineforge.app.ui.theme.SurfaceContainerHigh),
+        shape = RoundedCornerShape(8.dp)
     ) {
         Column {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable { expanded = !expanded }
-                    .padding(16.dp),
+                    .padding(24.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text(text = title, color = GhostWhite)
+                Text(
+                    text = title.uppercase(),
+                    style = com.magazineforge.app.ui.theme.LuxeTypography.labelMedium.copy(
+                        color = com.magazineforge.app.ui.theme.OnSurfaceVariant,
+                        letterSpacing = 2.sp
+                    )
+                )
                 Icon(
                     imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
                     contentDescription = "Expand",
-                    tint = GhostWhite
+                    tint = com.magazineforge.app.ui.theme.OnSurfaceVariant
                 )
             }
             AnimatedVisibility(visible = expanded) {
-                Column(modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+                Column(
+                    modifier = Modifier.padding(start = 24.dp, end = 24.dp, bottom = 24.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
                     content()
                 }
             }
@@ -267,22 +278,64 @@ fun ImageUploadField(
     onValueChange: (String) -> Unit,
     onPickImage: () -> Unit
 ) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        OutlinedTextField(
-            value = value,
-            onValueChange = onValueChange,
-            label = { Text(label) },
-            modifier = Modifier.weight(1f)
-        )
-        IconButton(onClick = onPickImage) {
-            Icon(
-                imageVector = Icons.Default.Image,
-                contentDescription = "Pick Image",
-                tint = GoldBright
+    var useDriveLink by remember { mutableStateOf(false) }
+
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(label, style = com.magazineforge.app.ui.theme.LuxeTypography.labelSmall.copy(color = com.magazineforge.app.ui.theme.GhostWhite))
+            Text(
+                text = if (useDriveLink) "Use Local Image" else "Use Drive Link",
+                style = com.magazineforge.app.ui.theme.LuxeTypography.labelSmall.copy(color = com.magazineforge.app.ui.theme.EditorialGold),
+                modifier = Modifier.clickable { useDriveLink = !useDriveLink }
             )
+        }
+
+        if (useDriveLink) {
+            OutlinedTextField(
+                value = value,
+                onValueChange = onValueChange,
+                placeholder = { Text("Paste Google Drive link here", color = com.magazineforge.app.ui.theme.GhostWhite.copy(alpha=0.5f)) },
+                modifier = Modifier.fillMaxWidth(),
+                textStyle = com.magazineforge.app.ui.theme.LuxeTypography.bodyMedium.copy(color = com.magazineforge.app.ui.theme.GhostWhite),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = com.magazineforge.app.ui.theme.EditorialGold,
+                    unfocusedBorderColor = com.magazineforge.app.ui.theme.BorderDark,
+                    cursorColor = com.magazineforge.app.ui.theme.EditorialGold
+                )
+            )
+        } else {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                OutlinedTextField(
+                    value = value,
+                    onValueChange = onValueChange,
+                    placeholder = { Text("Or select from gallery", color = com.magazineforge.app.ui.theme.GhostWhite.copy(alpha=0.5f)) },
+                    modifier = Modifier.weight(1f),
+                    textStyle = com.magazineforge.app.ui.theme.LuxeTypography.bodyMedium.copy(color = com.magazineforge.app.ui.theme.GhostWhite),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = com.magazineforge.app.ui.theme.EditorialGold,
+                        unfocusedBorderColor = com.magazineforge.app.ui.theme.BorderDark,
+                        cursorColor = com.magazineforge.app.ui.theme.EditorialGold
+                    )
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                IconButton(
+                    onClick = onPickImage,
+                    modifier = Modifier.background(com.magazineforge.app.ui.theme.EditorialGold.copy(alpha = 0.1f), RoundedCornerShape(8.dp))
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Image,
+                        contentDescription = "Pick Image",
+                        tint = com.magazineforge.app.ui.theme.EditorialGold
+                    )
+                }
+            }
         }
     }
 }

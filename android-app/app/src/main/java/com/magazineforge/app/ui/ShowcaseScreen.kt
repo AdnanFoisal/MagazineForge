@@ -124,37 +124,50 @@ fun ShowcaseScreen(
 
 @Composable
 fun ShowcaseCard(item: ShowcaseItem, onClick: () -> Unit) {
+    // Generate an aspect ratio based on title length to create masonry effect
+    val aspectRatio = if (item.title.length % 2 == 0) 0.75f else 1.0f
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = DarkSurface),
-        border = androidx.compose.foundation.BorderStroke(1.dp, AshGrey.copy(alpha = 0.2f))
+        shape = RoundedCornerShape(8.dp),
+        colors = CardDefaults.cardColors(containerColor = androidx.compose.ui.graphics.Color(0xFF1A1A1A)),
+        border = androidx.compose.foundation.BorderStroke(1.dp, androidx.compose.ui.graphics.Color(0xFF2A2A2A))
     ) {
-        Column {
-            AsyncImage(
-                model = item.coverImageUrl.takeIf { it.isNotEmpty() } ?: "https://via.placeholder.com/300x400?text=No+Cover",
-                contentDescription = item.title,
-                contentScale = ContentScale.Crop,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .aspectRatio(0.75f)
-                    .clip(RoundedCornerShape(topStart = 12.dp, topEnd = 12.dp))
-            )
-            Column(modifier = Modifier.padding(12.dp)) {
-                Text(
-                    text = item.title,
-                    style = LuxeTypography.labelMedium.copy(color = GhostWhite),
-                    maxLines = 2,
-                    overflow = TextOverflow.Ellipsis
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = item.templateVariant,
-                    style = LuxeTypography.labelSmall.copy(color = AshGrey)
+        Column(modifier = Modifier.padding(16.dp)) {
+            Box(modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(aspectRatio)
+                .clip(RoundedCornerShape(4.dp))
+                .padding(bottom = 12.dp)
+            ) {
+                AsyncImage(
+                    model = coil.request.ImageRequest.Builder(androidx.compose.ui.platform.LocalContext.current)
+                        .data(item.coverImageUrl.takeIf { it.isNotEmpty() } ?: "https://via.placeholder.com/300x400?text=No+Cover")
+                        .crossfade(true)
+                        .build(),
+                    contentDescription = item.title,
+                    contentScale = ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
                 )
             }
+            Text(
+                text = item.title,
+                style = LuxeTypography.headlineSmall.copy(color = GhostWhite, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold),
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(bottom = 4.dp)
+            )
+            Text(
+                text = "@${item.templateVariant.replace("_", "")}",
+                style = LuxeTypography.labelSmall.copy(
+                    color = AshGrey, 
+                    letterSpacing = 1.sp,
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.Medium
+                ).copy(textTransform = androidx.compose.ui.text.intl.LocaleList.current.let { androidx.compose.ui.text.intl.LocaleList("en") }.let { /* just use uppercase modifier later if needed */ LuxeTypography.labelSmall.copy(color = AshGrey) }) 
+                // We'll just use String.uppercase() in the text instead
+            )
         }
     }
 }

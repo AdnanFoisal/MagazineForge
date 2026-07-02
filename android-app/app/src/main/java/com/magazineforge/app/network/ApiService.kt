@@ -28,6 +28,11 @@ interface ApiService {
         @Path("job_id") jobId: String
     ): Response<ResponseBody>
 
+    @GET("job/{job_id}/cover")
+    suspend fun downloadCover(
+        @Path("job_id") jobId: String
+    ): Response<ResponseBody>
+
     @POST("generate-schema")
     suspend fun generateSchema(
         @Header("Authorization") geminiKey: String,

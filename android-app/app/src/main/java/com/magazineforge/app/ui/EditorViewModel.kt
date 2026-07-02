@@ -3,19 +3,23 @@ package com.magazineforge.app.ui
 import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.google.firebase.storage.FirebaseStorage
+import com.magazineforge.app.models.ArticleSchema
+import com.magazineforge.app.models.MagazineSchema
 import com.magazineforge.app.network.ApiClient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.io.FileOutputStream
+import java.util.UUID
 import com.magazineforge.app.models.GenerateSchemaRequest
 import com.magazineforge.app.models.GenerateLatexRequest
 import com.magazineforge.app.models.CompileRawRequest
-import com.magazineforge.app.models.MagazineSchema
 import kotlinx.coroutines.flow.asStateFlow
 
 sealed class SchemaState {
@@ -175,27 +179,54 @@ class EditorViewModel : ViewModel() {
     
     private suspend fun downloadPdf(context: Context, jobId: String) {
         try {
+            _compileState.value = CompileState.Loading(100, "Downloading Magazine...")
             val response = ApiClient.retrofitService.downloadJob(jobId)
-            if (response.isSuccessful) {
+            
+            _compileState.value = CompileState.Loading(100, "Downloading Cover...")
+            val coverResponse = ApiClient.retrofitService.downloadCover(jobId)
+
+            if (response.isSuccessful && coverResponse.isSuccessful) {
                 val pdfBytes = response.body()?.bytes()
-                if (pdfBytes != null) {
+                val coverBytes = coverResponse.body()?.bytes()
+                
+                if (pdfBytes != null && coverBytes != null) {
                     val file = savePdfToDisk(context, pdfBytes)
                     
-                    // Publish to showcase
-                    val showcaseItem = com.magazineforge.app.models.ShowcaseItem(
-                        title = currentTopic,
-                        templateVariant = currentVariant,
-                        pdfUrl = file.absolutePath, // In a real app, we would upload to Firebase Storage
-                        coverImageUrl = "" // In a real app, we would upload a thumbnail
-                    )
-                    com.magazineforge.app.network.ShowcaseRepository().publishMagazine(showcaseItem)
+                    _compileState.value = CompileState.Loading(100, "Publishing to Showcase...")
+                    
+                    try {
+                        val storage = FirebaseStorage.getInstance()
+                        val storageRef = storage.reference
+                        val uniqueId = UUID.randomUUID().toString()
+                        
+                        val pdfRef = storageRef.child("magazines/$uniqueId.pdf")
+                        val coverRef = storageRef.child("covers/$uniqueId.jpg")
+                        
+                        pdfRef.putBytes(pdfBytes).await()
+                        coverRef.putBytes(coverBytes).await()
+                        
+                        val publicPdfUrl = pdfRef.downloadUrl.await().toString()
+                        val publicCoverUrl = coverRef.downloadUrl.await().toString()
+                        
+                        // Publish to showcase
+                        val showcaseItem = com.magazineforge.app.models.ShowcaseItem(
+                            title = currentTopic,
+                            templateVariant = currentVariant,
+                            pdfUrl = publicPdfUrl,
+                            coverImageUrl = publicCoverUrl
+                        )
+                        com.magazineforge.app.network.ShowcaseRepository().publishMagazine(showcaseItem)
+                    } catch (e: Exception) {
+                        e.printStackTrace()
+                        // If upload fails, just continue so user can at least view their local PDF
+                    }
                     
                     _compileState.value = CompileState.Success(file)
                 } else {
-                    _compileState.value = CompileState.Error("Received empty PDF bytes")
+                    _compileState.value = CompileState.Error("Received empty bytes")
                 }
             } else {
-                _compileState.value = CompileState.Error("Download Error: ${response.code()}")
+                _compileState.value = CompileState.Error("Download Error: PDF=${response.code()} Cover=${coverResponse.code()}")
             }
         } catch (e: Exception) {
             _compileState.value = CompileState.Error("Download error: ${e.message}")

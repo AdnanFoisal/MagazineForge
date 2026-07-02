@@ -20,13 +20,13 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-          cache: gradle
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v3
-        with:
-          gradle-version: '8.4'
-        
+        uses: gradle/actions/setup-gradle@v4
+
       - name: Build Debug APK
         run: gradle assembleDebug --no-daemon
         working-directory: android-app
@@ -37,6 +37,7 @@ jobs:
 
       - name: Upload Debug APK
         uses: actions/upload-artifact@v4
+        if: success()
         with:
           name: debug-apk
           path: android-app/app/build/outputs/apk/debug/*.apk
@@ -55,12 +56,12 @@ jobs:
         with:
           java-version: '17'
           distribution: 'temurin'
-          cache: gradle
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
 
       - name: Setup Gradle
-        uses: gradle/actions/setup-gradle@v3
-        with:
-          gradle-version: '8.4'
+        uses: gradle/actions/setup-gradle@v4
 
       - name: Run Lint
         run: gradle lintDebug --no-daemon

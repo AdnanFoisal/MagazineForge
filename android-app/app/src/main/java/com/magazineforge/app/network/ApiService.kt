@@ -15,6 +15,11 @@ interface ApiService {
     @GET("health")
     suspend fun checkHealth(): Response<ResponseBody>
 
+    @POST("verify-key")
+    suspend fun verifyKey(
+        @Body request: com.magazineforge.app.models.VerifyKeyRequest
+    ): Response<com.magazineforge.app.models.VerifyKeyResponse>
+
     @POST("job")
     suspend fun createJob(
         @Header("Authorization") geminiKey: String,

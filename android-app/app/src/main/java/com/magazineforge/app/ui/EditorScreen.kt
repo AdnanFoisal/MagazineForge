@@ -25,6 +25,18 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.magazineforge.app.ui.theme.PitchBlack
+import com.magazineforge.app.ui.theme.DarkSurface
+import com.magazineforge.app.ui.theme.Graphite
+import com.magazineforge.app.ui.theme.BorderDark
+import com.magazineforge.app.ui.theme.BorderLight
+import com.magazineforge.app.ui.theme.EditorialGold
+import com.magazineforge.app.ui.theme.GoldBright
+import com.magazineforge.app.ui.theme.ErrorRed
+import com.magazineforge.app.ui.theme.GhostWhite
+import com.magazineforge.app.ui.theme.AshGrey
+import com.magazineforge.app.ui.theme.MutedWarm
+import com.magazineforge.app.ui.theme.LuxeTypography
 import java.util.UUID
 
 data class PageBlock(
@@ -50,6 +62,7 @@ fun uriToBase64(context: Context, uri: android.net.Uri): String? {
 @Composable
 fun EditorScreen(
     templateVariant: String,
+    isCompileLoading: Boolean,
     onCompileClicked: (String, List<PageBlock>) -> Unit,
     onBack: () -> Unit
 ) {
@@ -62,13 +75,13 @@ fun EditorScreen(
         PageBlock(type = "article", topic = "Main Feature")
     )}
 
-    val obsidian = Color(0xFF0F0F10)
-    val darkSurface = Color(0xFF18181B)
-    val gold = Color(0xFFC5A059)
-    val copper = Color(0xFFB87333)
-    val ivory = Color(0xFFF5F5F7)
-    val mutedGray = Color(0xFFA1A1AA)
-    val borderCol = Color(0xFF2E2A24)
+    val obsidian = PitchBlack
+    val darkSurface = DarkSurface
+    val gold = EditorialGold
+    val copper = MutedWarm
+    val ivory = GhostWhite
+    val mutedGray = AshGrey
+    val borderCol = BorderDark
 
     // Photo Picker launcher
     var activePageIndexForPicker by remember { mutableStateOf<Int?>(null) }
@@ -106,19 +119,11 @@ fun EditorScreen(
             Column {
                 Text(
                     text = "Editorial Desk",
-                    style = LocalTextStyle.current.copy(
-                        fontFamily = FontFamily.Serif,
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 24.sp,
-                        color = ivory
-                    )
+                    style = LuxeTypography.headlineSmall.copy(color = ivory)
                 )
                 Text(
                     text = "Template Variant: ${templateVariant.replace("cover_template_", "").uppercase()}",
-                    style = MaterialTheme.typography.bodySmall.copy(
-                        fontFamily = FontFamily.SansSerif,
-                        color = gold
-                    )
+                    style = LuxeTypography.labelSmall.copy(color = gold)
                 )
             }
         }
@@ -134,9 +139,9 @@ fun EditorScreen(
                 OutlinedTextField(
                     value = magazineTopic,
                     onValueChange = { magazineTopic = it },
-                    label = { Text("Overall Magazine Topic", color = gold, fontFamily = FontFamily.SansSerif) },
+                    label = { Text("Overall Magazine Topic", style = LuxeTypography.bodyMedium) },
                     modifier = Modifier.fillMaxWidth(),
-                    textStyle = LocalTextStyle.current.copy(color = ivory, fontFamily = FontFamily.SansSerif),
+                    textStyle = LuxeTypography.bodyLarge.copy(color = ivory),
                     singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = gold,
@@ -151,10 +156,10 @@ fun EditorScreen(
             item {
                 Text(
                     text = "Page Sequencer",
-                    fontFamily = FontFamily.Serif,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 18.sp,
-                    color = ivory,
+                    style = LuxeTypography.bodyLarge.copy(
+                        fontWeight = FontWeight.Bold,
+                        color = ivory
+                    ),
                     modifier = Modifier.padding(top = 8.dp)
                 )
             }
@@ -200,17 +205,17 @@ fun EditorScreen(
                             ) {
                                 Text(
                                     text = "Page ${index + 1}: ${page.type.uppercase()}",
-                                    fontFamily = FontFamily.Serif,
-                                    fontWeight = FontWeight.Bold,
-                                    color = gold,
-                                    fontSize = 16.sp
+                                    style = LuxeTypography.bodyMedium.copy(
+                                        fontWeight = FontWeight.Bold,
+                                        color = gold
+                                    )
                                 )
                                 if (pages.size > 1) {
                                     IconButton(
                                         onClick = { pages.removeAt(index) },
                                         modifier = Modifier.size(24.dp)
                                     ) {
-                                        Icon(Icons.Default.Delete, contentDescription = "Delete Page", tint = Color.Red.copy(alpha = 0.8f))
+                                        Icon(Icons.Default.Delete, contentDescription = "Delete Page", tint = ErrorRed.copy(alpha = 0.8f))
                                     }
                                 }
                             }
@@ -220,9 +225,9 @@ fun EditorScreen(
                                 OutlinedTextField(
                                     value = page.topic,
                                     onValueChange = { newTopic -> pages[index] = page.copy(topic = newTopic) },
-                                    label = { Text(if (page.type == "cover") "Cover Title" else "Article Topic", fontFamily = FontFamily.SansSerif) },
+                                    label = { Text(if (page.type == "cover") "Cover Title" else "Article Topic", style = LuxeTypography.labelSmall) },
                                     modifier = Modifier.fillMaxWidth(),
-                                    textStyle = LocalTextStyle.current.copy(color = ivory, fontFamily = FontFamily.SansSerif),
+                                    textStyle = LuxeTypography.bodyMedium.copy(color = ivory),
                                     colors = OutlinedTextFieldDefaults.colors(
                                         focusedBorderColor = copper,
                                         unfocusedBorderColor = borderCol,
@@ -255,7 +260,7 @@ fun EditorScreen(
                                     ) {
                                         Text(
                                             text = if (page.imageUrl.isNotEmpty()) "Change Image" else "Select Image",
-                                            fontFamily = FontFamily.SansSerif
+                                            style = LuxeTypography.labelMedium
                                         )
                                     }
                                     
@@ -263,10 +268,10 @@ fun EditorScreen(
                                         Spacer(modifier = Modifier.width(12.dp))
                                         Text(
                                             text = "Image Selected",
-                                            color = Color.Green,
-                                            fontSize = 12.sp,
-                                            fontFamily = FontFamily.SansSerif,
-                                            fontWeight = FontWeight.Bold,
+                                            style = LuxeTypography.labelSmall.copy(
+                                                fontWeight = FontWeight.Bold,
+                                                color = GoldBright
+                                            ),
                                             modifier = Modifier.weight(1f)
                                         )
                                     }
@@ -274,9 +279,7 @@ fun EditorScreen(
                             } else {
                                 Text(
                                     text = "Table of contents is auto-generated based on the other articles in this magazine compilation.",
-                                    color = mutedGray,
-                                    fontSize = 13.sp,
-                                    fontFamily = FontFamily.SansSerif
+                                    style = LuxeTypography.labelSmall.copy(color = mutedGray)
                                 )
                             }
                         }
@@ -299,7 +302,7 @@ fun EditorScreen(
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = ivory),
                         modifier = Modifier.weight(1f)
                     ) {
-                        Text("+ Article", fontFamily = FontFamily.SansSerif)
+                        Text("+ Article", style = LuxeTypography.labelMedium)
                     }
                     OutlinedButton(
                         onClick = { pages.add(PageBlock(type = "cover")) },
@@ -308,7 +311,7 @@ fun EditorScreen(
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = ivory),
                         modifier = Modifier.weight(1f)
                     ) {
-                        Text("+ Cover", fontFamily = FontFamily.SansSerif)
+                        Text("+ Cover", style = LuxeTypography.labelMedium)
                     }
                     OutlinedButton(
                         onClick = { pages.add(PageBlock(type = "toc")) },
@@ -317,7 +320,7 @@ fun EditorScreen(
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = ivory),
                         modifier = Modifier.weight(1f)
                     ) {
-                        Text("+ TOC", fontFamily = FontFamily.SansSerif)
+                        Text("+ TOC", style = LuxeTypography.labelMedium)
                     }
                 }
             }
@@ -337,13 +340,13 @@ fun EditorScreen(
                 disabledContentColor = mutedGray
             ),
             shape = RoundedCornerShape(8.dp),
-            enabled = magazineTopic.isNotBlank() && pages.isNotEmpty()
+            enabled = magazineTopic.isNotBlank() && pages.isNotEmpty() && !isCompileLoading
         ) {
             Text(
                 text = "Craft Magazine",
-                fontFamily = FontFamily.Serif,
-                fontWeight = FontWeight.Bold,
-                fontSize = 18.sp
+                style = LuxeTypography.bodyLarge.copy(
+                    fontWeight = FontWeight.Bold
+                )
             )
         }
     }

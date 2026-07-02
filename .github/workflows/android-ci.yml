@@ -29,8 +29,13 @@ jobs:
         with:
           gradle-version: '8.4'
 
-      - name: Mock google-services.json
-        run: echo '{"project_info":{"project_number":"123","firebase_url":"https://mock.firebaseio.com","project_id":"mock","storage_bucket":"mock.appspot.com"},"client":[{"client_info":{"mobilesdk_app_id":"1:123:android:123","android_client_info":{"package_name":"com.magazineforge.app"}},"api_key":[{"current_key":"mock"}]}]}' > android-app/app/google-services.json
+      - name: Decode google-services.json
+        run: |
+          if [ -z "${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}" ]; then
+            echo '{"project_info":{"project_number":"123","firebase_url":"https://mock.firebaseio.com","project_id":"mock","storage_bucket":"mock.appspot.com"},"client":[{"client_info":{"mobilesdk_app_id":"1:123:android:123","android_client_info":{"package_name":"com.magazineforge.app"}},"api_key":[{"current_key":"mock"}]}]}' > android-app/app/google-services.json
+          else
+            echo "${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}" | base64 -d > android-app/app/google-services.json
+          fi
 
       - name: Build Release APK
         run: gradle assembleRelease --no-daemon
@@ -70,8 +75,13 @@ jobs:
         with:
           gradle-version: '8.4'
 
-      - name: Mock google-services.json
-        run: echo '{"project_info":{"project_number":"123","firebase_url":"https://mock.firebaseio.com","project_id":"mock","storage_bucket":"mock.appspot.com"},"client":[{"client_info":{"mobilesdk_app_id":"1:123:android:123","android_client_info":{"package_name":"com.magazineforge.app"}},"api_key":[{"current_key":"mock"}]}]}' > android-app/app/google-services.json
+      - name: Decode google-services.json
+        run: |
+          if [ -z "${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}" ]; then
+            echo '{"project_info":{"project_number":"123","firebase_url":"https://mock.firebaseio.com","project_id":"mock","storage_bucket":"mock.appspot.com"},"client":[{"client_info":{"mobilesdk_app_id":"1:123:android:123","android_client_info":{"package_name":"com.magazineforge.app"}},"api_key":[{"current_key":"mock"}]}]}' > android-app/app/google-services.json
+          else
+            echo "${{ secrets.GOOGLE_SERVICES_JSON_BASE64 }}" | base64 -d > android-app/app/google-services.json
+          fi
 
       - name: Run Lint
         run: gradle lintRelease --no-daemon

@@ -21,9 +21,10 @@ import com.magazineforge.app.ui.EditorScreen
 import com.magazineforge.app.ui.EditorViewModel
 import com.magazineforge.app.ui.OnboardingScreen
 import com.magazineforge.app.ui.PdfViewerScreen
-import com.magazineforge.app.ui.TemplateGalleryScreen
 import com.magazineforge.app.ui.MyMagazinesScreen
 import com.magazineforge.app.ui.ShowcaseScreen
+import com.magazineforge.app.ui.SettingsScreen
+import com.magazineforge.app.ui.ProgressTrackerDialog
 import com.magazineforge.app.utils.SecureStorage
 import com.magazineforge.app.network.ApiClient
 import com.magazineforge.app.models.VerifyKeyRequest
@@ -39,6 +40,9 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Brush
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.Collections
+import androidx.compose.material.icons.filled.Settings
+import com.magazineforge.app.ui.SettingsScreen
+import com.magazineforge.app.ui.theme.MagazineForgeTheme
 import com.magazineforge.app.ui.theme.LuxeTypography
 import com.magazineforge.app.ui.theme.PitchBlack
 import com.magazineforge.app.ui.theme.DarkSurface
@@ -61,7 +65,7 @@ class MainActivity : ComponentActivity() {
         val savedKey = secureStorage.getApiKey()
 
         setContent {
-            LuxeEditorialNoirTheme {
+            MagazineForgeTheme {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
@@ -69,7 +73,7 @@ class MainActivity : ComponentActivity() {
                     var currentScreen by remember { mutableStateOf(if (savedKey != null) "showcase" else "onboarding") }
                     var selectedTemplate by remember { mutableStateOf("") }
                     var apiKey by remember { mutableStateOf(savedKey ?: "") }
-                    var selectedPdfForViewer by remember { mutableStateOf<File?>(null) }
+                    var selectedPdfForViewer by remember { mutableStateOf<String?>(null) }
                     
                     val coroutineScope = rememberCoroutineScope()
                     var isVerifying by remember { mutableStateOf(false) }
@@ -114,7 +118,8 @@ class MainActivity : ComponentActivity() {
                                         Triple("showcase", "Home", Icons.Default.Home),
                                         Triple("editor", "Studio", Icons.Default.Brush),
                                         Triple("gallery", "Gallery", Icons.Default.PhotoLibrary),
-                                        Triple("library", "Library", Icons.Default.Collections)
+                                        Triple("library", "Library", Icons.Default.Collections),
+                                        Triple("settings", "Settings", Icons.Default.Settings)
                                     )
                                     items.forEach { (route, label, icon) ->
                                         NavigationBarItem(
@@ -136,16 +141,29 @@ class MainActivity : ComponentActivity() {
                         }
                     ) { innerPadding ->
                         Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
+                            if (showProgressCard) {
+                                val stageText = when {
+                                    schemaState is SchemaState.Loading -> "Designing Layout..."
+                                    latexState is LatexState.Loading -> "Writing Content & Typesetting..."
+                                    compileState is CompileState.Loading -> "Compiling PDF..."
+                                    else -> "Processing..."
+                                }
+                                ProgressTrackerDialog(
+                                    currentStage = stageText,
+                                    onDismiss = { showProgressCard = false }
+                                )
+                            }
+
                             if (selectedPdfForViewer != null) {
                                 PdfViewerScreen(
-                                    pdfFile = selectedPdfForViewer!!,
+                                    pdfUrlOrPath = selectedPdfForViewer!!,
                                     onBack = {
                                         selectedPdfForViewer = null
                                     }
                                 )
                             } else if (compileState is CompileState.Success) {
                                 PdfViewerScreen(
-                                    pdfFile = (compileState as CompileState.Success).pdfFile,
+                                    pdfUrlOrPath = (compileState as CompileState.Success).pdfFile.absolutePath,
                                     onBack = {
                                         viewModel.resetState()
                                     }
@@ -191,8 +209,7 @@ class MainActivity : ComponentActivity() {
                                     )
                                     "showcase" -> ShowcaseScreen(
                                         onMagazineSelected = { url ->
-                                            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-                                            startActivity(intent)
+                                            selectedPdfForViewer = url
                                         }
                                     )
                                     "gallery" -> TemplateGalleryScreen(
@@ -248,7 +265,31 @@ class MainActivity : ComponentActivity() {
                                             currentScreen = "gallery"
                                         },
                                         onMagazineSelected = { pdfFile ->
-                                            selectedPdfForViewer = pdfFile
+                                            selectedPdfForViewer = pdfFile.absolutePath
+                                        }
+                                    )
+                                    "settings" -> SettingsScreen(
+                                        currentApiKey = apiKey,
+                                        onSaveApiKey = { newKey ->
+                                            isVerifying = true
+                                            verifyError = null
+                                            coroutineScope.launch {
+                                                try {
+                                                    val response = withContext(Dispatchers.IO) {
+                                                        ApiClient.retrofitService.verifyKey(VerifyKeyRequest(newKey))
+                                                    }
+                                                    if (response.isSuccessful && response.body()?.valid == true) {
+                                                        secureStorage.saveApiKey(newKey)
+                                                        apiKey = newKey
+                                                    } else {
+                                                        verifyError = "Invalid API Key"
+                                                    }
+                                                } catch (e: Exception) {
+                                                    verifyError = "Connection Error"
+                                                } finally {
+                                                    isVerifying = false
+                                                }
+                                            }
                                         }
                                     )
                                 }

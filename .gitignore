@@ -1,0 +1,35 @@
+# Android
+android-app/.gradle/
+android-app/build/
+android-app/app/build/
+android-app/local.properties
+android-app/.idea/
+android-app/*.iml
+android-app/app/*.iml
+
+# Backend
+backend/__pycache__/
+backend/*.pyc
+backend/workspace/
+backend/*.log
+backend/*.pdf
+
+# Magazine Analysis (large PDFs)
+magazine-analysis/source-pdfs/
+
+# OS
+.DS_Store
+Thumbs.db
+*.swp
+
+# Agent files
+.agents/
+*.pyc
+__pycache__/
+
+# Temp files
+check_space.py
+create_space.py
+mock_bg.png
+TEST_INFRA.md
+TEST_READY.md

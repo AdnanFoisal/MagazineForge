@@ -1,0 +1,146 @@
+[
+  {
+    "id": "food_classic",
+    "name": "Classic Dining",
+    "category": "Food",
+    "description": "Elegant serif typography with a minimalist clean slate.",
+    "thumbnailUrl": "placeholder_food_classic",
+    "texTemplate": "cover_template_a"
+  },
+  {
+    "id": "food_modern",
+    "name": "Modern Gastronomy",
+    "category": "Food",
+    "description": "Bold, punchy sans-serif with vibrant color blocking.",
+    "thumbnailUrl": "placeholder_food_modern",
+    "texTemplate": "cover_template_b"
+  },
+  {
+    "id": "food_rustic",
+    "name": "Rustic Kitchen",
+    "category": "Food",
+    "description": "Warm, earthy tones with organic layout structures.",
+    "thumbnailUrl": "placeholder_food_rustic",
+    "texTemplate": "cover_template_c"
+  },
+  {
+    "id": "travel_landscape",
+    "name": "Expansive Horizon",
+    "category": "Travel",
+    "description": "Full-bleed landscape imagery with minimal condensed text.",
+    "thumbnailUrl": "placeholder_travel_landscape",
+    "texTemplate": "cover_template_a"
+  },
+  {
+    "id": "travel_journal",
+    "name": "The Voyager",
+    "category": "Travel",
+    "description": "Diary-style callouts with overlapping photo frames.",
+    "thumbnailUrl": "placeholder_travel_journal",
+    "texTemplate": "cover_template_b"
+  },
+  {
+    "id": "travel_guide",
+    "name": "City Guide",
+    "category": "Travel",
+    "description": "Structured, information-dense grid with bold accents.",
+    "thumbnailUrl": "placeholder_travel_guide",
+    "texTemplate": "cover_template_c"
+  },
+  {
+    "id": "tech_cyber",
+    "name": "Cyber Edge",
+    "category": "Tech",
+    "description": "High-contrast dark mode with electric monospace accents.",
+    "thumbnailUrl": "placeholder_tech_cyber",
+    "texTemplate": "cover_template_a"
+  },
+  {
+    "id": "tech_minimal",
+    "name": "Clean Tech",
+    "category": "Tech",
+    "description": "Stark white background with precise geometric sans-serifs.",
+    "thumbnailUrl": "placeholder_tech_minimal",
+    "texTemplate": "cover_template_b"
+  },
+  {
+    "id": "tech_spec",
+    "name": "The Spec Sheet",
+    "category": "Tech",
+    "description": "Grid-locked data layout with glowing highlight lines.",
+    "thumbnailUrl": "placeholder_tech_spec",
+    "texTemplate": "cover_template_c"
+  },
+  {
+    "id": "lifestyle_vogue",
+    "name": "Editorial Chic",
+    "category": "Lifestyle",
+    "description": "Ultra-thin typography with immense negative space.",
+    "thumbnailUrl": "placeholder_lifestyle_vogue",
+    "texTemplate": "cover_template_a"
+  },
+  {
+    "id": "lifestyle_indie",
+    "name": "Indie Culture",
+    "category": "Lifestyle",
+    "description": "Pastel tones with playful, unconventional text placement.",
+    "thumbnailUrl": "placeholder_lifestyle_indie",
+    "texTemplate": "cover_template_b"
+  },
+  {
+    "id": "lifestyle_wellness",
+    "name": "Mind & Body",
+    "category": "Lifestyle",
+    "description": "Earthy nudes and beige with soft serif typography.",
+    "thumbnailUrl": "placeholder_lifestyle_wellness",
+    "texTemplate": "cover_template_c"
+  },
+  {
+    "id": "science_cosmos",
+    "name": "Deep Space",
+    "category": "Science",
+    "description": "Navy backgrounds with vibrant data callouts.",
+    "thumbnailUrl": "placeholder_science_cosmos",
+    "texTemplate": "cover_template_a"
+  },
+  {
+    "id": "science_nature",
+    "name": "Macro World",
+    "category": "Science",
+    "description": "Forest green accents overlaid on highly detailed imagery.",
+    "thumbnailUrl": "placeholder_science_nature",
+    "texTemplate": "cover_template_b"
+  },
+  {
+    "id": "science_journal",
+    "name": "The Academic",
+    "category": "Science",
+    "description": "Structured, multi-column classic journal style.",
+    "thumbnailUrl": "placeholder_science_journal",
+    "texTemplate": "cover_template_c"
+  },
+  {
+    "id": "custom_corporate",
+    "name": "Boardroom",
+    "category": "Custom",
+    "description": "Clean, predictable, balanced business style.",
+    "thumbnailUrl": "placeholder_custom_corporate",
+    "texTemplate": "cover_template_a"
+  },
+  {
+    "id": "custom_bold",
+    "name": "The Statement",
+    "category": "Custom",
+    "description": "Massive typography with primary brand colors.",
+    "thumbnailUrl": "placeholder_custom_bold",
+    "texTemplate": "cover_template_b"
+  },
+  {
+    "id": "custom_blank",
+    "name": "Blank Canvas",
+    "category": "Custom",
+    "description": "Minimalist framework ready for any content.",
+    "thumbnailUrl": "placeholder_custom_blank",
+    "texTemplate": "cover_template_c"
+  }
+]

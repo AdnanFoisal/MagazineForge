@@ -71,8 +71,17 @@ fun FloatingProgressTracker(
                     colors = CardDefaults.cardColors(containerColor = Color(0xFF1A1A1A))
                 ) {
                     Column(modifier = Modifier.padding(16.dp)) {
+                        val statusText = when {
+                            schemaState is SchemaState.Loading -> "Curating Content..."
+                            isGeneratingLatex -> "Writing LaTeX Code..."
+                            currentProgress < 0f -> "Initializing Engine..."
+                            currentProgress < 0.3f -> "Typesetting Layout..."
+                            currentProgress < 0.6f -> "Downloading Assets..."
+                            currentProgress < 0.9f -> "Rendering PDF..."
+                            else -> "Final Polish..."
+                        }
                         Text(
-                            text = "AI Editorial Team",
+                            text = statusText,
                             style = LuxeTypography.titleSmall.copy(
                                 color = EditorialGold,
                                 fontWeight = FontWeight.Bold

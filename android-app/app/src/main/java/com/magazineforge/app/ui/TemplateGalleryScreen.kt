@@ -64,7 +64,7 @@ fun loadTemplates(context: Context): List<TemplateModel> {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TemplateGalleryScreen(
-    onTemplateSelected: (String, String) -> Unit,
+    onTemplateSelected: (String, String, String) -> Unit,
     onPreviewSelected: (String) -> Unit,
     onLibraryClicked: () -> Unit,
     onPublishClicked: () -> Unit,
@@ -139,7 +139,7 @@ fun TemplateGalleryScreen(
                 items(filteredTemplates) { template ->
                     TemplateMasonryCard(
                         template = template, 
-                        onClick = { onTemplateSelected(template.texTemplate, template.description) },
+                        onClick = { onTemplateSelected(template.texTemplate, template.description, template.name) },
                         onPreview = { onPreviewSelected(template.texTemplate) }
                     )
                 }

@@ -15,6 +15,7 @@ import com.magazineforge.app.ui.theme.*
 @Composable
 fun OnboardingScreen(
     onVerifyClicked: (String) -> Unit,
+    onOpenEditorClicked: () -> Unit = {},
     isVerifying: Boolean = false,
     verifyError: String? = null
 ) {
@@ -116,6 +117,12 @@ fun OnboardingScreen(
                         color = PitchBlack
                     )
                 }
+            }
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            TextButton(onClick = onOpenEditorClicked) {
+                Text("Open Raw Editor", style = MaterialTheme.typography.labelLarge, color = EditorialGold)
             }
             
             Spacer(modifier = Modifier.height(24.dp))

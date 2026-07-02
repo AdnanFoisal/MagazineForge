@@ -75,6 +75,7 @@ class MainActivity : ComponentActivity() {
                 ) {
                     var currentScreen by remember { mutableStateOf(if (savedKey != null) "showcase" else "onboarding") }
                     var selectedTemplate by remember { mutableStateOf("") }
+                    var selectedTemplateName by remember { mutableStateOf("") }
                     var initialEditorPrompt by remember { mutableStateOf("") }
                     var apiKey by remember { mutableStateOf(savedKey ?: "") }
                     var selectedPdfForViewer by remember { mutableStateOf<String?>(null) }
@@ -99,6 +100,7 @@ class MainActivity : ComponentActivity() {
 
                     LaunchedEffect(latexState) {
                         if (latexState is LatexState.Success) {
+                            showProgressCard = false
                             currentScreen = "latex_notebook"
                         } else if (latexState is LatexState.Loading) {
                             showProgressCard = true
@@ -221,6 +223,9 @@ class MainActivity : ComponentActivity() {
                                                 }
                                             }
                                         },
+                                        onOpenEditorClicked = {
+                                            currentScreen = "latex_notebook"
+                                        },
                                         isVerifying = isVerifying,
                                         verifyError = verifyError
                                     )
@@ -231,9 +236,10 @@ class MainActivity : ComponentActivity() {
                                         }
                                     )
                                     "gallery" -> TemplateGalleryScreen(
-                                        onTemplateSelected = { template, description ->
+                                        onTemplateSelected = { template, description, name ->
                                             selectedTemplate = template
                                             initialEditorPrompt = description
+                                            selectedTemplateName = name
                                             currentScreen = "editor"
                                         },
                                         onPreviewSelected = { templateVariant ->
@@ -265,6 +271,7 @@ class MainActivity : ComponentActivity() {
                                     )
                                     "editor" -> EditorScreen(
                                         templateVariant = selectedTemplate,
+                                        templateName = selectedTemplateName,
                                         initialPrompt = initialEditorPrompt,
                                         isCompileLoading = isCompileLoading,
                                         onCompileClicked = { magazineTopic, pages ->

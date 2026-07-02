@@ -45,6 +45,7 @@ data class PageBlock(
 @Composable
 fun EditorScreen(
     templateVariant: String,
+    templateName: String = "",
     initialPrompt: String = "",
     isCompileLoading: Boolean,
     onCompileClicked: (String, List<PageBlock>) -> Unit,

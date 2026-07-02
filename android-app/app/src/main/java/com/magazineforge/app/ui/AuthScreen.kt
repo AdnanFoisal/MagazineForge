@@ -39,6 +39,7 @@ fun AuthScreen(
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
     val auth = FirebaseAuth.getInstance()
+    val context = androidx.compose.ui.platform.LocalContext.current
 
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
@@ -112,16 +113,13 @@ fun AuthScreen(
                     onClick = {
                         isLoading = true
                         errorMessage = null
-                        // In a real app, you would pass the Web Client ID here.
-                        // We will use a dummy one for compilation, as the user handles Firebase config.
+                        // We will use the web client ID from strings.xml
                         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-                            .requestIdToken("DUMMY_WEB_CLIENT_ID")
+                            .requestIdToken(context.getString(R.string.default_web_client_id))
                             .requestEmail()
                             .build()
-                        // Note: this assumes context is an activity, which we will bypass for this UI stub 
-                        // by instructing the user to configure it later, or using a fallback.
-                        // We will trigger a mock success if it fails for demonstration in v2.0
-                        onAuthSuccess()
+                        val googleSignInClient = GoogleSignIn.getClient(context, gso)
+                        launcher.launch(googleSignInClient.signInIntent)
                     },
                     modifier = Modifier
                         .fillMaxWidth()

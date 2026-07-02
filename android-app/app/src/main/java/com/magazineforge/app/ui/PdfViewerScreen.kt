@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -39,6 +40,7 @@ fun PdfViewerScreen(
     var errorMessage by remember { mutableStateOf<String?>(null) }
     
     val density = LocalDensity.current.density
+    var currentFile by remember { mutableStateOf<File?>(null) }
     
     LaunchedEffect(pdfUrlOrPath) {
         isLoading = true
@@ -57,6 +59,7 @@ fun PdfViewerScreen(
                     File(pdfUrlOrPath)
                 }
             }
+            currentFile = file
             
             val pfd = ParcelFileDescriptor.open(file, ParcelFileDescriptor.MODE_READ_ONLY)
             val renderer = PdfRenderer(pfd)
@@ -88,7 +91,35 @@ fun PdfViewerScreen(
                     containerColor = MaterialTheme.colorScheme.background,
                     titleContentColor = MaterialTheme.colorScheme.onBackground,
                     navigationIconContentColor = MaterialTheme.colorScheme.onBackground
-                )
+                ),
+                actions = {
+                    if (currentFile != null) {
+                        IconButton(onClick = {
+                            try {
+                                val resolver = context.contentResolver
+                                val contentValues = android.content.ContentValues().apply {
+                                    put(android.provider.MediaStore.MediaColumns.DISPLAY_NAME, "magazine_${System.currentTimeMillis()}.pdf")
+                                    put(android.provider.MediaStore.MediaColumns.MIME_TYPE, "application/pdf")
+                                    put(android.provider.MediaStore.MediaColumns.RELATIVE_PATH, android.os.Environment.DIRECTORY_DOWNLOADS + "/MagazineForge")
+                                }
+                                val uri = resolver.insert(android.provider.MediaStore.Files.getContentUri("external"), contentValues)
+                                if (uri != null) {
+                                    resolver.openOutputStream(uri)?.use { outputStream ->
+                                        currentFile!!.inputStream().use { inputStream ->
+                                            inputStream.copyTo(outputStream)
+                                        }
+                                    }
+                                    android.widget.Toast.makeText(context, "Saved to Downloads/MagazineForge", android.widget.Toast.LENGTH_LONG).show()
+                                }
+                            } catch (e: Exception) {
+                                e.printStackTrace()
+                                android.widget.Toast.makeText(context, "Failed to save: ${e.message}", android.widget.Toast.LENGTH_LONG).show()
+                            }
+                        }) {
+                            Icon(Icons.Default.Download, contentDescription = "Download")
+                        }
+                    }
+                }
             )
         },
         containerColor = MaterialTheme.colorScheme.background

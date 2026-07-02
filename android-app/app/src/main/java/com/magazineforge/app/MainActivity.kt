@@ -208,6 +208,7 @@ class MainActivity : ComponentActivity() {
                                         verifyError = verifyError
                                     )
                                     "showcase" -> ShowcaseScreen(
+                                        viewModel = viewModel,
                                         onMagazineSelected = { url ->
                                             selectedPdfForViewer = url
                                         }

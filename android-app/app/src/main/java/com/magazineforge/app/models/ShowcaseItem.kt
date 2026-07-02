@@ -6,5 +6,6 @@ data class ShowcaseItem(
     val coverImageUrl: String = "",
     val pdfUrl: String = "",
     val templateVariant: String = "",
+    val latexCode: String = "",
     val timestamp: Long = System.currentTimeMillis()
 )

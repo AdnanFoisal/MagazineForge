@@ -51,10 +51,11 @@ class EditorViewModel : ViewModel() {
     val latexState = _latexState.asStateFlow()
 
     private val _compileState = MutableStateFlow<CompileState>(CompileState.Idle)
-    val compileState = _compileState.asStateFlow()
+    val compileState: StateFlow<CompileState> = _compileState.asStateFlow()
     
-    var currentTopic: String = "Untitled"
-    private var currentVariant: String = "a"
+    private var currentTopic: String = ""
+    private var currentVariant: String = ""
+    private var isFromShowcase: Boolean = false
     private var currentApiKey: String = ""
 
     private fun normalizeTemplateVariant(templateName: String): String {
@@ -123,7 +124,10 @@ class EditorViewModel : ViewModel() {
         }
     }
 
-    fun compileRaw(context: Context, latexCode: String) {
+    fun compileRaw(context: Context, latexCode: String, topic: String = "magazine", variant: String = "variant", fromShowcase: Boolean = false) {
+        this.currentTopic = topic
+        this.currentVariant = variant
+        this.isFromShowcase = fromShowcase
         _compileState.value = CompileState.Loading(0, "Starting compile job...")
         
         viewModelScope.launch {
@@ -194,31 +198,21 @@ class EditorViewModel : ViewModel() {
                     
                     _compileState.value = CompileState.Loading(100, "Publishing to Showcase...")
                     
-                    try {
-                        val storage = FirebaseStorage.getInstance()
-                        val storageRef = storage.reference
-                        val uniqueId = UUID.randomUUID().toString()
-                        
-                        val pdfRef = storageRef.child("magazines/$uniqueId.pdf")
-                        val coverRef = storageRef.child("covers/$uniqueId.jpg")
-                        
-                        pdfRef.putBytes(pdfBytes).await()
-                        coverRef.putBytes(coverBytes).await()
-                        
-                        val publicPdfUrl = pdfRef.downloadUrl.await().toString()
-                        val publicCoverUrl = coverRef.downloadUrl.await().toString()
-                        
-                        // Publish to showcase
-                        val showcaseItem = com.magazineforge.app.models.ShowcaseItem(
-                            title = currentTopic,
-                            templateVariant = currentVariant,
-                            pdfUrl = publicPdfUrl,
-                            coverImageUrl = publicCoverUrl
-                        )
-                        com.magazineforge.app.network.ShowcaseRepository().publishMagazine(showcaseItem)
-                    } catch (e: Exception) {
-                        e.printStackTrace()
-                        // If upload fails, just continue so user can at least view their local PDF
+                    if (!isFromShowcase) {
+                        try {
+                            val currentLatex = (_latexState.value as? LatexState.Success)?.latex ?: ""
+                            
+                            // Publish to showcase with the raw latex code
+                            val showcaseItem = com.magazineforge.app.models.ShowcaseItem(
+                                title = currentTopic,
+                                templateVariant = currentVariant,
+                                latexCode = currentLatex
+                            )
+                            com.magazineforge.app.network.ShowcaseRepository().publishMagazine(showcaseItem)
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                            // If publishing fails, user can still view their local PDF
+                        }
                     }
                     
                     _compileState.value = CompileState.Success(file)

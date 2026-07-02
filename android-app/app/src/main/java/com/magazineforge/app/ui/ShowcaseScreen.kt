@@ -14,6 +14,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -29,9 +30,11 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun ShowcaseScreen(
+    viewModel: EditorViewModel,
     onMagazineSelected: (String) -> Unit
 ) {
     val repository = remember { ShowcaseRepository() }
+    val context = LocalContext.current
     var showcaseItems by remember { mutableStateOf<List<ShowcaseItem>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
     var selectedFilter by remember { mutableStateOf("All") }
@@ -112,11 +115,16 @@ fun ShowcaseScreen(
                 contentPadding = PaddingValues(bottom = 120.dp) // padding for BottomNavigationBar
             ) {
                 items(filteredItems) { item ->
-                    ShowcaseCard(item = item, onClick = {
-                        if (item.pdfUrl.isNotEmpty()) {
-                            onMagazineSelected(item.pdfUrl)
+                    ShowcaseCard(
+                        item = item,
+                        onClick = {
+                            if (item.latexCode.isNotEmpty()) {
+                                viewModel.compileRaw(context, item.latexCode, item.title, item.templateVariant, true)
+                            } else if (item.pdfUrl.isNotEmpty()) {
+                                onMagazineSelected(item.pdfUrl)
+                            }
                         }
-                    })
+                    )
                 }
             }
         }
@@ -143,15 +151,30 @@ fun ShowcaseCard(item: ShowcaseItem, onClick: () -> Unit) {
                 .clip(RoundedCornerShape(4.dp))
                 .padding(bottom = 12.dp)
             ) {
-                AsyncImage(
-                    model = coil.request.ImageRequest.Builder(androidx.compose.ui.platform.LocalContext.current)
-                        .data(item.coverImageUrl.takeIf { it.isNotEmpty() } ?: "https://via.placeholder.com/300x400?text=No+Cover")
-                        .crossfade(true)
-                        .build(),
-                    contentDescription = item.title,
-                    contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize()
-                )
+                val gradientColor1 = remember(item.templateVariant) { 
+                    androidx.compose.ui.graphics.Color((0xFF000000..0xFFFFFFFF).random()) 
+                }
+                val gradientColor2 = remember(item.templateVariant) { 
+                    androidx.compose.ui.graphics.Color((0xFF000000..0xFFFFFFFF).random()) 
+                }
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            brush = androidx.compose.ui.graphics.Brush.linearGradient(
+                                colors = listOf(gradientColor1, gradientColor2)
+                            )
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = item.templateVariant.take(2).uppercase(),
+                        style = LuxeTypography.displayMedium.copy(
+                            color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.5f),
+                            fontWeight = androidx.compose.ui.text.font.FontWeight.Black
+                        )
+                    )
+                }
             }
             Text(
                 text = item.title,

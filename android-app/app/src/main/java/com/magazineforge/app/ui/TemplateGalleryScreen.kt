@@ -204,6 +204,14 @@ fun TemplateCard(template: TemplateModel, onClick: () -> Unit) {
                 contentAlignment = Alignment.Center
             ) {
                 TemplatePreview(template = template, modifier = Modifier.fillMaxSize())
+                if (template.thumbnailUrl.isNotEmpty()) {
+                    coil.compose.AsyncImage(
+                        model = template.thumbnailUrl,
+                        contentDescription = "Preview Image",
+                        modifier = Modifier.fillMaxSize(),
+                        contentScale = androidx.compose.ui.layout.ContentScale.Crop
+                    )
+                }
             }
             Spacer(modifier = Modifier.height(8.dp))
             Text(
@@ -221,6 +229,15 @@ fun TemplateCard(template: TemplateModel, onClick: () -> Unit) {
                 color = Color(0xFFA1A1AA),
                 maxLines = 2
             )
+            Spacer(modifier = Modifier.height(8.dp))
+            OutlinedButton(
+                onClick = { /* TODO: Open sample PDF */ },
+                modifier = Modifier.fillMaxWidth(),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color(0xFFC5A059)),
+                border = BorderStroke(1.dp, Color(0xFFC5A059))
+            ) {
+                Text("Preview Sample PDF", style = MaterialTheme.typography.labelSmall)
+            }
         }
     }
 }

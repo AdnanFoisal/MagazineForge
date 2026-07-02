@@ -73,7 +73,7 @@ fun FloatingProgressTracker(
                     Column(modifier = Modifier.padding(16.dp)) {
                         val statusText = when {
                             schemaState is SchemaState.Loading -> "Curating Content..."
-                            isGeneratingLatex -> "Writing LaTeX Code..."
+                            latexState is LatexState.Loading -> "Writing LaTeX Code..."
                             currentProgress < 0f -> "Initializing Engine..."
                             currentProgress < 0.3f -> "Typesetting Layout..."
                             currentProgress < 0.6f -> "Downloading Assets..."

@@ -113,9 +113,11 @@ fun AuthScreen(
                     onClick = {
                         isLoading = true
                         errorMessage = null
-                        // We will use the web client ID from strings.xml
+                        // We will use the web client ID from strings.xml (resolving dynamically so CI builds don't fail)
+                        val resId = context.resources.getIdentifier("default_web_client_id", "string", context.packageName)
+                        val webClientId = if (resId != 0) context.getString(resId) else "DUMMY_WEB_CLIENT_ID"
                         val gso = GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN)
-                            .requestIdToken(context.getString(R.string.default_web_client_id))
+                            .requestIdToken(webClientId)
                             .requestEmail()
                             .build()
                         val googleSignInClient = GoogleSignIn.getClient(context, gso)

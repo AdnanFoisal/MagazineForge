@@ -317,7 +317,7 @@ class MainActivity : ComponentActivity() {
                                     "latex_notebook" -> {
                                         val aiRawLatexState by viewModel.aiRawLatexState.collectAsState()
                                         LatexNotebookScreen(
-                                            initialLatex = initialLatex,
+                                            initialLatex = (latexState as? LatexState.Success)?.latexCode ?: "",
                                             isCompiling = isCompileLoading,
                                             aiRawState = aiRawLatexState,
                                             onGenerateRawLatex = { prompt ->

@@ -172,6 +172,16 @@ class EditorViewModel : ViewModel() {
                 val pdfBytes = response.body()?.bytes()
                 if (pdfBytes != null) {
                     val file = savePdfToDisk(context, pdfBytes)
+                    
+                    // Publish to showcase
+                    val showcaseItem = com.magazineforge.app.models.ShowcaseItem(
+                        title = currentTopic,
+                        templateVariant = currentVariant,
+                        pdfUrl = file.absolutePath, // In a real app, we would upload to Firebase Storage
+                        coverImageUrl = "" // In a real app, we would upload a thumbnail
+                    )
+                    com.magazineforge.app.network.ShowcaseRepository().publishMagazine(showcaseItem)
+                    
                     _compileState.value = CompileState.Success(file)
                 } else {
                     _compileState.value = CompileState.Error("Received empty PDF bytes")

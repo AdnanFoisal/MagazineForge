@@ -81,6 +81,7 @@ dependencies {
     implementation(platform("com.google.firebase:firebase-bom:32.7.4"))
     implementation("com.google.firebase:firebase-analytics")
     implementation("com.google.firebase:firebase-storage")
+    implementation("com.google.firebase:firebase-firestore")
     implementation("io.coil-kt:coil-compose:2.5.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.7.3")
     

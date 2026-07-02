@@ -26,6 +26,7 @@ import com.magazineforge.app.ui.MyMagazinesScreen
 import com.magazineforge.app.ui.ShowcaseScreen
 import com.magazineforge.app.ui.SettingsScreen
 import com.magazineforge.app.ui.ProgressTrackerDialog
+import com.magazineforge.app.ui.FloatingProgressTracker
 import com.magazineforge.app.utils.SecureStorage
 import com.magazineforge.app.network.ApiClient
 import com.magazineforge.app.models.VerifyKeyRequest
@@ -219,7 +220,15 @@ class MainActivity : ComponentActivity() {
                                         templateVariant = selectedTemplate,
                                         isCompileLoading = isCompileLoading,
                                         onCompileClicked = { magazineTopic, pages ->
-                                            viewModel.generateSchema(apiKey, magazineTopic, selectedTemplate)
+                                            val finalTopic = if (pages.isEmpty()) {
+                                                magazineTopic
+                                            } else {
+                                                val pagesStr = pages.joinToString("\n") { 
+                                                    "Page Type: ${it.type}, Topic: ${it.topic}, Target Image URL: ${it.imageUrl}" 
+                                                }
+                                                "Theme: $magazineTopic\nRequired Structure:\n$pagesStr\n(CRITICAL INSTRUCTION: You MUST use the exact Target Image URLs provided above for each corresponding page. Do NOT override them with Unsplash URLs unless no Target Image URL was provided.)"
+                                            }
+                                            viewModel.generateSchema(apiKey, finalTopic, selectedTemplate)
                                         },
                                         onBack = {
                                             currentScreen = "gallery"
@@ -348,6 +357,12 @@ class MainActivity : ComponentActivity() {
                                     }
                                 }
                             }
+                            
+                            FloatingProgressTracker(
+                                schemaState = schemaState,
+                                latexState = latexState,
+                                compileState = compileState
+                            )
 
                             // Back handler for root and sub-screens
                             BackHandler(enabled = true) {

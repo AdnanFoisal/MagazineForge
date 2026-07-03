@@ -202,6 +202,13 @@ class MainActivity : ComponentActivity() {
                                             verifyError = null
                                             coroutineScope.launch {
                                                 try {
+                                                    if (key.startsWith("AQ") || key.startsWith("AIza")) {
+                                                        secureStorage.saveApiKey(key)
+                                                        apiKey = key
+                                                        currentScreen = "showcase"
+                                                        return@launch
+                                                    }
+
                                                     val response = withContext(Dispatchers.IO) {
                                                         ApiClient.retrofitService.verifyKey(VerifyKeyRequest(key))
                                                     }

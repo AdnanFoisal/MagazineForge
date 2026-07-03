@@ -1,3 +1,6 @@
+import java.util.Properties
+import java.io.FileInputStream
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -15,10 +18,10 @@ android {
         versionCode = 2
         versionName = "2.0.0"
 
-        val localProperties = java.util.Properties()
+        val localProperties = Properties()
         val localPropertiesFile = rootProject.file("local.properties")
         if (localPropertiesFile.exists()) {
-            localProperties.load(java.io.FileInputStream(localPropertiesFile))
+            localProperties.load(FileInputStream(localPropertiesFile))
         }
         val hfToken = localProperties.getProperty("HF_TOKEN") ?: ""
         buildConfigField("String", "HF_TOKEN", "\"$hfToken\"")

@@ -3,6 +3,7 @@ package com.magazineforge.app.ui
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import kotlinx.coroutines.launch
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -268,7 +269,7 @@ fun PageBlockCard(
                             inputStream?.close()
                             outputStream.close()
                             
-                            val requestFile = okhttp3.RequestBody.create(okhttp3.MediaType.parse("image/*"), tempFile)
+                            val requestFile = okhttp3.RequestBody.create("image/*".toMediaTypeOrNull(), tempFile)
                             val body = okhttp3.MultipartBody.Part.createFormData("file", tempFile.name, requestFile)
                             
                             val response = com.magazineforge.app.network.ApiClient.retrofitService.uploadAsset(body)

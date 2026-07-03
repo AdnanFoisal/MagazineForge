@@ -266,7 +266,7 @@ fun LatexNotebookScreen(
             ) {
                 BasicTextField(
                     value = latexCode,
-                    onValueChange = { newValue ->
+                    onValueChange = { newValue: String ->
                         latexCode = newValue
                         onCodeChange(newValue)
                     },

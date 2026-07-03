@@ -24,7 +24,32 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.input.OffsetMapping
+import androidx.compose.ui.text.input.TransformedText
+import androidx.compose.ui.text.input.VisualTransformation
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import android.content.Intent
+
+class SearchHighlightTransformation(private val searchQuery: String) : VisualTransformation {
+    override fun filter(text: AnnotatedString): TransformedText {
+        if (searchQuery.isEmpty()) return TransformedText(text, OffsetMapping.Identity)
+        val builder = AnnotatedString.Builder(text.text)
+        var startIndex = 0
+        while (startIndex < text.length) {
+            val index = text.text.indexOf(searchQuery, startIndex, ignoreCase = true)
+            if (index == -1) break
+            builder.addStyle(
+                style = SpanStyle(background = Color.Yellow, color = Color.Black),
+                start = index,
+                end = index + searchQuery.length
+            )
+            startIndex = index + searchQuery.length
+        }
+        return TransformedText(builder.toAnnotatedString(), OffsetMapping.Identity)
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -38,6 +63,22 @@ fun LatexNotebookScreen(
     onCodeChange: (String) -> Unit
 ) {
     var latexCode by remember { mutableStateOf(initialLatex) }
+    var undoStack by remember { mutableStateOf(listOf<String>()) }
+    var redoStack by remember { mutableStateOf(listOf<String>()) }
+
+    fun updateLatex(newCode: String) {
+        if (newCode != latexCode) {
+            if (newCode.length - latexCode.length > 5 || newCode.endsWith(" ") || newCode.endsWith("\n")) {
+                if (undoStack.lastOrNull() != latexCode) {
+                    undoStack = (undoStack + latexCode).takeLast(50)
+                    redoStack = emptyList()
+                }
+            }
+            latexCode = newCode
+            onCodeChange(newCode)
+        }
+    }
+
     var showAiDialog by remember { mutableStateOf(false) }
     var aiMagName by remember { mutableStateOf("") }
     var aiTopic by remember { mutableStateOf("") }
@@ -53,7 +94,16 @@ fun LatexNotebookScreen(
     val context = LocalContext.current
     val clipboardManager = LocalClipboardManager.current
     
-    // Auto-update editor when AI finishes
+    val createDocumentLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("application/x-tex")
+    ) { uri ->
+        uri?.let {
+            context.contentResolver.openOutputStream(it)?.use { outputStream ->
+                outputStream.write(latexCode.toByteArray())
+            }
+        }
+    }
+
     LaunchedEffect(aiRawState) {
         if (aiRawState is LatexState.Success) {
             latexCode = aiRawState.latexCode
@@ -113,6 +163,7 @@ fun LatexNotebookScreen(
                                     text = { Text("Clear Editor") },
                                     onClick = {
                                         showMenu = false
+                                        undoStack = undoStack + latexCode
                                         latexCode = ""
                                         onCodeChange("")
                                     }
@@ -121,6 +172,7 @@ fun LatexNotebookScreen(
                                     text = { Text("Reset to Template") },
                                     onClick = {
                                         showMenu = false
+                                        undoStack = undoStack + latexCode
                                         latexCode = initialLatex
                                         onCodeChange(initialLatex)
                                     }
@@ -142,7 +194,6 @@ fun LatexNotebookScreen(
                         }
                     }
                 )
-                // Tab Row Mock
                 Row(
                     modifier = Modifier.fillMaxWidth().background(Color.White).padding(horizontal = 16.dp)
                 ) {
@@ -181,6 +232,7 @@ fun LatexNotebookScreen(
                             onClick = {
                                 if (findText.isNotEmpty()) {
                                     val updated = latexCode.replace(findText, replaceText)
+                                    undoStack = undoStack + latexCode
                                     latexCode = updated
                                     onCodeChange(updated)
                                 }
@@ -209,12 +261,31 @@ fun LatexNotebookScreen(
                 ) {
                     Icon(Icons.Default.Folder, contentDescription = "Folder", tint = Color.Gray, modifier = Modifier.size(20.dp))
                     Icon(Icons.Default.ContentPaste, contentDescription = "Paste", tint = Color.Gray, modifier = Modifier.size(20.dp))
-                    Icon(Icons.Default.Undo, contentDescription = "Undo", tint = Color.Gray, modifier = Modifier.size(20.dp))
-                    Icon(Icons.Default.Redo, contentDescription = "Redo", tint = Color.Gray, modifier = Modifier.size(20.dp))
-                    Icon(Icons.Default.Search, contentDescription = "Search", tint = Color.Gray, modifier = Modifier.size(20.dp).clickable { showFindReplace = !showFindReplace })
+                    
+                    Icon(Icons.Default.Undo, contentDescription = "Undo", tint = if (undoStack.isNotEmpty()) Color.Black else Color.Gray, modifier = Modifier.size(20.dp).clickable(enabled = undoStack.isNotEmpty()) {
+                        if (undoStack.isNotEmpty()) {
+                            redoStack = redoStack + latexCode
+                            val prev = undoStack.last()
+                            undoStack = undoStack.dropLast(1)
+                            latexCode = prev
+                            onCodeChange(prev)
+                        }
+                    })
+                    
+                    Icon(Icons.Default.Redo, contentDescription = "Redo", tint = if (redoStack.isNotEmpty()) Color.Black else Color.Gray, modifier = Modifier.size(20.dp).clickable(enabled = redoStack.isNotEmpty()) {
+                        if (redoStack.isNotEmpty()) {
+                            undoStack = undoStack + latexCode
+                            val next = redoStack.last()
+                            redoStack = redoStack.dropLast(1)
+                            latexCode = next
+                            onCodeChange(next)
+                        }
+                    })
+                    
+                    Icon(Icons.Default.Search, contentDescription = "Search", tint = Color.Black, modifier = Modifier.size(20.dp).clickable { showFindReplace = !showFindReplace })
                     Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.Gray, modifier = Modifier.size(20.dp))
                     Icon(Icons.Default.ArrowForward, contentDescription = "Forward", tint = Color.Gray, modifier = Modifier.size(20.dp))
-                    Icon(Icons.Default.Save, contentDescription = "Save", tint = Color.Gray, modifier = Modifier.size(20.dp))
+                    Icon(Icons.Default.Save, contentDescription = "Save", tint = Color.Black, modifier = Modifier.size(20.dp).clickable { createDocumentLauncher.launch("magazine.tex") })
                 }
             }
         },
@@ -229,7 +300,6 @@ fun LatexNotebookScreen(
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
-            // Gutter for line numbers
             Box(
                 modifier = Modifier
                     .fillMaxHeight()
@@ -256,7 +326,6 @@ fun LatexNotebookScreen(
             
             Divider(color = Color.LightGray, modifier = Modifier.width(1.dp).fillMaxHeight())
             
-            // Editor area
             Box(
                 modifier = Modifier
                     .weight(1f)
@@ -267,9 +336,9 @@ fun LatexNotebookScreen(
                 BasicTextField(
                     value = latexCode,
                     onValueChange = { newValue: String ->
-                        latexCode = newValue
-                        onCodeChange(newValue)
+                        updateLatex(newValue)
                     },
+                    visualTransformation = SearchHighlightTransformation(findText),
                     modifier = Modifier
                         .fillMaxSize()
                         .verticalScroll(scrollState)
@@ -285,7 +354,6 @@ fun LatexNotebookScreen(
             }
         }
         
-        // AI Generation FAB
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -301,7 +369,6 @@ fun LatexNotebookScreen(
             }
         }
         
-        // AI Prompt Dialog
         if (showAiDialog) {
             AlertDialog(
                 onDismissRequest = { showAiDialog = false },

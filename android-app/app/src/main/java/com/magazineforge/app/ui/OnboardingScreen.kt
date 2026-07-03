@@ -56,7 +56,7 @@ fun OnboardingScreen(
                 value = apiKey,
                 onValueChange = { apiKey = it },
                 label = { Text("Gemini API Key", style = MaterialTheme.typography.labelMedium) },
-                placeholder = { Text("AIzaSy...", style = MaterialTheme.typography.bodyMedium, color = BorderLight) },
+                placeholder = { Text("AQ...", style = MaterialTheme.typography.bodyMedium, color = BorderLight) },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 textStyle = MaterialTheme.typography.bodyLarge.copy(color = GhostWhite),

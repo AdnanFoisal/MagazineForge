@@ -49,7 +49,12 @@ fun PdfViewerScreen(
             val file = withContext(Dispatchers.IO) {
                 if (pdfUrlOrPath.startsWith("http")) {
                     val tempFile = File(context.cacheDir, "temp_viewer_${System.currentTimeMillis()}.pdf")
-                    URL(pdfUrlOrPath).openStream().use { input ->
+                    val url = URL(pdfUrlOrPath)
+                    val connection = url.openConnection() as java.net.HttpURLConnection
+                    connection.setRequestProperty("Authorization", "Bearer ${com.magazineforge.app.BuildConfig.HF_TOKEN}")
+                    connection.connect()
+                    
+                    connection.inputStream.use { input ->
                         FileOutputStream(tempFile).use { output ->
                             input.copyTo(output)
                         }

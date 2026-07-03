@@ -154,7 +154,11 @@ fun ShowcaseCard(item: ShowcaseItem, onClick: () -> Unit) {
             ) {
                 if (item.coverImageUrl.isNotEmpty()) {
                     AsyncImage(
-                        model = item.coverImageUrl,
+                        model = coil.request.ImageRequest.Builder(LocalContext.current)
+                            .data(item.coverImageUrl)
+                            .addHeader("Authorization", "Bearer ${com.magazineforge.app.BuildConfig.HF_TOKEN}")
+                            .crossfade(true)
+                            .build(),
                         contentDescription = "Cover Image",
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.fillMaxSize()

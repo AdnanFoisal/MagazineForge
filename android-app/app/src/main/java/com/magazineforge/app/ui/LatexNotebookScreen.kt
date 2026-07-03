@@ -266,9 +266,9 @@ fun LatexNotebookScreen(
             ) {
                 BasicTextField(
                     value = latexCode,
-                    onValueChange = {
-                        latexCode = it
-                        onCodeChange(it)
+                    onValueChange = { newValue ->
+                        latexCode = newValue
+                        onCodeChange(newValue)
                     },
                     modifier = Modifier
                         .fillMaxSize()

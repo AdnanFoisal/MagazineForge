@@ -2,6 +2,7 @@ package com.magazineforge.app.ui
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -253,12 +254,12 @@ fun PageBlockCard(
             val context = androidx.compose.ui.platform.LocalContext.current
             val scope = rememberCoroutineScope()
             var isUploading by remember { mutableStateOf(false) }
-            val launcher = androidx.compose.activity.compose.rememberLauncherForActivityResult(
+            val launcher = androidx.activity.compose.rememberLauncherForActivityResult(
                 androidx.activity.result.contract.ActivityResultContracts.GetContent()
             ) { uri ->
                 if (uri != null) {
                     isUploading = true
-                    scope.kotlinx.coroutines.launch {
+                    scope.launch {
                         try {
                             val inputStream = context.contentResolver.openInputStream(uri)
                             val tempFile = java.io.File(context.cacheDir, "upload_${System.currentTimeMillis()}.jpg")

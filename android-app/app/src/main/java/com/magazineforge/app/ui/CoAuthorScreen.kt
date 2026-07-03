@@ -79,9 +79,10 @@ fun CoAuthorScreen(
                     }
                 },
                 actions = {
+                    val isSchemaValid = schema.title.isNotBlank() && schema.topic.isNotBlank()
                     Button(
                         onClick = { onGenerateLatex(schema) },
-                        enabled = !isGeneratingLatex,
+                        enabled = !isGeneratingLatex && isSchemaValid,
                         colors = ButtonDefaults.buttonColors(containerColor = GoldBright)
                     ) {
                         Text(if (isGeneratingLatex) "Generating..." else "Next", color = PitchBlack)

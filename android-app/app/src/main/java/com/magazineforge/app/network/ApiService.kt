@@ -43,19 +43,19 @@ interface ApiService {
 
     @POST("generate-schema")
     suspend fun generateSchema(
-        @Header("Authorization") geminiKey: String,
+        @Header("X-Gemini-Key") geminiKey: String,
         @Body request: com.magazineforge.app.models.GenerateSchemaRequest
     ): Response<com.magazineforge.app.models.MagazineSchema>
 
     @POST("generate-latex")
     suspend fun generateLatex(
-        @Header("Authorization") geminiKey: String,
+        @Header("X-Gemini-Key") geminiKey: String,
         @Body request: com.magazineforge.app.models.GenerateLatexRequest
     ): Response<com.magazineforge.app.models.GenerateLatexResponse>
 
     @POST("generate-raw-latex")
     suspend fun generateRawLatex(
-        @Header("Authorization") geminiKey: String,
+        @Header("X-Gemini-Key") geminiKey: String,
         @Body request: com.magazineforge.app.models.GenerateRawLatexRequest
     ): Response<com.magazineforge.app.models.GenerateRawLatexResponse>
 

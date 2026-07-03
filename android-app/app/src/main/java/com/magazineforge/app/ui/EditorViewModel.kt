@@ -63,6 +63,13 @@ class EditorViewModel : ViewModel() {
     private var currentApiKey: String = ""
     private var currentRawLatex: String = ""
     private var currentCoverUrl: String = ""
+    private var currentEditedLatex: String? = null
+
+    fun getLatexCode(): String? = currentEditedLatex
+
+    fun updateLatexCode(code: String) {
+        currentEditedLatex = code
+    }
 
     private fun normalizeTemplateVariant(templateName: String): String {
         val candidate = when {
@@ -84,6 +91,8 @@ class EditorViewModel : ViewModel() {
         currentTopic = magazineTopic
         currentApiKey = geminiKey
         currentVariant = normalizeTemplateVariant(templateName)
+        currentRawLatex = ""
+        currentEditedLatex = null
         
         _schemaState.value = SchemaState.Loading
         
@@ -108,6 +117,8 @@ class EditorViewModel : ViewModel() {
     }
 
     fun generateLatex(schema: MagazineSchema) {
+        currentRawLatex = ""
+        currentEditedLatex = null
         _latexState.value = LatexState.Loading
         
         viewModelScope.launch {

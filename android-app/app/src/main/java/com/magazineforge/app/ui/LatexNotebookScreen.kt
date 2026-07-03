@@ -6,6 +6,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.clickable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -19,6 +21,10 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalClipboardManager
+import androidx.compose.ui.text.AnnotatedString
+import android.content.Intent
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -28,7 +34,8 @@ fun LatexNotebookScreen(
     aiRawState: LatexState,
     onGenerateRawLatex: (String) -> Unit,
     onCompile: (String) -> Unit,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onCodeChange: (String) -> Unit
 ) {
     var latexCode by remember { mutableStateOf(initialLatex) }
     var showAiDialog by remember { mutableStateOf(false) }
@@ -38,10 +45,19 @@ fun LatexNotebookScreen(
     var aiImages by remember { mutableStateOf("") }
     var aiStyle by remember { mutableStateOf("") }
     
+    var showFindReplace by remember { mutableStateOf(false) }
+    var findText by remember { mutableStateOf("") }
+    var replaceText by remember { mutableStateOf("") }
+    var showMenu by remember { mutableStateOf(false) }
+
+    val context = LocalContext.current
+    val clipboardManager = LocalClipboardManager.current
+    
     // Auto-update editor when AI finishes
     LaunchedEffect(aiRawState) {
         if (aiRawState is LatexState.Success) {
             latexCode = aiRawState.latexCode
+            onCodeChange(aiRawState.latexCode)
             showAiDialog = false
         }
     }
@@ -74,11 +90,55 @@ fun LatexNotebookScreen(
                                 Icon(Icons.Default.PlayArrow, contentDescription = "Compile", tint = tabGreen)
                             }
                         }
-                        IconButton(onClick = {}) {
+                        IconButton(onClick = { showFindReplace = !showFindReplace }) {
                             Icon(Icons.Default.Search, contentDescription = "Search", tint = Color.DarkGray)
                         }
-                        IconButton(onClick = {}) {
-                            Icon(Icons.Default.MoreVert, contentDescription = "More", tint = Color.DarkGray)
+                        Box {
+                            IconButton(onClick = { showMenu = true }) {
+                                Icon(Icons.Default.MoreVert, contentDescription = "More", tint = Color.DarkGray)
+                            }
+                            DropdownMenu(
+                                expanded = showMenu,
+                                onDismissRequest = { showMenu = false },
+                                modifier = Modifier.background(Color.White)
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text("Copy Code") },
+                                    onClick = {
+                                        showMenu = false
+                                        clipboardManager.setText(AnnotatedString(latexCode))
+                                    }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("Clear Editor") },
+                                    onClick = {
+                                        showMenu = false
+                                        latexCode = ""
+                                        onCodeChange("")
+                                    }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("Reset to Template") },
+                                    onClick = {
+                                        showMenu = false
+                                        latexCode = initialLatex
+                                        onCodeChange(initialLatex)
+                                    }
+                                )
+                                DropdownMenuItem(
+                                    text = { Text("Share") },
+                                    onClick = {
+                                        showMenu = false
+                                        val sendIntent: Intent = Intent().apply {
+                                            action = Intent.ACTION_SEND
+                                            putExtra(Intent.EXTRA_TEXT, latexCode)
+                                            type = "text/plain"
+                                        }
+                                        val shareIntent = Intent.createChooser(sendIntent, null)
+                                        context.startActivity(shareIntent)
+                                    }
+                                )
+                            }
                         }
                     }
                 )
@@ -90,8 +150,49 @@ fun LatexNotebookScreen(
                         Text("*magazine.tex", color = Color.Black, fontSize = 14.sp, modifier = Modifier.padding(bottom = 4.dp))
                         Box(modifier = Modifier.height(2.dp).width(100.dp).background(tabGreen))
                     }
-                }
                 Divider(color = Color.LightGray, thickness = 1.dp)
+                if (showFindReplace) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(Color.White)
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OutlinedTextField(
+                            value = findText,
+                            onValueChange = { findText = it },
+                            label = { Text("Find", fontSize = 12.sp) },
+                            modifier = Modifier.weight(1f),
+                            singleLine = true,
+                            textStyle = TextStyle(fontSize = 14.sp)
+                        )
+                        OutlinedTextField(
+                            value = replaceText,
+                            onValueChange = { replaceText = it },
+                            label = { Text("Replace", fontSize = 12.sp) },
+                            modifier = Modifier.weight(1f),
+                            singleLine = true,
+                            textStyle = TextStyle(fontSize = 14.sp)
+                        )
+                        Button(
+                            onClick = {
+                                if (findText.isNotEmpty()) {
+                                    val updated = latexCode.replace(findText, replaceText)
+                                    latexCode = updated
+                                    onCodeChange(updated)
+                                }
+                            },
+                            colors = ButtonDefaults.buttonColors(containerColor = tabGreen),
+                            contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                            modifier = Modifier.height(40.dp)
+                        ) {
+                            Text("Replace", color = Color.White, fontSize = 12.sp)
+                        }
+                    }
+                    Divider(color = Color.LightGray, thickness = 1.dp)
+                }
             }
         },
         bottomBar = {
@@ -109,7 +210,7 @@ fun LatexNotebookScreen(
                     Icon(Icons.Default.ContentPaste, contentDescription = "Paste", tint = Color.Gray, modifier = Modifier.size(20.dp))
                     Icon(Icons.Default.Undo, contentDescription = "Undo", tint = Color.Gray, modifier = Modifier.size(20.dp))
                     Icon(Icons.Default.Redo, contentDescription = "Redo", tint = Color.Gray, modifier = Modifier.size(20.dp))
-                    Icon(Icons.Default.Search, contentDescription = "Search", tint = Color.Gray, modifier = Modifier.size(20.dp))
+                    Icon(Icons.Default.Search, contentDescription = "Search", tint = Color.Gray, modifier = Modifier.size(20.dp).clickable { showFindReplace = !showFindReplace })
                     Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.Gray, modifier = Modifier.size(20.dp))
                     Icon(Icons.Default.ArrowForward, contentDescription = "Forward", tint = Color.Gray, modifier = Modifier.size(20.dp))
                     Icon(Icons.Default.Save, contentDescription = "Save", tint = Color.Gray, modifier = Modifier.size(20.dp))
@@ -118,6 +219,10 @@ fun LatexNotebookScreen(
         },
         containerColor = bgCream
     ) { paddingValues ->
+        val scrollState = rememberScrollState()
+        val lineCount = latexCode.count { it == '\n' } + 1
+        val lineNumbersText = (1..lineCount).joinToString("\n")
+
         Row(
             modifier = Modifier
                 .fillMaxSize()
@@ -127,11 +232,24 @@ fun LatexNotebookScreen(
             Box(
                 modifier = Modifier
                     .fillMaxHeight()
-                    .width(32.dp)
+                    .width(40.dp)
                     .background(gutterColor)
+                    .padding(top = 16.dp, bottom = 16.dp)
             ) {
-                Column(modifier = Modifier.padding(top = 16.dp, end = 4.dp).fillMaxWidth(), horizontalAlignment = Alignment.End) {
-                    Text("1", color = Color.Gray, fontSize = 14.sp, fontFamily = FontFamily.Monospace)
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .verticalScroll(scrollState)
+                        .padding(end = 6.dp),
+                    horizontalAlignment = Alignment.End
+                ) {
+                    Text(
+                        text = lineNumbersText,
+                        color = Color.Gray,
+                        fontSize = 14.sp,
+                        fontFamily = FontFamily.Monospace,
+                        lineHeight = 20.sp
+                    )
                 }
             }
             
@@ -147,10 +265,15 @@ fun LatexNotebookScreen(
             ) {
                 BasicTextField(
                     value = latexCode,
-                    onValueChange = { latexCode = it },
+                    onValueChange = {
+                        latexCode = it
+                        onCodeChange(it)
+                    },
                     modifier = Modifier
                         .fillMaxSize()
-                        .verticalScroll(rememberScrollState()),
+                        .verticalScroll(scrollState)
+                        .horizontalScroll(rememberScrollState()),
+                    softWrap = false,
                     textStyle = TextStyle(
                         fontFamily = FontFamily.Monospace,
                         fontSize = 14.sp,

@@ -83,6 +83,7 @@ class MainActivity : ComponentActivity() {
                     val coroutineScope = rememberCoroutineScope()
                     var isVerifying by remember { mutableStateOf(false) }
                     var verifyError by remember { mutableStateOf<String?>(null) }
+                    var verifySuccess by remember { mutableStateOf<Boolean?>(null) }
                     
                     val schemaState by viewModel.schemaState.collectAsState()
                     val latexState by viewModel.latexState.collectAsState()
@@ -111,6 +112,11 @@ class MainActivity : ComponentActivity() {
                         if (compileState is CompileState.Loading) {
                             showProgressCard = true
                         }
+                    }
+
+                    LaunchedEffect(currentScreen) {
+                        verifyError = null
+                        verifySuccess = null
                     }
 
                     Scaffold(
@@ -307,7 +313,7 @@ class MainActivity : ComponentActivity() {
                                     "latex_notebook" -> {
                                         val aiRawLatexState by viewModel.aiRawLatexState.collectAsState()
                                         LatexNotebookScreen(
-                                            initialLatex = (latexState as? LatexState.Success)?.latexCode ?: "",
+                                            initialLatex = viewModel.getLatexCode() ?: (latexState as? LatexState.Success)?.latexCode ?: "",
                                             isCompiling = isCompileLoading,
                                             aiRawState = aiRawLatexState,
                                             onGenerateRawLatex = { prompt ->
@@ -316,7 +322,10 @@ class MainActivity : ComponentActivity() {
                                             onCompile = { code ->
                                                 viewModel.compileRaw(applicationContext, code)
                                             },
-                                            onBack = { currentScreen = "gallery" }
+                                            onBack = { currentScreen = "gallery" },
+                                            onCodeChange = { code ->
+                                                viewModel.updateLatexCode(code)
+                                            }
                                         )
                                     }
                                     "library" -> MyMagazinesScreen(
@@ -329,9 +338,13 @@ class MainActivity : ComponentActivity() {
                                     )
                                     "settings" -> SettingsScreen(
                                         currentApiKey = apiKey,
+                                        isVerifying = isVerifying,
+                                        verifyError = verifyError,
+                                        verifySuccess = verifySuccess,
                                         onSaveApiKey = { newKey ->
                                             isVerifying = true
                                             verifyError = null
+                                            verifySuccess = null
                                             coroutineScope.launch {
                                                 try {
                                                     val response = withContext(Dispatchers.IO) {
@@ -340,15 +353,22 @@ class MainActivity : ComponentActivity() {
                                                     if (response.isSuccessful && response.body()?.valid == true) {
                                                         secureStorage.saveApiKey(newKey)
                                                         apiKey = newKey
+                                                        verifySuccess = true
                                                     } else {
                                                         verifyError = "Invalid API Key"
+                                                        verifySuccess = false
                                                     }
                                                 } catch (e: Exception) {
                                                     verifyError = "Connection Error"
+                                                    verifySuccess = false
                                                 } finally {
                                                     isVerifying = false
                                                 }
                                             }
+                                        },
+                                        onClearFeedback = {
+                                            verifyError = null
+                                            verifySuccess = null
                                         }
                                     )
                                 }

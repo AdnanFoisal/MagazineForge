@@ -27,7 +27,11 @@ import kotlinx.coroutines.launch
 @Composable
 fun SettingsScreen(
     currentApiKey: String,
-    onSaveApiKey: (String) -> Unit
+    isVerifying: Boolean,
+    verifyError: String?,
+    verifySuccess: Boolean?,
+    onSaveApiKey: (String) -> Unit,
+    onClearFeedback: () -> Unit
 ) {
     var apiKeyInput by remember { mutableStateOf(currentApiKey) }
     var passwordVisible by remember { mutableStateOf(false) }
@@ -52,30 +56,61 @@ fun SettingsScreen(
         ) {
             Column(modifier = Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(24.dp)) {
                 Text("Gemini API Key", style = MaterialTheme.typography.titleMedium.copy(color = MaterialTheme.colorScheme.onSurface))
-                OutlinedTextField(
-                    value = apiKeyInput,
-                    onValueChange = { apiKeyInput = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    label = { Text("API Key") },
-                    visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                    trailingIcon = {
-                        val image = if (passwordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff
-                        val description = if (passwordVisible) "Hide API Key" else "Show API Key"
-                        IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                            Icon(imageVector = image, contentDescription = description)
-                        }
-                    },
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        focusedLabelColor = MaterialTheme.colorScheme.primary
+                Column {
+                    OutlinedTextField(
+                        value = apiKeyInput,
+                        onValueChange = {
+                            apiKeyInput = it
+                            onClearFeedback()
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        label = { Text("API Key") },
+                        visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                        trailingIcon = {
+                            val image = if (passwordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff
+                            val description = if (passwordVisible) "Hide API Key" else "Show API Key"
+                            IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                                Icon(imageVector = image, contentDescription = description)
+                            }
+                        },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            focusedLabelColor = MaterialTheme.colorScheme.primary
+                        )
                     )
-                )
+                    if (verifySuccess == true) {
+                        Text(
+                            text = "API Key saved successfully!",
+                            color = Color(0xFF4CAF50),
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
+                    } else if (verifyError != null) {
+                        Text(
+                            text = verifyError,
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.padding(top = 4.dp)
+                        )
+                    }
+                }
                 Button(
                     onClick = { onSaveApiKey(apiKeyInput) },
+                    enabled = !isVerifying,
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                     modifier = Modifier.align(Alignment.End)
                 ) {
-                    Text("Verify & Save", color = MaterialTheme.colorScheme.onPrimary)
+                    if (isVerifying) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(16.dp),
+                            color = MaterialTheme.colorScheme.onPrimary,
+                            strokeWidth = 2.dp
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Verifying...", color = MaterialTheme.colorScheme.onPrimary)
+                    } else {
+                        Text("Verify & Save", color = MaterialTheme.colorScheme.onPrimary)
+                    }
                 }
             }
         }

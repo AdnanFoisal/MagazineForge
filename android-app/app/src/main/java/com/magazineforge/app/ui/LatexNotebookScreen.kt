@@ -32,7 +32,11 @@ fun LatexNotebookScreen(
 ) {
     var latexCode by remember { mutableStateOf(initialLatex) }
     var showAiDialog by remember { mutableStateOf(false) }
-    var aiPrompt by remember { mutableStateOf("") }
+    var aiMagName by remember { mutableStateOf("") }
+    var aiTopic by remember { mutableStateOf("") }
+    var aiNumArticles by remember { mutableStateOf("") }
+    var aiImages by remember { mutableStateOf("") }
+    var aiStyle by remember { mutableStateOf("") }
     
     // Auto-update editor when AI finishes
     LaunchedEffect(aiRawState) {
@@ -181,13 +185,37 @@ fun LatexNotebookScreen(
                 title = { Text("AI Raw Generation") },
                 text = {
                     Column {
-                        Text("Describe the magazine you want to generate. The AI will write the complete LuaLaTeX code from scratch.")
+                        Text("Fill out ALL fields to generate a structured magazine in LuaLaTeX.")
                         Spacer(modifier = Modifier.height(8.dp))
                         OutlinedTextField(
-                            value = aiPrompt,
-                            onValueChange = { aiPrompt = it },
-                            placeholder = { Text("e.g. A 4-page travel magazine about the Swiss Alps...") },
-                            modifier = Modifier.fillMaxWidth().height(120.dp)
+                            value = aiMagName,
+                            onValueChange = { aiMagName = it },
+                            label = { Text("Magazine Name") },
+                            modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
+                        )
+                        OutlinedTextField(
+                            value = aiTopic,
+                            onValueChange = { aiTopic = it },
+                            label = { Text("Topic (e.g. Travel, Tech)") },
+                            modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
+                        )
+                        OutlinedTextField(
+                            value = aiNumArticles,
+                            onValueChange = { aiNumArticles = it.filter { char -> char.isDigit() } },
+                            label = { Text("Number of Articles") },
+                            modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
+                        )
+                        OutlinedTextField(
+                            value = aiImages,
+                            onValueChange = { aiImages = it },
+                            label = { Text("Preferred Images (URLs or Keywords)") },
+                            modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
+                        )
+                        OutlinedTextField(
+                            value = aiStyle,
+                            onValueChange = { aiStyle = it },
+                            label = { Text("Style / Vibe") },
+                            modifier = Modifier.fillMaxWidth()
                         )
                         if (aiRawState is LatexState.Loading) {
                             Spacer(modifier = Modifier.height(16.dp))
@@ -200,8 +228,19 @@ fun LatexNotebookScreen(
                 },
                 confirmButton = {
                     TextButton(
-                        onClick = { onGenerateRawLatex(aiPrompt) },
-                        enabled = aiRawState !is LatexState.Loading && aiPrompt.isNotBlank()
+                        onClick = {
+                            val constructedPrompt = """
+                                Magazine Name: $aiMagName
+                                Topic: $aiTopic
+                                Number of Articles: $aiNumArticles
+                                Images/Assets: $aiImages
+                                Style/Vibe: $aiStyle
+                                
+                                Write the complete, robust LuaLaTeX document for this magazine. It MUST be a single compilable document. Do NOT output JSON. Use --shell-escape friendly \luacode* curl blocks to fetch the provided images if they are URLs.
+                            """.trimIndent()
+                            onGenerateRawLatex(constructedPrompt)
+                        },
+                        enabled = aiRawState !is LatexState.Loading && aiMagName.isNotBlank() && aiTopic.isNotBlank() && aiNumArticles.isNotBlank() && aiImages.isNotBlank() && aiStyle.isNotBlank()
                     ) {
                         Text("Generate")
                     }

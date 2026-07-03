@@ -61,6 +61,8 @@ class EditorViewModel : ViewModel() {
     private var currentVariant: String = ""
     private var isFromShowcase: Boolean = false
     private var currentApiKey: String = ""
+    private var currentRawLatex: String = ""
+    private var currentCoverUrl: String = ""
 
     private fun normalizeTemplateVariant(templateName: String): String {
         val candidate = when {
@@ -155,6 +157,8 @@ class EditorViewModel : ViewModel() {
         this.currentTopic = topic
         this.currentVariant = variant
         this.isFromShowcase = fromShowcase
+        this.currentRawLatex = latexCode
+        this.currentCoverUrl = ""
         _compileState.value = CompileState.Loading(0, "Compiling PDF on Cloud...")
         
         viewModelScope.launch {
@@ -187,6 +191,7 @@ class EditorViewModel : ViewModel() {
                     if (statusObj != null) {
                         if (statusObj.status == "COMPLETED") {
                             _compileState.value = CompileState.Loading(100, "Downloading PDF...")
+                            currentCoverUrl = statusObj.cover_url ?: ""
                             downloadPdf(context, jobId)
                             isPolling = false
                         } else if (statusObj.status == "FAILED") {
@@ -227,13 +232,12 @@ class EditorViewModel : ViewModel() {
                     
                     if (!isFromShowcase) {
                         try {
-                            val currentLatex = (_latexState.value as? LatexState.Success)?.latexCode ?: ""
-                            
-                            // Publish to showcase with the raw latex code
                             val showcaseItem = com.magazineforge.app.models.ShowcaseItem(
                                 title = currentTopic,
                                 templateVariant = currentVariant,
-                                latexCode = currentLatex
+                                latexCode = currentRawLatex,
+                                pdfUrl = "https://adnanfoisal-magazineforge.hf.space/job/$jobId/download",
+                                coverImageUrl = currentCoverUrl
                             )
                             com.magazineforge.app.network.ShowcaseRepository().publishMagazine(showcaseItem)
                         } catch (e: Exception) {

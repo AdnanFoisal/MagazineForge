@@ -152,29 +152,38 @@ fun ShowcaseCard(item: ShowcaseItem, onClick: () -> Unit) {
                 .clip(RoundedCornerShape(4.dp))
                 .padding(bottom = 12.dp)
             ) {
-                val gradientColor1 = remember(item.templateVariant) { 
-                    androidx.compose.ui.graphics.Color((0xFF000000..0xFFFFFFFF).random()) 
-                }
-                val gradientColor2 = remember(item.templateVariant) { 
-                    androidx.compose.ui.graphics.Color((0xFF000000..0xFFFFFFFF).random()) 
-                }
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(
-                            brush = androidx.compose.ui.graphics.Brush.linearGradient(
-                                colors = listOf(gradientColor1, gradientColor2)
-                            )
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = item.templateVariant.take(2).uppercase(),
-                        style = LuxeTypography.displayMedium.copy(
-                            color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.5f),
-                            fontWeight = androidx.compose.ui.text.font.FontWeight.Black
-                        )
+                if (item.coverImageUrl.isNotEmpty()) {
+                    AsyncImage(
+                        model = item.coverImageUrl,
+                        contentDescription = "Cover Image",
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize()
                     )
+                } else {
+                    val gradientColor1 = remember(item.templateVariant) { 
+                        androidx.compose.ui.graphics.Color((0xFF000000..0xFFFFFFFF).random()) 
+                    }
+                    val gradientColor2 = remember(item.templateVariant) { 
+                        androidx.compose.ui.graphics.Color((0xFF000000..0xFFFFFFFF).random()) 
+                    }
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(
+                                brush = androidx.compose.ui.graphics.Brush.linearGradient(
+                                    colors = listOf(gradientColor1, gradientColor2)
+                                )
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = item.templateVariant.take(2).uppercase(),
+                            style = LuxeTypography.displayMedium.copy(
+                                color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.5f),
+                                fontWeight = androidx.compose.ui.text.font.FontWeight.Black
+                            )
+                        )
+                    }
                 }
             }
             Text(

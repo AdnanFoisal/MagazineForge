@@ -44,29 +44,27 @@ fun AuthScreen(
     val launcher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.StartActivityForResult()
     ) { result ->
-        if (result.resultCode == Activity.RESULT_OK) {
-            val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
-            try {
-                val account = task.getResult(ApiException::class.java)
-                account?.idToken?.let { idToken ->
-                    val credential = GoogleAuthProvider.getCredential(idToken, null)
-                    isLoading = true
-                    coroutineScope.launch {
-                        try {
-                            auth.signInWithCredential(credential).await()
-                            onAuthSuccess()
-                        } catch (e: Exception) {
-                            errorMessage = e.message ?: "Authentication failed"
-                        } finally {
-                            isLoading = false
-                        }
+        val task = GoogleSignIn.getSignedInAccountFromIntent(result.data)
+        try {
+            val account = task.getResult(ApiException::class.java)
+            if (account?.idToken != null) {
+                val credential = GoogleAuthProvider.getCredential(account.idToken, null)
+                isLoading = true
+                coroutineScope.launch {
+                    try {
+                        auth.signInWithCredential(credential).await()
+                        onAuthSuccess()
+                    } catch (e: Exception) {
+                        errorMessage = e.message ?: "Authentication failed"
+                    } finally {
+                        isLoading = false
                     }
                 }
-            } catch (e: ApiException) {
-                errorMessage = "Google Sign-In failed: ${e.statusCode}"
+            } else {
                 isLoading = false
             }
-        } else {
+        } catch (e: ApiException) {
+            errorMessage = "Google Sign-In failed (Code: ${e.statusCode}). Check Firebase SHA-1 or Web Client ID."
             isLoading = false
         }
     }

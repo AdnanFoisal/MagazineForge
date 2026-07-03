@@ -165,16 +165,6 @@ class MainActivity : ComponentActivity() {
                                     }
                                 )
                             } else if (compileState is CompileState.Error) {
-                                // Navigate when compile finishes successfully
-                                LaunchedEffect(compileState) {
-                                    if (compileState is CompileState.Success) {
-                                        val pdfUrl = (compileState as CompileState.Success).pdfFile.absolutePath
-                                        if (pdfUrl.isNotEmpty()) {
-                                            selectedPdfForViewer = pdfUrl
-                                            viewModel.resetState()
-                                        }
-                                    }
-                                }
                                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                                     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.padding(16.dp)) {
                                         Text("Error: ${(compileState as CompileState.Error).message}", color = MaterialTheme.colorScheme.error)

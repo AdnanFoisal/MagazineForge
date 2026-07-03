@@ -19,5 +19,6 @@ data class JobResponse(
 data class JobStatusResponse(
     val status: String,
     val progress: Int,
-    val error: String?
+    val error: String?,
+    val cover_url: String? = null
 )

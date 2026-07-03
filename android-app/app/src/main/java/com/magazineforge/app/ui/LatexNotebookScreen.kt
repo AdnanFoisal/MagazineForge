@@ -150,6 +150,7 @@ fun LatexNotebookScreen(
                         Text("*magazine.tex", color = Color.Black, fontSize = 14.sp, modifier = Modifier.padding(bottom = 4.dp))
                         Box(modifier = Modifier.height(2.dp).width(100.dp).background(tabGreen))
                     }
+                }
                 Divider(color = Color.LightGray, thickness = 1.dp)
                 if (showFindReplace) {
                     Row(

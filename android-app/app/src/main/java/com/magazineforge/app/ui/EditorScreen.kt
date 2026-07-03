@@ -250,6 +250,43 @@ fun PageBlockCard(
                 }
             }
             
+            val context = androidx.compose.ui.platform.LocalContext.current
+            val scope = rememberCoroutineScope()
+            var isUploading by remember { mutableStateOf(false) }
+            val launcher = androidx.compose.activity.compose.rememberLauncherForActivityResult(
+                androidx.activity.result.contract.ActivityResultContracts.GetContent()
+            ) { uri ->
+                if (uri != null) {
+                    isUploading = true
+                    scope.kotlinx.coroutines.launch {
+                        try {
+                            val inputStream = context.contentResolver.openInputStream(uri)
+                            val tempFile = java.io.File(context.cacheDir, "upload_${System.currentTimeMillis()}.jpg")
+                            val outputStream = java.io.FileOutputStream(tempFile)
+                            inputStream?.copyTo(outputStream)
+                            inputStream?.close()
+                            outputStream.close()
+                            
+                            val requestFile = okhttp3.RequestBody.create(okhttp3.MediaType.parse("image/*"), tempFile)
+                            val body = okhttp3.MultipartBody.Part.createFormData("file", tempFile.name, requestFile)
+                            
+                            val response = com.magazineforge.app.network.ApiClient.retrofitService.uploadAsset(body)
+                            if (response.isSuccessful) {
+                                val path = response.body()?.url ?: ""
+                                if (path.isNotEmpty()) {
+                                    val fullUrl = "${com.magazineforge.app.network.ApiClient.BASE_URL}$path"
+                                    onUpdate(page.copy(imageUrl = fullUrl))
+                                }
+                            }
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                        } finally {
+                            isUploading = false
+                        }
+                    }
+                }
+            }
+            
             Spacer(modifier = Modifier.height(8.dp))
             
             OutlinedTextField(
@@ -281,6 +318,15 @@ fun PageBlockCard(
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 leadingIcon = { Icon(Icons.Default.Image, contentDescription = "Image") },
+                trailingIcon = {
+                    if (isUploading) {
+                        CircularProgressIndicator(modifier = Modifier.size(24.dp), color = EditorialGold)
+                    } else {
+                        IconButton(onClick = { launcher.launch("image/*") }) {
+                            Icon(Icons.Default.Add, contentDescription = "Upload from device", tint = EditorialGold)
+                        }
+                    }
+                },
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = EditorialGold,
                     unfocusedTextColor = GhostWhite,

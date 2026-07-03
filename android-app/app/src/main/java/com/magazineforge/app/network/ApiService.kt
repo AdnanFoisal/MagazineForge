@@ -8,8 +8,16 @@ import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.http.POST
 import retrofit2.http.Path
+import retrofit2.http.Multipart
+import retrofit2.http.Part
+import okhttp3.MultipartBody
 
 interface ApiService {
+    @Multipart
+    @POST("upload-asset")
+    suspend fun uploadAsset(
+        @Part file: MultipartBody.Part
+    ): Response<com.magazineforge.app.models.UploadAssetResponse>
     @GET("health")
     suspend fun checkHealth(): Response<ResponseBody>
 

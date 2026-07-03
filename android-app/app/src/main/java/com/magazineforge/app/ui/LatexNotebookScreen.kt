@@ -274,7 +274,6 @@ fun LatexNotebookScreen(
                         .fillMaxSize()
                         .verticalScroll(scrollState)
                         .horizontalScroll(rememberScrollState()),
-                    softWrap = false,
                     textStyle = TextStyle(
                         fontFamily = FontFamily.Monospace,
                         fontSize = 14.sp,

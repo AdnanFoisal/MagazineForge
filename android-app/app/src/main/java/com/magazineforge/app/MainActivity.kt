@@ -205,12 +205,20 @@ class MainActivity : ComponentActivity() {
                                                     val response = withContext(Dispatchers.IO) {
                                                         ApiClient.retrofitService.verifyKey(VerifyKeyRequest(key))
                                                     }
-                                                    if (response.isSuccessful && response.body()?.valid == true) {
-                                                        secureStorage.saveApiKey(key)
-                                                        apiKey = key
-                                                        currentScreen = "showcase"
+                                                    if (response.isSuccessful) {
+                                                        if (response.body()?.valid == true) {
+                                                            secureStorage.saveApiKey(key)
+                                                            apiKey = key
+                                                            currentScreen = "showcase"
+                                                        } else {
+                                                            verifyError = "Invalid API Key"
+                                                        }
                                                     } else {
-                                                        verifyError = "Invalid API Key"
+                                                        if (response.code() in 400..499) {
+                                                            verifyError = "Invalid API Key"
+                                                        } else {
+                                                            verifyError = "Server Booting... Try again."
+                                                        }
                                                     }
                                                 } catch (e: Exception) {
                                                     verifyError = "Connection Error: ${e.message}"

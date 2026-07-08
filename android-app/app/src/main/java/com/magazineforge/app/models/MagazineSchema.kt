@@ -122,15 +122,6 @@ data class GenerateLatexResponse(
     val latexCode: String
 )
 
-data class GenerateRawLatexRequest(
-    @SerializedName("prompt")
-    val prompt: String
-)
-
-data class GenerateRawLatexResponse(
-    @SerializedName("latexCode")
-    val latexCode: String
-)
 
 data class CompileRawRequest(
     @SerializedName("latexCode")

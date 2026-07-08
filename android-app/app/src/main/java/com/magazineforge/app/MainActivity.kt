@@ -32,6 +32,8 @@ import com.google.firebase.auth.FirebaseAuth
 import com.magazineforge.app.utils.SecureStorage
 import com.magazineforge.app.network.ApiClient
 import com.magazineforge.app.models.VerifyKeyRequest
+import coil.Coil
+import coil.ImageLoader
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -62,6 +64,12 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        val imageLoader = ImageLoader.Builder(this)
+            .okHttpClient { ApiClient.okHttpClient }
+            .build()
+        Coil.setImageLoader(imageLoader)
+        
         viewModel = ViewModelProvider(this)[EditorViewModel::class.java]
         
         val secureStorage = SecureStorage(this)
@@ -78,6 +86,7 @@ class MainActivity : ComponentActivity() {
                     var selectedTemplateName by remember { mutableStateOf("") }
                     var initialEditorPrompt by remember { mutableStateOf("") }
                     var apiKey by remember { mutableStateOf(savedKey ?: "") }
+                    var backupApiKey by remember { mutableStateOf(secureStorage.getBackupApiKey() ?: "") }
                     var selectedPdfForViewer by remember { mutableStateOf<String?>(null) }
                     
                     val coroutineScope = rememberCoroutineScope()
@@ -254,7 +263,7 @@ class MainActivity : ComponentActivity() {
                                             currentScreen = "editor"
                                         },
                                         onPreviewSelected = { templateVariant ->
-                                            viewModel.generateSchema(apiKey, "Magazine Preview", templateVariant)
+                                            viewModel.generateSchema(apiKey, backupApiKey, "Magazine Preview", templateVariant)
                                         },
                                         onLibraryClicked = {
                                             currentScreen = "library"
@@ -304,7 +313,7 @@ class MainActivity : ComponentActivity() {
                                                 }
                                                 "Theme: $magazineTopic\n\nRequired Structure:\n$pagesStr\n\n(CRITICAL INSTRUCTION: You MUST strictly adhere to the [CUSTOMIZATION CONFIGURATION] for each page. Adapt your language, formatting, and generation to perfectly match the requested Tone, Color Palette, Image Style, Layout Density, and Target Audience. You MUST also use the exact Target Image URLs provided above for each corresponding page. Do NOT override them with Unsplash URLs unless no Target Image URL was provided.)"
                                             }
-                                            viewModel.generateSchema(apiKey, finalTopic, selectedTemplate)
+                                            viewModel.generateSchema(apiKey, backupApiKey, finalTopic, selectedTemplate)
                                         },
                                         onBack = {
                                             currentScreen = "gallery"
@@ -326,14 +335,9 @@ class MainActivity : ComponentActivity() {
                                         }
                                     }
                                     "latex_notebook" -> {
-                                        val aiRawLatexState by viewModel.aiRawLatexState.collectAsState()
                                         LatexNotebookScreen(
                                             initialLatex = viewModel.getLatexCode() ?: (latexState as? LatexState.Success)?.latexCode ?: "",
                                             isCompiling = isCompileLoading,
-                                            aiRawState = aiRawLatexState,
-                                            onGenerateRawLatex = { prompt ->
-                                                viewModel.generateRawLatex(apiKey, prompt)
-                                            },
                                             onCompile = { code ->
                                                 viewModel.compileRaw(applicationContext, code)
                                             },
@@ -353,10 +357,11 @@ class MainActivity : ComponentActivity() {
                                     )
                                     "settings" -> SettingsScreen(
                                         currentApiKey = apiKey,
+                                        currentBackupApiKey = backupApiKey,
                                         isVerifying = isVerifying,
                                         verifyError = verifyError,
                                         verifySuccess = verifySuccess,
-                                        onSaveApiKey = { newKey ->
+                                        onSaveApiKeys = { newKey, newBackupKey ->
                                             isVerifying = true
                                             verifyError = null
                                             verifySuccess = null
@@ -368,9 +373,11 @@ class MainActivity : ComponentActivity() {
                                                     if (response.isSuccessful && response.body()?.valid == true) {
                                                         secureStorage.saveApiKey(newKey)
                                                         apiKey = newKey
+                                                        secureStorage.saveBackupApiKey(newBackupKey)
+                                                        backupApiKey = newBackupKey
                                                         verifySuccess = true
                                                     } else {
-                                                        verifyError = "Invalid API Key"
+                                                        verifyError = "Invalid Primary API Key"
                                                         verifySuccess = false
                                                     }
                                                 } catch (e: Exception) {

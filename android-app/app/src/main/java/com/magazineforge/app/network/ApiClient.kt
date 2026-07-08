@@ -13,7 +13,7 @@ object ApiClient {
     // HuggingFace Personal Access Token loaded from local.properties
     private val HF_TOKEN = com.magazineforge.app.BuildConfig.HF_TOKEN
 
-    private val okHttpClient = OkHttpClient.Builder()
+    val okHttpClient = OkHttpClient.Builder()
         .addInterceptor { chain: Interceptor.Chain ->
             val request = chain.request().newBuilder()
                 .addHeader("Authorization", "Bearer $HF_TOKEN")

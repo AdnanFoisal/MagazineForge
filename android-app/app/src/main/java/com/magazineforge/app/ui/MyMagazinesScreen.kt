@@ -29,7 +29,8 @@ data class MagazinePdfItem(
     val file: File,
     val name: String,
     val formattedDate: String,
-    val formattedSize: String
+    val formattedSize: String,
+    val coverFile: File?
 )
 
 @Composable
@@ -67,12 +68,16 @@ fun MyMagazinesScreen(
                         "$sizeKb KB"
                     }
                     
+                    val coverFilename = "${rawName}_cover.jpg"
+                    val coverFile = File(dir, coverFilename)
+                    
                     list.add(
                         MagazinePdfItem(
                             file = file,
                             name = displayName,
                             formattedDate = dateFormat.format(Date(file.lastModified())),
-                            formattedSize = sizeString
+                            formattedSize = sizeString,
+                            coverFile = if (coverFile.exists()) coverFile else null
                         )
                     )
                 }
@@ -171,21 +176,33 @@ fun MyMagazinesScreen(
                                     .padding(8.dp),
                                 contentAlignment = Alignment.Center
                             ) {
-                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                    Text(
-                                        text = "PDF",
-                                        color = copper,
-                                        fontFamily = FontFamily.Serif,
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 24.sp
+                                if (item.coverFile != null) {
+                                    coil.compose.AsyncImage(
+                                        model = coil.request.ImageRequest.Builder(LocalContext.current)
+                                            .data(item.coverFile)
+                                            .crossfade(true)
+                                            .build(),
+                                        contentDescription = "Cover Image",
+                                        contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                                        modifier = Modifier.fillMaxSize()
                                     )
-                                    Spacer(modifier = Modifier.height(4.dp))
-                                    Text(
-                                        text = item.formattedSize,
-                                        color = mutedGray,
-                                        fontFamily = FontFamily.SansSerif,
-                                        fontSize = 12.sp
-                                    )
+                                } else {
+                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                        Text(
+                                            text = "PDF",
+                                            color = copper,
+                                            fontFamily = FontFamily.Serif,
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 24.sp
+                                        )
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text(
+                                            text = item.formattedSize,
+                                            color = mutedGray,
+                                            fontFamily = FontFamily.SansSerif,
+                                            fontSize = 12.sp
+                                        )
+                                    }
                                 }
                             }
                             Spacer(modifier = Modifier.height(8.dp))

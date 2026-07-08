@@ -156,7 +156,6 @@ fun ShowcaseCard(item: ShowcaseItem, onClick: () -> Unit) {
                     AsyncImage(
                         model = coil.request.ImageRequest.Builder(LocalContext.current)
                             .data(item.coverImageUrl)
-                            .addHeader("Authorization", "Bearer ${com.magazineforge.app.BuildConfig.HF_TOKEN}")
                             .crossfade(true)
                             .build(),
                         contentDescription = "Cover Image",

@@ -61,6 +61,7 @@ class EditorViewModel : ViewModel() {
     private var currentVariant: String = ""
     private var isFromShowcase: Boolean = false
     private var currentApiKey: String = ""
+    private var currentBackupKey: String? = null
     private var currentRawLatex: String = ""
     private var currentCoverUrl: String = ""
     private var currentEditedLatex: String? = null
@@ -78,7 +79,7 @@ class EditorViewModel : ViewModel() {
             else -> templateName.split("_").lastOrNull().orEmpty()
         }.lowercase()
 
-        return candidate.takeIf { it in setOf("a", "b", "c") } ?: "a"
+        return candidate.takeIf { it in setOf("a", "b", "c") } ?: error("Unrecognized template variant: $templateName")
     }
     
     fun resetState() {
@@ -87,9 +88,14 @@ class EditorViewModel : ViewModel() {
         _compileState.value = CompileState.Idle
     }
 
-    fun generateSchema(geminiKey: String, magazineTopic: String, templateName: String) {
+    fun generateSchema(geminiKey: String, backupKey: String?, magazineTopic: String, templateName: String) {
+        if (magazineTopic.isBlank()) {
+            _schemaState.value = SchemaState.Error("Topic can't be empty")
+            return
+        }
         currentTopic = magazineTopic
         currentApiKey = geminiKey
+        currentBackupKey = backupKey
         currentVariant = normalizeTemplateVariant(templateName)
         currentRawLatex = ""
         currentEditedLatex = null
@@ -99,19 +105,31 @@ class EditorViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 val request = GenerateSchemaRequest(topic = magazineTopic, templateVariant = currentVariant)
-                val response = ApiClient.retrofitService.generateSchema(geminiKey, request)
+                var response = ApiClient.retrofitService.generateSchema(geminiKey, request)
+                
+                if (!response.isSuccessful && (response.code() == 401 || response.code() == 429)) {
+                    if (!backupKey.isNullOrBlank()) {
+                        response = ApiClient.retrofitService.generateSchema(backupKey, request)
+                    }
+                }
+                
                 if (response.isSuccessful) {
                     val schema = response.body()
                     if (schema != null) {
                         _schemaState.value = SchemaState.Success(schema)
                     } else {
-                        _schemaState.value = SchemaState.Loading
+                        _schemaState.value = SchemaState.Error("Empty response body")
                     }
                 } else {
-                    _schemaState.value = SchemaState.Error("Error: ${response.code()}")
+                    val code = response.code()
+                    if (code == 401 || code == 429) {
+                        _schemaState.value = SchemaState.Error("Your API key may be invalid or rate-limited — check it in Settings")
+                    } else {
+                        _schemaState.value = SchemaState.Error("Error: $code")
+                    }
                 }
             } catch (e: Exception) {
-                _schemaState.value = SchemaState.Error(e.message ?: "Unknown network error")
+                _schemaState.value = SchemaState.Error(e.message ?: "Generation failed unexpectedly")
             }
         }
     }
@@ -124,7 +142,14 @@ class EditorViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 val request = GenerateLatexRequest(schema = schema, templateVariant = currentVariant)
-                val response = ApiClient.retrofitService.generateLatex(currentApiKey, request)
+                var response = ApiClient.retrofitService.generateLatex(currentApiKey, request)
+                
+                if (!response.isSuccessful && (response.code() == 401 || response.code() == 429)) {
+                    if (!currentBackupKey.isNullOrBlank()) {
+                        response = ApiClient.retrofitService.generateLatex(currentBackupKey!!, request)
+                    }
+                }
+                
                 if (response.isSuccessful) {
                     val latex = response.body()?.latexCode
                     if (latex != null) {
@@ -133,36 +158,20 @@ class EditorViewModel : ViewModel() {
                         _latexState.value = LatexState.Error("Received empty latex")
                     }
                 } else {
-                    _latexState.value = LatexState.Error("Error: ${response.code()}")
+                    val code = response.code()
+                    if (code == 401 || code == 429) {
+                        _latexState.value = LatexState.Error("Your API key may be invalid or rate-limited — check it in Settings")
+                    } else {
+                        _latexState.value = LatexState.Error("Error: $code")
+                    }
                 }
             } catch (e: Exception) {
-                _latexState.value = LatexState.Error(e.message ?: "Unknown network error")
+                _latexState.value = LatexState.Error(e.message ?: "Generation failed unexpectedly")
             }
         }
     }
 
-    fun generateRawLatex(apiKey: String, prompt: String) {
-        _aiRawLatexState.value = LatexState.Loading
-        
-        viewModelScope.launch {
-            try {
-                val request = GenerateRawLatexRequest(prompt = prompt)
-                val response = ApiClient.retrofitService.generateRawLatex(apiKey, request)
-                if (response.isSuccessful) {
-                    val latex = response.body()?.latexCode
-                    if (latex != null) {
-                        _aiRawLatexState.value = LatexState.Success(latex)
-                    } else {
-                        _aiRawLatexState.value = LatexState.Error("Received empty latex")
-                    }
-                } else {
-                    _aiRawLatexState.value = LatexState.Error("Error: ${response.code()}")
-                }
-            } catch (e: Exception) {
-                _aiRawLatexState.value = LatexState.Error(e.message ?: "Unknown network error")
-            }
-        }
-    }
+
 
     fun compileRaw(context: Context, latexCode: String, topic: String = "magazine", variant: String = "variant", fromShowcase: Boolean = false) {
         this.currentTopic = topic
@@ -194,7 +203,12 @@ class EditorViewModel : ViewModel() {
     
     private suspend fun pollJobStatus(context: Context, jobId: String) {
         var isPolling = true
+        val startTime = System.currentTimeMillis()
         while (isPolling) {
+            if (System.currentTimeMillis() - startTime > 100_000) {
+                _compileState.value = CompileState.Error("Generation timed out after 100 seconds")
+                break
+            }
             try {
                 val response = ApiClient.retrofitService.getJobStatus(jobId)
                 if (response.isSuccessful) {
@@ -212,6 +226,8 @@ class EditorViewModel : ViewModel() {
                             _compileState.value = CompileState.Loading(statusObj.progress, "Generating... ${statusObj.progress}%")
                             delay(5000) // Poll every 5 seconds
                         }
+                    } else {
+                        delay(5000) // Poll every 5 seconds if status body is null
                     }
                 } else {
                     _compileState.value = CompileState.Error("Error polling job: ${response.code()}")
@@ -232,12 +248,12 @@ class EditorViewModel : ViewModel() {
             _compileState.value = CompileState.Loading(100, "Downloading Cover...")
             val coverResponse = ApiClient.retrofitService.downloadCover(jobId)
 
-            if (response.isSuccessful && coverResponse.isSuccessful) {
+            if (response.isSuccessful) {
                 val pdfBytes = response.body()?.bytes()
-                val coverBytes = coverResponse.body()?.bytes()
+                val coverBytes = if (coverResponse.isSuccessful) coverResponse.body()?.bytes() else null
                 
-                if (pdfBytes != null && coverBytes != null) {
-                    val file = savePdfToDisk(context, pdfBytes)
+                if (pdfBytes != null) {
+                    val file = saveFilesToDisk(context, pdfBytes, coverBytes)
                     
                     _compileState.value = CompileState.Loading(100, "Publishing to Showcase...")
                     
@@ -248,7 +264,7 @@ class EditorViewModel : ViewModel() {
                                 templateVariant = currentVariant,
                                 latexCode = currentRawLatex,
                                 pdfUrl = "https://adnanfoisal-magazineforge.hf.space/job/$jobId/download",
-                                coverImageUrl = currentCoverUrl
+                                coverImageUrl = if (coverBytes != null) currentCoverUrl else ""
                             )
                             com.magazineforge.app.network.ShowcaseRepository().publishMagazine(showcaseItem)
                         } catch (e: Exception) {
@@ -269,10 +285,10 @@ class EditorViewModel : ViewModel() {
         }
     }
     
-    private suspend fun savePdfToDisk(context: Context, bytes: ByteArray): File {
+    private suspend fun saveFilesToDisk(context: Context, pdfBytes: ByteArray, coverBytes: ByteArray?): File {
         return withContext(Dispatchers.IO) {
             val previewFile = File(context.cacheDir, "magazine_preview.pdf")
-            FileOutputStream(previewFile).use { it.write(bytes) }
+            FileOutputStream(previewFile).use { it.write(pdfBytes) }
             
             try {
                 val dir = File(context.filesDir, "magazines")
@@ -280,9 +296,16 @@ class EditorViewModel : ViewModel() {
                     dir.mkdirs()
                 }
                 val safeTopic = currentTopic.replace("[^a-zA-Z0-9]".toRegex(), "_")
-                val filename = "magazine_${System.currentTimeMillis()}_${safeTopic}.pdf"
+                val timestamp = System.currentTimeMillis()
+                val filename = "magazine_${timestamp}_${safeTopic}.pdf"
                 val persistentFile = File(dir, filename)
-                FileOutputStream(persistentFile).use { it.write(bytes) }
+                FileOutputStream(persistentFile).use { it.write(pdfBytes) }
+                
+                if (coverBytes != null) {
+                    val coverFilename = "magazine_${timestamp}_${safeTopic}_cover.jpg"
+                    val coverFile = File(dir, coverFilename)
+                    FileOutputStream(coverFile).use { it.write(coverBytes) }
+                }
             } catch (e: Exception) {
                 e.printStackTrace()
             }

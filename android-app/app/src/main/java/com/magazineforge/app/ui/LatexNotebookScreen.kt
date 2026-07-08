@@ -56,8 +56,6 @@ class SearchHighlightTransformation(private val searchQuery: String) : VisualTra
 fun LatexNotebookScreen(
     initialLatex: String,
     isCompiling: Boolean,
-    aiRawState: LatexState,
-    onGenerateRawLatex: (String) -> Unit,
     onCompile: (String) -> Unit,
     onBack: () -> Unit,
     onCodeChange: (String) -> Unit
@@ -78,14 +76,6 @@ fun LatexNotebookScreen(
             onCodeChange(newCode)
         }
     }
-
-    var showAiDialog by remember { mutableStateOf(false) }
-    var aiMagName by remember { mutableStateOf("") }
-    var aiTopic by remember { mutableStateOf("") }
-    var aiNumArticles by remember { mutableStateOf("") }
-    var aiImages by remember { mutableStateOf("") }
-    var aiStyle by remember { mutableStateOf("") }
-    
     var showFindReplace by remember { mutableStateOf(false) }
     var findText by remember { mutableStateOf("") }
     var replaceText by remember { mutableStateOf("") }
@@ -104,13 +94,7 @@ fun LatexNotebookScreen(
         }
     }
 
-    LaunchedEffect(aiRawState) {
-        if (aiRawState is LatexState.Success) {
-            latexCode = aiRawState.latexCode
-            onCodeChange(aiRawState.latexCode)
-            showAiDialog = false
-        }
-    }
+
     
     val bgCream = Color(0xFFFDFCEB)
     val gutterColor = Color(0xFFEFEFEF)
@@ -354,93 +338,6 @@ fun LatexNotebookScreen(
             }
         }
         
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(16.dp),
-            contentAlignment = Alignment.BottomEnd
-        ) {
-            FloatingActionButton(
-                onClick = { showAiDialog = true },
-                containerColor = Color(0xFFC5A059),
-                contentColor = Color.White
-            ) {
-                Icon(Icons.Default.AutoAwesome, contentDescription = "AI Generate")
-            }
-        }
-        
-        if (showAiDialog) {
-            AlertDialog(
-                onDismissRequest = { showAiDialog = false },
-                title = { Text("AI Raw Generation") },
-                text = {
-                    Column {
-                        Text("Fill out ALL fields to generate a structured magazine in LuaLaTeX.")
-                        Spacer(modifier = Modifier.height(8.dp))
-                        OutlinedTextField(
-                            value = aiMagName,
-                            onValueChange = { aiMagName = it },
-                            label = { Text("Magazine Name") },
-                            modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
-                        )
-                        OutlinedTextField(
-                            value = aiTopic,
-                            onValueChange = { aiTopic = it },
-                            label = { Text("Topic (e.g. Travel, Tech)") },
-                            modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
-                        )
-                        OutlinedTextField(
-                            value = aiNumArticles,
-                            onValueChange = { aiNumArticles = it.filter { char -> char.isDigit() } },
-                            label = { Text("Number of Articles") },
-                            modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
-                        )
-                        OutlinedTextField(
-                            value = aiImages,
-                            onValueChange = { aiImages = it },
-                            label = { Text("Preferred Images (URLs or Keywords)") },
-                            modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp)
-                        )
-                        OutlinedTextField(
-                            value = aiStyle,
-                            onValueChange = { aiStyle = it },
-                            label = { Text("Style / Vibe") },
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        if (aiRawState is LatexState.Loading) {
-                            Spacer(modifier = Modifier.height(16.dp))
-                            CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
-                        } else if (aiRawState is LatexState.Error) {
-                            Spacer(modifier = Modifier.height(8.dp))
-                            Text(aiRawState.message, color = MaterialTheme.colorScheme.error)
-                        }
-                    }
-                },
-                confirmButton = {
-                    TextButton(
-                        onClick = {
-                            val constructedPrompt = """
-                                Magazine Name: $aiMagName
-                                Topic: $aiTopic
-                                Number of Articles: $aiNumArticles
-                                Images/Assets: $aiImages
-                                Style/Vibe: $aiStyle
-                                
-                                Write the complete, robust LuaLaTeX document for this magazine. It MUST be a single compilable document. Do NOT output JSON. Use --shell-escape friendly \luacode* curl blocks to fetch the provided images if they are URLs.
-                            """.trimIndent()
-                            onGenerateRawLatex(constructedPrompt)
-                        },
-                        enabled = aiRawState !is LatexState.Loading && aiMagName.isNotBlank() && aiTopic.isNotBlank() && aiNumArticles.isNotBlank() && aiImages.isNotBlank() && aiStyle.isNotBlank()
-                    ) {
-                        Text("Generate")
-                    }
-                },
-                dismissButton = {
-                    TextButton(onClick = { showAiDialog = false }) {
-                        Text("Cancel")
-                    }
-                }
-            )
         }
     }
 }

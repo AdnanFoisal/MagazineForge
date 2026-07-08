@@ -27,13 +27,15 @@ import kotlinx.coroutines.launch
 @Composable
 fun SettingsScreen(
     currentApiKey: String,
+    currentBackupApiKey: String?,
     isVerifying: Boolean,
     verifyError: String?,
     verifySuccess: Boolean?,
-    onSaveApiKey: (String) -> Unit,
+    onSaveApiKeys: (String, String) -> Unit,
     onClearFeedback: () -> Unit
 ) {
     var apiKeyInput by remember { mutableStateOf(currentApiKey) }
+    var backupApiKeyInput by remember { mutableStateOf(currentBackupApiKey ?: "") }
     var passwordVisible by remember { mutableStateOf(false) }
     val currentTheme by ThemeState.currentTheme.collectAsState()
     
@@ -55,8 +57,8 @@ fun SettingsScreen(
             shape = RoundedCornerShape(12.dp)
         ) {
             Column(modifier = Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(24.dp)) {
-                Text("Gemini API Key", style = MaterialTheme.typography.titleMedium.copy(color = MaterialTheme.colorScheme.onSurface))
-                Column {
+                Text("Gemini API Keys", style = MaterialTheme.typography.titleMedium.copy(color = MaterialTheme.colorScheme.onSurface))
+                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                     OutlinedTextField(
                         value = apiKeyInput,
                         onValueChange = {
@@ -64,7 +66,7 @@ fun SettingsScreen(
                             onClearFeedback()
                         },
                         modifier = Modifier.fillMaxWidth(),
-                        label = { Text("API Key") },
+                        label = { Text("Primary API Key") },
                         visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                         trailingIcon = {
                             val image = if (passwordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff
@@ -78,9 +80,33 @@ fun SettingsScreen(
                             focusedLabelColor = MaterialTheme.colorScheme.primary
                         )
                     )
+                    
+                    var backupPasswordVisible by remember { mutableStateOf(false) }
+                    OutlinedTextField(
+                        value = backupApiKeyInput,
+                        onValueChange = {
+                            backupApiKeyInput = it
+                            onClearFeedback()
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        label = { Text("Backup API Key (Optional)") },
+                        visualTransformation = if (backupPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                        trailingIcon = {
+                            val image = if (backupPasswordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff
+                            val description = if (backupPasswordVisible) "Hide API Key" else "Show API Key"
+                            IconButton(onClick = { backupPasswordVisible = !backupPasswordVisible }) {
+                                Icon(imageVector = image, contentDescription = description)
+                            }
+                        },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            focusedLabelColor = MaterialTheme.colorScheme.primary
+                        )
+                    )
+                    
                     if (verifySuccess == true) {
                         Text(
-                            text = "API Key saved successfully!",
+                            text = "Keys saved successfully!",
                             color = Color(0xFF4CAF50),
                             style = MaterialTheme.typography.bodySmall,
                             modifier = Modifier.padding(top = 4.dp)
@@ -95,7 +121,7 @@ fun SettingsScreen(
                     }
                 }
                 Button(
-                    onClick = { onSaveApiKey(apiKeyInput) },
+                    onClick = { onSaveApiKeys(apiKeyInput, backupApiKeyInput) },
                     enabled = !isVerifying,
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                     modifier = Modifier.align(Alignment.End)

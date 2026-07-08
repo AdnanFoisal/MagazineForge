@@ -29,4 +29,16 @@ class SecureStorage(context: Context) {
     fun clearApiKey() {
         sharedPreferences.edit().remove("gemini_api_key").apply()
     }
+
+    fun saveBackupApiKey(key: String) {
+        sharedPreferences.edit().putString("gemini_backup_api_key", key).apply()
+    }
+
+    fun getBackupApiKey(): String? {
+        return sharedPreferences.getString("gemini_backup_api_key", null)
+    }
+
+    fun clearBackupApiKey() {
+        sharedPreferences.edit().remove("gemini_backup_api_key").apply()
+    }
 }

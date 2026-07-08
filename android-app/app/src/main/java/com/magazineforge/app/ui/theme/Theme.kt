@@ -46,6 +46,9 @@ fun MagazineForgeTheme(content: @Composable () -> Unit) {
     val iconMarkTint2 by animateColorAsState(currentTheme.iconMarkTint2, animationSpec)
     val cornerRadius by animateDpAsState(currentTheme.cornerRadius, tween(durationMillis = 300))
     val editorBackground by animateColorAsState(currentTheme.editorBackground, animationSpec)
+    val editorText by animateColorAsState(currentTheme.editorText, animationSpec)
+    val editorTextSecondary by animateColorAsState(currentTheme.editorTextSecondary, animationSpec)
+    val editorBorder by animateColorAsState(currentTheme.editorBorder, animationSpec)
     
     // Construct the animated tokens object
     val animatedTokens = ThemeTokens(
@@ -68,7 +71,10 @@ fun MagazineForgeTheme(content: @Composable () -> Unit) {
         wordmarkAllCaps = currentTheme.wordmarkAllCaps,
         decorativeMotif = currentTheme.decorativeMotif,
         isDark = currentTheme.isDark,
-        editorBackground = editorBackground
+        editorBackground = editorBackground,
+        editorText = editorText,
+        editorTextSecondary = editorTextSecondary,
+        editorBorder = editorBorder
     )
 
     // Map to MaterialTheme just for basic compatibility, but we prefer LocalThemeTokens

@@ -33,7 +33,10 @@ data class ThemeTokens(
     val wordmarkAllCaps: Boolean,
     val decorativeMotif: DecorativeMotif,
     val isDark: Boolean,
-    val editorBackground: Color
+    val editorBackground: Color,
+    val editorText: Color,
+    val editorTextSecondary: Color,
+    val editorBorder: Color
 )
 
 val SunsetEditorial = ThemeTokens(
@@ -56,7 +59,10 @@ val SunsetEditorial = ThemeTokens(
     wordmarkAllCaps = false,
     decorativeMotif = DecorativeMotif.BLOBS,
     isDark = false,
-    editorBackground = Color(0xFF1E1B3A)
+    editorBackground = Color(0xFF1E1B3A),
+    editorText = Color(0xFFF5EDE0),
+    editorTextSecondary = Color(0xFFC4B5E0),
+    editorBorder = Color(0xFFC4B5E0)
 )
 
 val AmberNoir = ThemeTokens(
@@ -79,7 +85,10 @@ val AmberNoir = ThemeTokens(
     wordmarkAllCaps = false,
     decorativeMotif = DecorativeMotif.BLOBS,
     isDark = false,
-    editorBackground = Color(0xFF1A1A1A)
+    editorBackground = Color(0xFF1A1A1A),
+    editorText = Color(0xFFF7F2E8),
+    editorTextSecondary = Color(0xFF8A8078),
+    editorBorder = Color(0xFF3D5A52)
 )
 
 val CosmicPurple = ThemeTokens(
@@ -102,7 +111,10 @@ val CosmicPurple = ThemeTokens(
     wordmarkAllCaps = true,
     decorativeMotif = DecorativeMotif.NEBULA,
     isDark = true,
-    editorBackground = Color(0xFF2D2144)
+    editorBackground = Color(0xFF2D2144),
+    editorText = Color(0xFFF0E8FF),
+    editorTextSecondary = Color(0xFFB8A3D9),
+    editorBorder = Color(0xFF8B5CF6)
 )
 
 val NatureSage = ThemeTokens(
@@ -125,7 +137,10 @@ val NatureSage = ThemeTokens(
     wordmarkAllCaps = false,
     decorativeMotif = DecorativeMotif.BOTANICAL,
     isDark = false,
-    editorBackground = Color(0xFF2A332A)
+    editorBackground = Color(0xFF2A332A),
+    editorText = Color(0xFFE8E5D8),
+    editorTextSecondary = Color(0xFF9BAE93),
+    editorBorder = Color(0xFF4A5D48)
 )
 
 val RisoPrint = ThemeTokens(
@@ -148,7 +163,10 @@ val RisoPrint = ThemeTokens(
     wordmarkAllCaps = true,
     decorativeMotif = DecorativeMotif.HALFTONE,
     isDark = false,
-    editorBackground = Color(0xFF1A1A1A)
+    editorBackground = Color(0xFF1A1A1A),
+    editorText = Color(0xFFF5EBE0),
+    editorTextSecondary = Color(0xFF6B6560),
+    editorBorder = Color(0xFF3D7FB8)
 )
 
 val EmeraldEditorial = ThemeTokens(
@@ -171,7 +189,10 @@ val EmeraldEditorial = ThemeTokens(
     wordmarkAllCaps = false,
     decorativeMotif = DecorativeMotif.BLOBS, // Warmer terracotta + sage
     isDark = false,
-    editorBackground = Color(0xFF1A2B20)
+    editorBackground = Color(0xFF1A2B20),
+    editorText = Color(0xFFF7F2E8),
+    editorTextSecondary = Color(0xFF8FA88A),
+    editorBorder = Color(0xFF8FA88A)
 )
 
 val AllThemes = listOf(

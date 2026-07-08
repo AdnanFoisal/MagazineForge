@@ -15,6 +15,8 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.runtime.*
@@ -58,9 +60,13 @@ fun EditorScreen(
     initialPrompt: String = "",
     isCompileLoading: Boolean,
     briefState: BriefState,
+    schemaState: SchemaState,
+    latexState: LatexState,
+    compileState: CompileState,
     onGenerateBrief: (String, List<String>) -> Unit,
     onCompileFromBrief: (String, SectionComposerConfig, GenerateBriefResponse) -> Unit,
     onCompileClicked: (String, List<PageBlock>, SectionComposerConfig) -> Unit,
+    onCancel: () -> Unit,
     onBack: () -> Unit
 ) {
     var prompt by remember { mutableStateOf(initialPrompt) }
@@ -68,6 +74,10 @@ fun EditorScreen(
     val pages = remember { mutableStateListOf<PageBlock>() }
     var composerConfig by remember { mutableStateOf(SectionComposerConfig()) }
     var showComposer by remember { mutableStateOf(false) }
+
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
+    val referenceImages = remember { mutableStateListOf<String>() }
 
     val tokens = com.magazineforge.app.ui.theme.LocalThemeTokens.current
     val obsidian = tokens.editorBackground
@@ -98,6 +108,7 @@ fun EditorScreen(
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = obsidian)
             )
         },
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         containerColor = obsidian
     ) { paddingValues ->
         Column(
@@ -191,18 +202,16 @@ fun EditorScreen(
                     }
                 } else {
                     // Phase 1: Initial Prompt
-                    val referenceImages = remember { mutableStateListOf<String>() }
                     var showReferenceImages by remember { mutableStateOf(false) }
                     
                     val context = androidx.compose.ui.platform.LocalContext.current
-                    val scope = rememberCoroutineScope()
                     var isUploading by remember { mutableStateOf(false) }
                     val launcher = androidx.activity.compose.rememberLauncherForActivityResult(
                         androidx.activity.result.contract.ActivityResultContracts.GetContent()
                     ) { uri ->
                         if (uri != null) {
                             isUploading = true
-                            scope.launch {
+                            coroutineScope.launch {
                                 try {
                                     val inputStream = context.contentResolver.openInputStream(uri)
                                     val tempFile = java.io.File(context.cacheDir, "upload_${System.currentTimeMillis()}.jpg")
@@ -219,10 +228,16 @@ fun EditorScreen(
                                         val path = response.body()?.url ?: ""
                                         if (path.isNotEmpty()) {
                                             referenceImages.add(path)
+                                            snackbarHostState.showSnackbar("Reference image uploaded successfully")
+                                        } else {
+                                            snackbarHostState.showSnackbar("Upload failed: empty path returned")
                                         }
+                                    } else {
+                                        snackbarHostState.showSnackbar("Upload failed: ${response.message()}")
                                     }
                                 } catch (e: Exception) {
                                     e.printStackTrace()
+                                    snackbarHostState.showSnackbar("Upload failed: ${e.localizedMessage ?: e.message}")
                                 } finally {
                                     isUploading = false
                                 }
@@ -241,17 +256,17 @@ fun EditorScreen(
                             placeholder = {
                                 Text(
                                     "What are we publishing today?\n\ne.g. 'A special edition on the future of electric aviation.'",
-                                    style = LuxeTypography.headlineMedium.copy(color = borderCol)
+                                    style = LuxeTypography.headlineMedium.copy(color = tokens.editorTextSecondary)
                                 )
                             },
                             modifier = Modifier.fillMaxWidth().height(200.dp),
-                            textStyle = LuxeTypography.headlineMedium.copy(color = ivory),
+                            textStyle = LuxeTypography.headlineMedium.copy(color = tokens.editorText),
                             colors = TextFieldDefaults.colors(
                                 focusedContainerColor = Color.Transparent,
                                 unfocusedContainerColor = Color.Transparent,
                                 focusedIndicatorColor = Color.Transparent,
                                 unfocusedIndicatorColor = Color.Transparent,
-                                cursorColor = gold
+                                cursorColor = tokens.primaryAccent
                             )
                         )
                         
@@ -293,14 +308,6 @@ fun EditorScreen(
                                 }
                             }
                         }
-                        
-                        if (briefState is BriefState.Error) {
-                            Text(
-                                text = briefState.message,
-                                color = MaterialTheme.colorScheme.error,
-                                modifier = Modifier.padding(bottom = 8.dp)
-                            )
-                        }
 
                         Button(
                             onClick = {
@@ -330,10 +337,12 @@ fun EditorScreen(
                         label = { Text("Magazine Overall Theme") },
                         modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = gold,
-                            focusedLabelColor = gold,
-                            unfocusedTextColor = ivory,
-                            focusedTextColor = ivory
+                            focusedTextColor = tokens.editorText,
+                            unfocusedTextColor = tokens.editorText,
+                            focusedBorderColor = tokens.primaryAccent,
+                            unfocusedBorderColor = tokens.editorBorder,
+                            focusedLabelColor = tokens.primaryAccent,
+                            unfocusedLabelColor = tokens.editorTextSecondary
                         )
                     )
 
@@ -347,6 +356,11 @@ fun EditorScreen(
                                 },
                                 onDelete = {
                                     pages.remove(page)
+                                },
+                                onShowSnackbar = { message ->
+                                    coroutineScope.launch {
+                                        snackbarHostState.showSnackbar(message)
+                                    }
                                 }
                             )
                             Spacer(modifier = Modifier.height(12.dp))
@@ -393,11 +407,252 @@ fun EditorScreen(
                 }
             }
         }
+
+        // Progress Tracking Dialogs
+        val isBriefFlowActive = briefState is BriefState.Loading || briefState is BriefState.Error
+        val isCompileFlowActive = schemaState is SchemaState.Loading || schemaState is SchemaState.Error ||
+                latexState is LatexState.Loading || latexState is LatexState.Error ||
+                compileState is CompileState.Loading || compileState is CompileState.Error
+
+        if (isBriefFlowActive) {
+            AlertDialog(
+                onDismissRequest = { /* Modal */ },
+                containerColor = tokens.surface,
+                title = {
+                    Text(
+                        text = "Generating Brief",
+                        style = LuxeTypography.headlineSmall.copy(color = tokens.primaryAccent, fontWeight = FontWeight.Bold)
+                    )
+                },
+                text = {
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(vertical = 8.dp)
+                        ) {
+                            if (briefState is BriefState.Loading) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(20.dp),
+                                    color = tokens.primaryAccent,
+                                    strokeWidth = 2.dp
+                                )
+                            } else if (briefState is BriefState.Error) {
+                                Icon(
+                                    imageVector = Icons.Default.Close,
+                                    contentDescription = "Failed",
+                                    tint = Color.Red,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            } else {
+                                Icon(
+                                    imageVector = Icons.Default.Check,
+                                    contentDescription = "Done",
+                                    tint = Color.Green,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                text = "Content Curation (Gemini API)",
+                                color = if (briefState is BriefState.Error) Color.Red else tokens.editorText
+                            )
+                        }
+
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(vertical = 8.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Add,
+                                contentDescription = "Pending",
+                                tint = tokens.editorTextSecondary,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                text = "Brief Outline Compilation",
+                                color = tokens.editorTextSecondary
+                            )
+                        }
+
+                        if (briefState is BriefState.Error) {
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                text = briefState.message,
+                                color = Color.Red,
+                                style = LuxeTypography.bodyMedium
+                            )
+                        }
+                    }
+                },
+                confirmButton = {
+                    if (briefState is BriefState.Error) {
+                        TextButton(
+                            onClick = {
+                                onGenerateBrief(prompt, referenceImages.toList())
+                            }
+                        ) {
+                            Text("Retry", color = tokens.primaryAccent)
+                        }
+                    }
+                },
+                dismissButton = {
+                    if (briefState is BriefState.Error) {
+                        TextButton(
+                            onClick = onCancel
+                        ) {
+                            Text("Cancel", color = tokens.editorTextSecondary)
+                        }
+                    }
+                }
+            )
+        } else if (isCompileFlowActive) {
+            AlertDialog(
+                onDismissRequest = { /* Modal */ },
+                containerColor = tokens.surface,
+                title = {
+                    Text(
+                        text = "Generating Magazine",
+                        style = LuxeTypography.headlineSmall.copy(color = tokens.primaryAccent, fontWeight = FontWeight.Bold)
+                    )
+                },
+                text = {
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        val step1Status = when (schemaState) {
+                            is SchemaState.Loading -> "loading"
+                            is SchemaState.Error -> "error"
+                            is SchemaState.Success -> "success"
+                            else -> "pending"
+                        }
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(vertical = 8.dp)
+                        ) {
+                            when (step1Status) {
+                                "loading" -> CircularProgressIndicator(modifier = Modifier.size(20.dp), color = tokens.primaryAccent, strokeWidth = 2.dp)
+                                "error" -> Icon(Icons.Default.Close, contentDescription = "Error", tint = Color.Red, modifier = Modifier.size(20.dp))
+                                "success" -> Icon(Icons.Default.Check, contentDescription = "Done", tint = Color.Green, modifier = Modifier.size(20.dp))
+                                else -> Icon(Icons.Default.Check, contentDescription = "Pending", tint = tokens.editorTextSecondary.copy(alpha = 0.5f), modifier = Modifier.size(20.dp))
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                text = "Content Curation (SchemaState)",
+                                color = if (step1Status == "error") Color.Red else if (step1Status == "loading") tokens.editorText else tokens.editorTextSecondary
+                            )
+                        }
+
+                        val step2Status = when (latexState) {
+                            is LatexState.Loading -> "loading"
+                            is LatexState.Error -> "error"
+                            is LatexState.Success -> "success"
+                            else -> "pending"
+                        }
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(vertical = 8.dp)
+                        ) {
+                            when (step2Status) {
+                                "loading" -> CircularProgressIndicator(modifier = Modifier.size(20.dp), color = tokens.primaryAccent, strokeWidth = 2.dp)
+                                "error" -> Icon(Icons.Default.Close, contentDescription = "Error", tint = Color.Red, modifier = Modifier.size(20.dp))
+                                "success" -> Icon(Icons.Default.Check, contentDescription = "Done", tint = Color.Green, modifier = Modifier.size(20.dp))
+                                else -> Icon(Icons.Default.Check, contentDescription = "Pending", tint = tokens.editorTextSecondary.copy(alpha = 0.5f), modifier = Modifier.size(20.dp))
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                text = "LaTeX Code Synthesis (LatexState)",
+                                color = if (step2Status == "error") Color.Red else if (step2Status == "loading") tokens.editorText else tokens.editorTextSecondary
+                            )
+                        }
+
+                        val step3Status = when (compileState) {
+                            is CompileState.Loading -> "loading"
+                            is CompileState.Error -> "error"
+                            is CompileState.Success -> "success"
+                            else -> "pending"
+                        }
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(vertical = 8.dp)
+                        ) {
+                            when (step3Status) {
+                                "loading" -> CircularProgressIndicator(modifier = Modifier.size(20.dp), color = tokens.primaryAccent, strokeWidth = 2.dp)
+                                "error" -> Icon(Icons.Default.Close, contentDescription = "Error", tint = Color.Red, modifier = Modifier.size(20.dp))
+                                "success" -> Icon(Icons.Default.Check, contentDescription = "Done", tint = Color.Green, modifier = Modifier.size(20.dp))
+                                else -> Icon(Icons.Default.Check, contentDescription = "Pending", tint = tokens.editorTextSecondary.copy(alpha = 0.5f), modifier = Modifier.size(20.dp))
+                            }
+                            Spacer(modifier = Modifier.width(12.dp))
+                            Text(
+                                text = "Cloud Compile & Download (CompileState)",
+                                color = if (step3Status == "error") Color.Red else if (step3Status == "loading") tokens.editorText else tokens.editorTextSecondary
+                            )
+                        }
+
+                        if (compileState is CompileState.Loading && compileState.message.isNotEmpty()) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = compileState.message,
+                                color = tokens.primaryAccent,
+                                style = LuxeTypography.bodySmall
+                            )
+                        }
+
+                        val errorMsg = when {
+                            schemaState is SchemaState.Error -> schemaState.message
+                            latexState is LatexState.Error -> latexState.message
+                            compileState is CompileState.Error -> compileState.message
+                            else -> null
+                        }
+                        if (errorMsg != null) {
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Text(
+                                text = errorMsg,
+                                color = Color.Red,
+                                style = LuxeTypography.bodyMedium
+                            )
+                        }
+                    }
+                },
+                confirmButton = {
+                    val hasError = schemaState is SchemaState.Error || latexState is LatexState.Error || compileState is CompileState.Error
+                    if (hasError) {
+                        TextButton(
+                            onClick = {
+                                if (selectedTabIndex == 0) {
+                                    val brief = (briefState as? BriefState.Success)?.brief
+                                    if (brief != null) {
+                                        onCompileFromBrief(prompt, composerConfig, brief)
+                                    }
+                                } else {
+                                    onCompileClicked(prompt, pages, composerConfig)
+                                }
+                            }
+                        ) {
+                            Text("Retry", color = tokens.primaryAccent)
+                        }
+                    }
+                },
+                dismissButton = {
+                    val hasError = schemaState is SchemaState.Error || latexState is LatexState.Error || compileState is CompileState.Error
+                    if (hasError) {
+                        TextButton(
+                            onClick = onCancel
+                        ) {
+                            Text("Cancel", color = tokens.editorTextSecondary)
+                        }
+                    }
+                }
+            )
+        }
     }
 }
 
 @Composable
-fun PageBlockCard(page: PageBlock, onUpdate: (PageBlock) -> Unit, onDelete: () -> Unit) {
+fun PageBlockCard(
+    page: PageBlock, 
+    onUpdate: (PageBlock) -> Unit, 
+    onDelete: () -> Unit,
+    onShowSnackbar: (String) -> Unit
+) {
     val tokens = com.magazineforge.app.ui.theme.LocalThemeTokens.current
     val darkSurface = tokens.surface
     val gold = tokens.primaryAccent
@@ -423,7 +678,7 @@ fun PageBlockCard(page: PageBlock, onUpdate: (PageBlock) -> Unit, onDelete: () -
                 Text(page.type.uppercase(), style = LuxeTypography.labelMedium.copy(color = gold))
                 Row {
                     IconButton(onClick = { showCustomizer = true }, modifier = Modifier.size(24.dp)) {
-                        Icon(Icons.Default.Settings, contentDescription = "Customize", tint = tokens.textPrimary.copy(alpha = 0.7f))
+                        Icon(Icons.Default.Settings, contentDescription = "Customize", tint = tokens.editorTextSecondary)
                     }
                     Spacer(modifier = Modifier.width(8.dp))
                     IconButton(onClick = onDelete, modifier = Modifier.size(24.dp)) {
@@ -458,10 +713,16 @@ fun PageBlockCard(page: PageBlock, onUpdate: (PageBlock) -> Unit, onDelete: () -
                                 if (path.isNotEmpty()) {
                                     val fullUrl = "${com.magazineforge.app.network.ApiClient.BASE_URL}$path"
                                     onUpdate(page.copy(imageUrl = fullUrl))
+                                    onShowSnackbar("Image uploaded successfully!")
+                                } else {
+                                    onShowSnackbar("Upload failed: Empty path returned.")
                                 }
+                            } else {
+                                onShowSnackbar("Upload failed: ${response.message()}")
                             }
                         } catch (e: Exception) {
                             e.printStackTrace()
+                            onShowSnackbar("Upload failed: ${e.localizedMessage ?: e.message}")
                         } finally {
                             isUploading = false
                         }
@@ -479,8 +740,11 @@ fun PageBlockCard(page: PageBlock, onUpdate: (PageBlock) -> Unit, onDelete: () -
                 singleLine = true,
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = gold,
-                    unfocusedTextColor = tokens.textPrimary,
-                    focusedTextColor = tokens.textPrimary
+                    unfocusedBorderColor = tokens.editorBorder,
+                    unfocusedTextColor = tokens.editorText,
+                    focusedTextColor = tokens.editorText,
+                    unfocusedPlaceholderColor = tokens.editorTextSecondary,
+                    focusedPlaceholderColor = tokens.editorTextSecondary
                 )
             )
             
@@ -499,7 +763,7 @@ fun PageBlockCard(page: PageBlock, onUpdate: (PageBlock) -> Unit, onDelete: () -
                 placeholder = { Text("Image URL or Google Drive Link") },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
-                leadingIcon = { Icon(Icons.Default.Image, contentDescription = "Image") },
+                leadingIcon = { Icon(Icons.Default.Image, contentDescription = "Image", tint = tokens.editorTextSecondary) },
                 trailingIcon = {
                     if (isUploading) {
                         CircularProgressIndicator(modifier = Modifier.size(24.dp), color = gold)
@@ -511,8 +775,11 @@ fun PageBlockCard(page: PageBlock, onUpdate: (PageBlock) -> Unit, onDelete: () -
                 },
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = gold,
-                    unfocusedTextColor = tokens.textPrimary,
-                    focusedTextColor = tokens.textPrimary
+                    unfocusedBorderColor = tokens.editorBorder,
+                    unfocusedTextColor = tokens.editorText,
+                    focusedTextColor = tokens.editorText,
+                    unfocusedPlaceholderColor = tokens.editorTextSecondary,
+                    focusedPlaceholderColor = tokens.editorTextSecondary
                 )
             )
         }

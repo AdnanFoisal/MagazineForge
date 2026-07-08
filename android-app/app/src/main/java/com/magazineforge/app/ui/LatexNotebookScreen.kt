@@ -13,7 +13,6 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalDensity
-import coil.compose.AsyncImage
 import kotlinx.coroutines.launch
 import com.magazineforge.app.ui.CompileState
 import androidx.compose.ui.Alignment
@@ -69,10 +68,11 @@ fun LatexNotebookScreen(
     onCodeChange: (String) -> Unit,
     onRewrite: ((String, String, (String?) -> Unit) -> Unit)? = null
 ) {
+    val tokens = com.magazineforge.app.ui.theme.LocalThemeTokens.current
+    
     var textFieldValue by remember { mutableStateOf(TextFieldValue(initialLatex)) }
     val latexCode = textFieldValue.text
     var isRewriting by remember { mutableStateOf(false) }
-    var isVisualMode by remember { mutableStateOf(false) }
 
     var undoStack by remember { mutableStateOf(listOf<String>()) }
     var redoStack by remember { mutableStateOf(listOf<String>()) }
@@ -88,6 +88,7 @@ fun LatexNotebookScreen(
             onCodeChange(newCode)
         }
     }
+    
     var showFindReplace by remember { mutableStateOf(false) }
     var findText by remember { mutableStateOf("") }
     var replaceText by remember { mutableStateOf("") }
@@ -121,12 +122,24 @@ fun LatexNotebookScreen(
         }
     }
 
-
-    
-    val bgCream = Color(0xFFFDFCEB)
-    val gutterColor = Color(0xFFEFEFEF)
-    val textDark = Color(0xFF2C2C2C)
-    val tabGreen = Color(0xFF4CAF50)
+    val editorBg = tokens.editorBackground
+    // A slightly lighter/darker color for the gutter to separate it from editorBg
+    val gutterColor = if (tokens.isDark) {
+        Color(
+            (editorBg.red + 0.05f).coerceAtMost(1f),
+            (editorBg.green + 0.05f).coerceAtMost(1f),
+            (editorBg.blue + 0.05f).coerceAtMost(1f)
+        )
+    } else {
+        Color(
+            (editorBg.red - 0.05f).coerceAtLeast(0f),
+            (editorBg.green - 0.05f).coerceAtLeast(0f),
+            (editorBg.blue - 0.05f).coerceAtLeast(0f)
+        )
+    }
+    val codeColor = tokens.editorText
+    val accentColor = tokens.primaryAccent
+    val secondaryTextColor = tokens.editorTextSecondary
     
     val scrollState = rememberScrollState()
 
@@ -135,13 +148,13 @@ fun LatexNotebookScreen(
         drawerContent = {
             ModalDrawerSheet(
                 modifier = Modifier.width(280.dp),
-                drawerContainerColor = Color.White
+                drawerContainerColor = tokens.surface
             ) {
-                Text("Document Outline", fontSize = 18.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(16.dp))
-                Divider()
+                Text("Document Outline", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = tokens.textPrimary, modifier = Modifier.padding(16.dp))
+                Divider(color = tokens.secondaryAccent.copy(alpha=0.3f))
                 outlineItems.forEach { item ->
                     NavigationDrawerItem(
-                        label = { Text(item.title, fontSize = 14.sp) },
+                        label = { Text(item.title, fontSize = 14.sp, color = tokens.textPrimary) },
                         selected = false,
                         onClick = {
                             coroutineScope.launch {
@@ -164,7 +177,7 @@ fun LatexNotebookScreen(
                 TopAppBar(
                     title = { 
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("magazine.tex", color = Color.Black, fontSize = 16.sp, fontWeight = FontWeight.Medium)
+                            Text("magazine.tex", color = codeColor, fontSize = 16.sp, fontWeight = FontWeight.Medium)
                             
                             if (compileState != null && compileState !is CompileState.Idle && compileState !is CompileState.Loading) {
                                 Spacer(modifier = Modifier.width(8.dp))
@@ -173,60 +186,57 @@ fun LatexNotebookScreen(
                                     modifier = Modifier
                                         .size(8.dp)
                                         .clip(androidx.compose.foundation.shape.CircleShape)
-                                        .background(if (isSuccess) tabGreen else Color.Red)
+                                        .background(if (isSuccess) accentColor else Color.Red)
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
                                 Text(
                                     text = if (isSuccess) "Success" else "Failed",
-                                    color = Color.Gray,
+                                    color = secondaryTextColor,
                                     fontSize = 12.sp
                                 )
                             }
                         }
                     },
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White),
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = editorBg),
                     navigationIcon = {
                         Row {
                             IconButton(onClick = onBack) {
-                                Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.Black)
+                                Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = codeColor)
                             }
                             IconButton(onClick = { coroutineScope.launch { drawerState.open() } }) {
-                                Icon(Icons.Default.Menu, contentDescription = "Outline", tint = Color.Black)
+                                Icon(Icons.Default.Menu, contentDescription = "Outline", tint = codeColor)
                             }
                         }
                     },
                     actions = {
                         IconButton(onClick = { onCompile(latexCode) }, enabled = !isCompiling) {
                             if (isCompiling) {
-                                CircularProgressIndicator(modifier = Modifier.size(24.dp), color = tabGreen, strokeWidth = 2.dp)
+                                CircularProgressIndicator(modifier = Modifier.size(24.dp), color = accentColor, strokeWidth = 2.dp)
                             } else {
-                                Icon(Icons.Default.PlayArrow, contentDescription = "Compile", tint = tabGreen)
+                                Icon(Icons.Default.PlayArrow, contentDescription = "Compile", tint = accentColor)
                             }
                         }
                         IconButton(onClick = { showFindReplace = !showFindReplace }) {
-                            Icon(Icons.Default.Search, contentDescription = "Search", tint = Color.DarkGray)
-                        }
-                        IconButton(onClick = { isVisualMode = !isVisualMode }) {
-                            Icon(if (isVisualMode) Icons.Default.Code else Icons.Default.Visibility, contentDescription = "Toggle Mode", tint = Color.DarkGray)
+                            Icon(Icons.Default.Search, contentDescription = "Search", tint = secondaryTextColor)
                         }
                         Box {
                             IconButton(onClick = { showMenu = true }) {
-                                Icon(Icons.Default.MoreVert, contentDescription = "More", tint = Color.DarkGray)
+                                Icon(Icons.Default.MoreVert, contentDescription = "More", tint = secondaryTextColor)
                             }
                             DropdownMenu(
                                 expanded = showMenu,
                                 onDismissRequest = { showMenu = false },
-                                modifier = Modifier.background(Color.White)
+                                modifier = Modifier.background(tokens.surface)
                             ) {
                                 DropdownMenuItem(
-                                    text = { Text("Copy Code") },
+                                    text = { Text("Copy Code", color = tokens.textPrimary) },
                                     onClick = {
                                         showMenu = false
                                         clipboardManager.setText(AnnotatedString(latexCode))
                                     }
                                 )
                                 DropdownMenuItem(
-                                    text = { Text("Clear Editor") },
+                                    text = { Text("Clear Editor", color = tokens.textPrimary) },
                                     onClick = {
                                         showMenu = false
                                         undoStack = undoStack + latexCode
@@ -236,7 +246,7 @@ fun LatexNotebookScreen(
                                     }
                                 )
                                 DropdownMenuItem(
-                                    text = { Text("Reset to Template") },
+                                    text = { Text("Reset to Template", color = tokens.textPrimary) },
                                     onClick = {
                                         showMenu = false
                                         undoStack = undoStack + latexCode
@@ -245,7 +255,7 @@ fun LatexNotebookScreen(
                                     }
                                 )
                                 DropdownMenuItem(
-                                    text = { Text("Share") },
+                                    text = { Text("Share", color = tokens.textPrimary) },
                                     onClick = {
                                         showMenu = false
                                         val sendIntent: Intent = Intent().apply {
@@ -262,19 +272,19 @@ fun LatexNotebookScreen(
                     }
                 )
                 Row(
-                    modifier = Modifier.fillMaxWidth().background(Color.White).padding(horizontal = 16.dp)
+                    modifier = Modifier.fillMaxWidth().background(editorBg).padding(horizontal = 16.dp)
                 ) {
                     Column {
-                        Text("*magazine.tex", color = Color.Black, fontSize = 14.sp, modifier = Modifier.padding(bottom = 4.dp))
-                        Box(modifier = Modifier.height(2.dp).width(100.dp).background(tabGreen))
+                        Text("*magazine.tex", color = codeColor, fontSize = 14.sp, modifier = Modifier.padding(bottom = 4.dp))
+                        Box(modifier = Modifier.height(2.dp).width(100.dp).background(accentColor))
                     }
                 }
-                Divider(color = Color.LightGray, thickness = 1.dp)
+                Divider(color = tokens.secondaryAccent.copy(alpha=0.3f), thickness = 1.dp)
                 if (showFindReplace) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .background(Color.White)
+                            .background(editorBg)
                             .padding(horizontal = 16.dp, vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -282,18 +292,26 @@ fun LatexNotebookScreen(
                         OutlinedTextField(
                             value = findText,
                             onValueChange = { findText = it },
-                            label = { Text("Find", fontSize = 12.sp) },
+                            label = { Text("Find", fontSize = 12.sp, color = secondaryTextColor) },
                             modifier = Modifier.weight(1f),
                             singleLine = true,
-                            textStyle = TextStyle(fontSize = 14.sp)
+                            textStyle = TextStyle(fontSize = 14.sp, color = codeColor),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = accentColor,
+                                unfocusedBorderColor = tokens.editorBorder,
+                            )
                         )
                         OutlinedTextField(
                             value = replaceText,
                             onValueChange = { replaceText = it },
-                            label = { Text("Replace", fontSize = 12.sp) },
+                            label = { Text("Replace", fontSize = 12.sp, color = secondaryTextColor) },
                             modifier = Modifier.weight(1f),
                             singleLine = true,
-                            textStyle = TextStyle(fontSize = 14.sp)
+                            textStyle = TextStyle(fontSize = 14.sp, color = codeColor),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = accentColor,
+                                unfocusedBorderColor = tokens.editorBorder,
+                            )
                         )
                         Button(
                             onClick = {
@@ -304,14 +322,14 @@ fun LatexNotebookScreen(
                                     updateLatex(updated)
                                 }
                             },
-                            colors = ButtonDefaults.buttonColors(containerColor = tabGreen),
+                            colors = ButtonDefaults.buttonColors(containerColor = accentColor),
                             contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
                             modifier = Modifier.height(40.dp)
                         ) {
-                            Text("Replace", color = Color.White, fontSize = 12.sp)
+                            Text("Replace", color = if(tokens.isDark) Color.White else Color.Black, fontSize = 12.sp)
                         }
                     }
-                    Divider(color = Color.LightGray, thickness = 1.dp)
+                    Divider(color = tokens.secondaryAccent.copy(alpha=0.3f), thickness = 1.dp)
                 }
             }
         },
@@ -341,11 +359,11 @@ fun LatexNotebookScreen(
                                 Text("Jump", color = Color.Red, fontSize = 12.sp, fontWeight = FontWeight.Bold)
                             }
                         }
-                        Divider(color = Color.LightGray, thickness = 1.dp)
+                        Divider(color = tokens.secondaryAccent.copy(alpha=0.3f), thickness = 1.dp)
                     }
                 }
                 BottomAppBar(
-                containerColor = Color(0xFFF5F5F5),
+                containerColor = editorBg,
                 contentPadding = PaddingValues(horizontal = 8.dp),
                 modifier = Modifier.height(48.dp)
             ) {
@@ -354,10 +372,10 @@ fun LatexNotebookScreen(
                     horizontalArrangement = Arrangement.SpaceEvenly,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Icon(Icons.Default.Folder, contentDescription = "Folder", tint = Color.Gray, modifier = Modifier.size(20.dp))
-                    Icon(Icons.Default.ContentPaste, contentDescription = "Paste", tint = Color.Gray, modifier = Modifier.size(20.dp))
+                    Icon(Icons.Default.Folder, contentDescription = "Folder", tint = secondaryTextColor, modifier = Modifier.size(20.dp))
+                    Icon(Icons.Default.ContentPaste, contentDescription = "Paste", tint = secondaryTextColor, modifier = Modifier.size(20.dp))
                     
-                    Icon(Icons.Default.Undo, contentDescription = "Undo", tint = if (undoStack.isNotEmpty()) Color.Black else Color.Gray, modifier = Modifier.size(20.dp).clickable(enabled = undoStack.isNotEmpty()) {
+                    Icon(Icons.Default.Undo, contentDescription = "Undo", tint = if (undoStack.isNotEmpty()) codeColor else secondaryTextColor, modifier = Modifier.size(20.dp).clickable(enabled = undoStack.isNotEmpty()) {
                         if (undoStack.isNotEmpty()) {
                             redoStack = redoStack + latexCode
                             val prev = undoStack.last()
@@ -367,7 +385,7 @@ fun LatexNotebookScreen(
                         }
                     })
                     
-                    Icon(Icons.Default.Redo, contentDescription = "Redo", tint = if (redoStack.isNotEmpty()) Color.Black else Color.Gray, modifier = Modifier.size(20.dp).clickable(enabled = redoStack.isNotEmpty()) {
+                    Icon(Icons.Default.Redo, contentDescription = "Redo", tint = if (redoStack.isNotEmpty()) codeColor else secondaryTextColor, modifier = Modifier.size(20.dp).clickable(enabled = redoStack.isNotEmpty()) {
                         if (redoStack.isNotEmpty()) {
                             undoStack = undoStack + latexCode
                             val next = redoStack.last()
@@ -377,107 +395,100 @@ fun LatexNotebookScreen(
                         }
                     })
                     
-                    Icon(Icons.Default.Search, contentDescription = "Search", tint = Color.Black, modifier = Modifier.size(20.dp).clickable { showFindReplace = !showFindReplace })
-                    Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = Color.Gray, modifier = Modifier.size(20.dp))
-                    Icon(Icons.Default.ArrowForward, contentDescription = "Forward", tint = Color.Gray, modifier = Modifier.size(20.dp))
-                    Icon(Icons.Default.Save, contentDescription = "Save", tint = Color.Black, modifier = Modifier.size(20.dp).clickable { createDocumentLauncher.launch("magazine.tex") })
+                    Icon(Icons.Default.Search, contentDescription = "Search", tint = codeColor, modifier = Modifier.size(20.dp).clickable { showFindReplace = !showFindReplace })
+                    Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = secondaryTextColor, modifier = Modifier.size(20.dp))
+                    Icon(Icons.Default.ArrowForward, contentDescription = "Forward", tint = secondaryTextColor, modifier = Modifier.size(20.dp))
+                    Icon(Icons.Default.Save, contentDescription = "Save", tint = codeColor, modifier = Modifier.size(20.dp).clickable { createDocumentLauncher.launch("magazine.tex") })
                 }
             }
         }
     },
-    containerColor = bgCream
+    containerColor = editorBg
     ) { paddingValues ->
-        if (isVisualMode) {
-            VisualEditor(latexCode, schemaState, onPatchAndRecompile = { newCode ->
-                updateLatex(newCode)
-                textFieldValue = TextFieldValue(newCode)
-            })
-        } else {
-            val lineCount = latexCode.count { it == '\n' } + 1
-            val lineNumbersText = (1..lineCount).joinToString("\n")
+        val lineCount = latexCode.count { it == '\n' } + 1
+        val lineNumbersText = (1..lineCount).joinToString("\n")
 
-            Row(
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+        ) {
+            Box(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues)
+                    .fillMaxHeight()
+                    .width(40.dp)
+                    .background(gutterColor)
+                    .padding(top = 16.dp, bottom = 16.dp)
             ) {
-                Box(
+                Column(
                     modifier = Modifier
-                        .fillMaxHeight()
-                        .width(40.dp)
-                        .background(gutterColor)
-                        .padding(top = 16.dp, bottom = 16.dp)
+                        .fillMaxWidth()
+                        .verticalScroll(scrollState)
+                        .padding(end = 6.dp),
+                    horizontalAlignment = Alignment.End
                 ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .verticalScroll(scrollState)
-                            .padding(end = 6.dp),
-                        horizontalAlignment = Alignment.End
-                    ) {
-                        Text(
-                            text = lineNumbersText,
-                            color = Color.Gray,
-                            fontSize = 14.sp,
-                            fontFamily = FontFamily.Monospace,
-                            lineHeight = 20.sp
-                        )
-                    }
-                }
-                
-                Divider(color = Color.LightGray, modifier = Modifier.width(1.dp).fillMaxHeight())
-                
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxHeight()
-                        .background(bgCream)
-                        .padding(16.dp)
-                ) {
-                    BasicTextField(
-                        value = textFieldValue,
-                        onValueChange = { newVal: TextFieldValue ->
-                            updateLatex(newVal.text)
-                            textFieldValue = newVal
-                        },
-                        visualTransformation = SearchHighlightTransformation(findText),
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .verticalScroll(scrollState)
-                            .horizontalScroll(rememberScrollState()),
-                        textStyle = TextStyle(
-                            fontFamily = FontFamily.Monospace,
-                            fontSize = 14.sp,
-                            color = textDark,
-                            lineHeight = 20.sp
-                        ),
-                        cursorBrush = androidx.compose.ui.graphics.SolidColor(tabGreen)
+                    Text(
+                        text = lineNumbersText,
+                        color = secondaryTextColor,
+                        fontSize = 14.sp,
+                        fontFamily = FontFamily.Monospace,
+                        lineHeight = 20.sp
                     )
-                    
-                    if (textFieldValue.selection.length > 0 && onRewrite != null) {
-                        Box(modifier = Modifier.align(Alignment.TopEnd).padding(16.dp).background(Color.White, RoundedCornerShape(8.dp)).padding(4.dp)) {
-                            if (isRewriting) {
-                                CircularProgressIndicator(modifier = Modifier.size(24.dp).padding(4.dp), color = tabGreen)
-                            } else {
-                                Row {
-                                    listOf("Rewrite", "Punch up", "Shorten").forEach { action ->
-                                        TextButton(onClick = {
-                                            isRewriting = true
-                                            val selectedText = textFieldValue.text.substring(textFieldValue.selection.start, textFieldValue.selection.end)
-                                            onRewrite(selectedText, action) { rewritten ->
-                                                isRewriting = false
-                                                if (rewritten != null) {
-                                                    val prefix = textFieldValue.text.substring(0, textFieldValue.selection.start)
-                                                    val suffix = textFieldValue.text.substring(textFieldValue.selection.end)
-                                                    val newCode = prefix + rewritten + suffix
-                                                    undoStack = undoStack + latexCode
-                                                    textFieldValue = TextFieldValue(newCode, selection = TextRange(prefix.length, prefix.length + rewritten.length))
-                                                    updateLatex(newCode)
-                                                }
+                }
+            }
+            
+            Divider(color = tokens.secondaryAccent.copy(alpha=0.3f), modifier = Modifier.width(1.dp).fillMaxHeight())
+            
+            Box(
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxHeight()
+                    .background(editorBg)
+                    .padding(16.dp)
+            ) {
+                BasicTextField(
+                    value = textFieldValue,
+                    onValueChange = { newVal: TextFieldValue ->
+                        updateLatex(newVal.text)
+                        textFieldValue = newVal
+                    },
+                    visualTransformation = SearchHighlightTransformation(findText),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(scrollState)
+                        .horizontalScroll(rememberScrollState()),
+                    textStyle = TextStyle(
+                        fontFamily = FontFamily.Monospace,
+                        fontSize = 14.sp,
+                        color = codeColor,
+                        lineHeight = 20.sp
+                    ),
+                    cursorBrush = androidx.compose.ui.graphics.SolidColor(accentColor)
+                )
+                
+                if (textFieldValue.selection.length > 0 && onRewrite != null) {
+                    Box(modifier = Modifier.align(Alignment.TopEnd).padding(16.dp).background(tokens.surface, RoundedCornerShape(8.dp)).padding(4.dp)) {
+                        if (isRewriting) {
+                            CircularProgressIndicator(modifier = Modifier.size(24.dp).padding(4.dp), color = accentColor)
+                        } else {
+                            Row {
+                                listOf("Rewrite", "Punch up", "Shorten").forEach { action ->
+                                    TextButton(onClick = {
+                                        isRewriting = true
+                                        val selectedText = textFieldValue.text.substring(textFieldValue.selection.start, textFieldValue.selection.end)
+                                        onRewrite(selectedText, action) { rewritten ->
+                                            isRewriting = false
+                                            if (rewritten != null) {
+                                                val prefix = textFieldValue.text.substring(0, textFieldValue.selection.start)
+                                                val suffix = textFieldValue.text.substring(textFieldValue.selection.end)
+                                                val newCode = prefix + rewritten + suffix
+                                                undoStack = undoStack + latexCode
+                                                textFieldValue = TextFieldValue(newCode, selection = TextRange(prefix.length, prefix.length + rewritten.length))
+                                                updateLatex(newCode)
                                             }
-                                        }) {
-                                            Text(action, color = tabGreen, fontSize = 12.sp)
                                         }
+                                    }) {
+                                        Text(action, color = accentColor, fontSize = 12.sp)
                                     }
                                 }
                             }
@@ -488,150 +499,4 @@ fun LatexNotebookScreen(
         }
     }
 }
-}
-
-data class TapZone(val field: String, val left: Float, val top: Float, val right: Float, val bottom: Float)
-
-val templateTapZones = mapOf(
-    "cover" to listOf(
-        TapZone("main_title", 0.05f, 0.05f, 0.95f, 0.25f),
-        TapZone("subtitle", 0.05f, 0.25f, 0.95f, 0.35f),
-        TapZone("image_url", 0.0f, 0.35f, 1.0f, 1.0f)
-    ),
-    "article" to listOf(
-        TapZone("headline", 0.05f, 0.05f, 0.95f, 0.15f),
-        TapZone("subheadline", 0.05f, 0.15f, 0.95f, 0.25f),
-        TapZone("body_copy", 0.05f, 0.25f, 0.95f, 0.95f)
-    )
-)
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun VisualEditor(
-    latexCode: String,
-    schemaState: com.magazineforge.app.ui.SchemaState?,
-    onPatchAndRecompile: (String) -> Unit
-) {
-    var currentPage by remember { mutableStateOf(1) }
-    var imageBytes by remember { mutableStateOf<ByteArray?>(null) }
-    var isLoading by remember { mutableStateOf(false) }
-    var errorMsg by remember { mutableStateOf<String?>(null) }
-
-    var selectedZone by remember { mutableStateOf<TapZone?>(null) }
-    var editValue by remember { mutableStateOf("") }
-    val sheetState = rememberModalBottomSheetState()
-    val scope = rememberCoroutineScope()
-    var showSheet by remember { mutableStateOf(false) }
-
-    LaunchedEffect(currentPage, latexCode) {
-        isLoading = true
-        errorMsg = null
-        try {
-            val request = com.magazineforge.app.models.RenderPageRequest(latexCode = latexCode, pageNumber = currentPage)
-            val response = com.magazineforge.app.network.ApiClient.retrofitService.renderPage(request)
-            if (response.isSuccessful) {
-                imageBytes = response.body()?.bytes()
-            } else {
-                errorMsg = "Failed to render page"
-            }
-        } catch (e: Exception) {
-            errorMsg = e.message
-        }
-        isLoading = false
-    }
-
-    Box(modifier = Modifier.fillMaxSize()) {
-        Column(modifier = Modifier.fillMaxSize()) {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(8.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(onClick = { if (currentPage > 1) currentPage-- }) {
-                    Icon(Icons.Default.ArrowBack, contentDescription = "Prev Page")
-                }
-                Text("Page $currentPage")
-                IconButton(onClick = { currentPage++ }) {
-                    Icon(Icons.Default.ArrowForward, contentDescription = "Next Page")
-                }
-            }
-            
-            Box(
-                modifier = Modifier
-                    .weight(1f)
-                    .fillMaxWidth()
-                    .background(Color.LightGray)
-            ) {
-                if (isLoading) {
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.Center))
-                } else if (errorMsg != null) {
-                    Text(errorMsg!!, color = Color.Red, modifier = Modifier.align(Alignment.Center))
-                } else if (imageBytes != null) {
-                    
-                    
-                    AsyncImage(
-                        model = imageBytes,
-                        contentDescription = "Rendered Page",
-                        modifier = Modifier.fillMaxSize(),
-                        contentScale = androidx.compose.ui.layout.ContentScale.Fit
-                    )
-                    
-                    // Invisible clickable overlays based on template
-                    val zones = if (currentPage == 1) templateTapZones["cover"] else templateTapZones["article"]
-                    zones?.forEach { zone ->
-                        Box(
-                            modifier = Modifier
-                                .fillMaxSize()
-                                .padding(
-                                    start = (zone.left * 300).dp, // Placeholder sizing
-                                    top = (zone.top * 400).dp
-                                )
-                                .clickable {
-                                    selectedZone = zone
-                                    editValue = "" // Try to extract existing text if possible, or just start empty
-                                    showSheet = true
-                                    scope.launch { sheetState.show() }
-                                }
-                        )
-                    }
-                }
-            }
-        }
-
-        if (showSheet && selectedZone != null) {
-            ModalBottomSheet(
-                onDismissRequest = { showSheet = false },
-                sheetState = sheetState
-            ) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text("Edit ${selectedZone?.field}", fontWeight = FontWeight.Bold)
-                    Spacer(modifier = Modifier.height(8.dp))
-                    OutlinedTextField(
-                        value = editValue,
-                        onValueChange = { editValue = it },
-                        modifier = Modifier.fillMaxWidth(),
-                        minLines = 3
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    Button(
-                        onClick = {
-                            // Simple string replacement for now. In a real app we'd regex or update schema.
-                            // Assuming the text edit is just prepending/appending for safety, or if we extract it, we replace it.
-                            val newCode = latexCode + "\n% Edit: ${selectedZone?.field} -> $editValue"
-                            onPatchAndRecompile(newCode)
-                            scope.launch { sheetState.hide() }.invokeOnCompletion {
-                                if (!sheetState.isVisible) {
-                                    showSheet = false
-                                }
-                            }
-                        },
-                        modifier = Modifier.align(Alignment.End)
-                    ) {
-                        Text("Save")
-                    }
-                    Spacer(modifier = Modifier.height(32.dp))
-                }
-            }
-        }
-    }
 }

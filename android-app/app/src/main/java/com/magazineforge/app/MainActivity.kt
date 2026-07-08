@@ -325,12 +325,19 @@ class MainActivity : ComponentActivity() {
                                         LatexNotebookScreen(
                                             initialLatex = viewModel.getLatexCode() ?: (latexState as? LatexState.Success)?.latexCode ?: "",
                                             isCompiling = isCompileLoading,
+                                            compileState = compileState,
+                                            schemaState = schemaState,
                                             onCompile = { code ->
                                                 viewModel.compileRaw(applicationContext, code)
                                             },
                                             onBack = { currentScreen = "gallery" },
                                             onCodeChange = { code ->
                                                 viewModel.updateLatexCode(code)
+                                            },
+                                            onRewrite = { text, instruction, onResult ->
+                                                val geminiKey = sharedPreferences.getString("api_key", "") ?: ""
+                                                val backupKey = sharedPreferences.getString("backup_key", null)
+                                                viewModel.rewriteSelection(geminiKey, backupKey, text, instruction, onResult)
                                             }
                                         )
                                     }

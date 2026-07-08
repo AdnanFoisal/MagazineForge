@@ -248,6 +248,29 @@ class EditorViewModel : ViewModel() {
 
 
 
+    fun rewriteSelection(geminiKey: String, backupKey: String?, text: String, instruction: String, onResult: (String?) -> Unit) {
+        viewModelScope.launch {
+            try {
+                val request = com.magazineforge.app.models.RewriteSelectionRequest(text = text, instruction = instruction)
+                var response = ApiClient.retrofitService.rewriteSelection(geminiKey, request)
+                
+                if (!response.isSuccessful && (response.code() == 401 || response.code() == 429)) {
+                    if (!backupKey.isNullOrBlank()) {
+                        response = ApiClient.retrofitService.rewriteSelection(backupKey, request)
+                    }
+                }
+                
+                if (response.isSuccessful) {
+                    onResult(response.body()?.rewrittenText)
+                } else {
+                    onResult(null)
+                }
+            } catch (e: Exception) {
+                onResult(null)
+            }
+        }
+    }
+
     fun compileRaw(context: Context, latexCode: String, topic: String = "magazine", variant: String = "variant", fromShowcase: Boolean = false) {
         this.currentTopic = topic
         this.currentVariant = variant

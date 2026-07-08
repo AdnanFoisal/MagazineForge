@@ -61,7 +61,16 @@ interface ApiService {
 
 
     @POST("compile-raw")
-    suspend fun compileRaw(
+    @POST(" render-page\)
+ suspend fun renderPage(@Body request: com.magazineforge.app.models.RenderPageRequest): Response<ResponseBody>
+
+ suspend fun compileRaw(
         @Body request: com.magazineforge.app.models.CompileRawRequest
     ): Response<com.magazineforge.app.models.CompileRawResponse>
+
+    @POST("rewrite-selection")
+    suspend fun rewriteSelection(
+        @Header("X-Gemini-Key") geminiKey: String,
+        @Body request: com.magazineforge.app.models.RewriteSelectionRequest
+    ): Response<com.magazineforge.app.models.RewriteSelectionResponse>
 }

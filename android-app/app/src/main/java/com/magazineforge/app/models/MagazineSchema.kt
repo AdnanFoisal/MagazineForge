@@ -170,6 +170,11 @@ data class GenerateLatexResponse(
 )
 
 
+data class RenderPageRequest(
+    @SerializedName(" latexCode\) val latexCode: String,
+ @SerializedName(\pageNumber\) val pageNumber: Int
+)
+
 data class CompileRawRequest(
     @SerializedName("latexCode")
     val latexCode: String
@@ -178,4 +183,13 @@ data class CompileRawRequest(
 data class CompileRawResponse(
     @SerializedName("jobId")
     val jobId: String
+)
+
+data class RewriteSelectionRequest(
+    @SerializedName("text") val text: String,
+    @SerializedName("instruction") val instruction: String
+)
+
+data class RewriteSelectionResponse(
+    @SerializedName("rewrittenText") val rewrittenText: String
 )

@@ -256,8 +256,11 @@ class MainActivity : ComponentActivity() {
                                         templateVariant = selectedTemplate,
                                         templateName = selectedTemplateName,
                                         initialPrompt = initialEditorPrompt,
-                                        isCompileLoading = schemaState is SchemaState.Loading,
+                                        isCompileLoading = schemaState is SchemaState.Loading || latexState is LatexState.Loading || compileState is CompileState.Loading,
                                         briefState = briefState,
+                                        schemaState = schemaState,
+                                        latexState = latexState,
+                                        compileState = compileState,
                                         onGenerateBrief = { prompt, referenceImages ->
                                             viewModel.generateBrief(apiKey, backupApiKey, prompt, referenceImages)
                                         },
@@ -295,6 +298,9 @@ class MainActivity : ComponentActivity() {
                                                 templateName = selectedTemplate,
                                                 config = config
                                             )
+                                        },
+                                        onCancel = {
+                                            viewModel.resetState()
                                         },
                                         onBack = {
                                             currentScreen = "gallery"

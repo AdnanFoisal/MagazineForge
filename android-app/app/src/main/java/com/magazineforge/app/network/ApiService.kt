@@ -41,6 +41,12 @@ interface ApiService {
         @Path("job_id") jobId: String
     ): Response<ResponseBody>
 
+    @POST("generate-brief")
+    suspend fun generateBrief(
+        @Header("X-Gemini-Key") geminiKey: String,
+        @Body request: com.magazineforge.app.models.GenerateBriefRequest
+    ): Response<com.magazineforge.app.models.GenerateBriefResponse>
+
     @POST("generate-schema")
     suspend fun generateSchema(
         @Header("X-Gemini-Key") geminiKey: String,

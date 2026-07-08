@@ -103,11 +103,58 @@ data class BackCoverSchema(
     var imageUrl: String?
 )
 
+data class BriefArticle(
+    @SerializedName("topic")
+    val topic: String
+)
+
+data class GenerateBriefResponse(
+    @SerializedName("category")
+    val category: String,
+    @SerializedName("titles")
+    val titles: List<String>,
+    @SerializedName("tone")
+    val tone: String,
+    @SerializedName("style_dna")
+    val styleDna: String,
+    @SerializedName("article_count")
+    val articleCount: Int,
+    @SerializedName("articles")
+    val articles: List<BriefArticle>
+)
+
+data class GenerateBriefRequest(
+    @SerializedName("prompt")
+    val prompt: String,
+    @SerializedName("referenceImages")
+    val referenceImages: List<String> = emptyList()
+)
+
 data class GenerateSchemaRequest(
     @SerializedName("topic")
     val topic: String,
     @SerializedName("templateVariant")
-    val templateVariant: String
+    val templateVariant: String,
+    @SerializedName("tone")
+    val tone: String = "Professional",
+    @SerializedName("layoutDensity")
+    val layoutDensity: String = "Balanced",
+    @SerializedName("enableMasthead")
+    val enableMasthead: Boolean = true,
+    @SerializedName("mastheadAngle")
+    val mastheadAngle: String = "",
+    @SerializedName("enableSidebar")
+    val enableSidebar: Boolean = true,
+    @SerializedName("sidebarTopic")
+    val sidebarTopic: String = "",
+    @SerializedName("enablePullQuote")
+    val enablePullQuote: Boolean = true,
+    @SerializedName("enableBackCover")
+    val enableBackCover: Boolean = true,
+    @SerializedName("enableTocTeasers")
+    val enableTocTeasers: Boolean = true,
+    @SerializedName("enableByline")
+    val enableByline: Boolean = true
 )
 
 data class GenerateLatexRequest(

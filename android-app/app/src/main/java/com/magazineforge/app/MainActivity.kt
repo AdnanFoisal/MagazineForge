@@ -94,6 +94,7 @@ class MainActivity : ComponentActivity() {
                     var verifyError by remember { mutableStateOf<String?>(null) }
                     var verifySuccess by remember { mutableStateOf<Boolean?>(null) }
                     
+                    val briefState by viewModel.briefState.collectAsState()
                     val schemaState by viewModel.schemaState.collectAsState()
                     val latexState by viewModel.latexState.collectAsState()
                     val compileState by viewModel.compileState.collectAsState()
@@ -293,8 +294,23 @@ class MainActivity : ComponentActivity() {
                                         templateVariant = selectedTemplate,
                                         templateName = selectedTemplateName,
                                         initialPrompt = initialEditorPrompt,
-                                        isCompileLoading = isCompileLoading,
-                                        onCompileClicked = { magazineTopic, pages ->
+                                        isCompileLoading = schemaState is SchemaState.Loading,
+                                        briefState = briefState,
+                                        onGenerateBrief = { prompt ->
+                                            viewModel.generateBrief(apiKey, backupApiKey, prompt)
+                                        },
+                                        onCompileFromBrief = { prompt, config, brief ->
+                                            viewModel.generateSchema(
+                                                geminiKey = apiKey, 
+                                                backupKey = backupApiKey, 
+                                                magazineTopic = prompt, 
+                                                templateName = selectedTemplate,
+                                                config = config,
+                                                tone = brief.tone,
+                                                layoutDensity = brief.styleDna
+                                            )
+                                        },
+                                        onCompileClicked = { magazineTopic, pages, config ->
                                             val finalTopic = if (pages.isEmpty()) {
                                                 magazineTopic
                                             } else {
@@ -305,15 +321,18 @@ class MainActivity : ComponentActivity() {
                                                     Target Image URL: ${it.imageUrl}
                                                     [CUSTOMIZATION CONFIGURATION]:
                                                     - Writing Tone: ${it.tone}
-                                                    - Color Palette: ${it.colorPalette}
-                                                    - Image Style: ${it.imageStyle}
                                                     - Layout Density: ${it.layoutDensity}
-                                                    - Target Audience: ${it.targetAudience}
                                                     """.trimIndent()
                                                 }
-                                                "Theme: $magazineTopic\n\nRequired Structure:\n$pagesStr\n\n(CRITICAL INSTRUCTION: You MUST strictly adhere to the [CUSTOMIZATION CONFIGURATION] for each page. Adapt your language, formatting, and generation to perfectly match the requested Tone, Color Palette, Image Style, Layout Density, and Target Audience. You MUST also use the exact Target Image URLs provided above for each corresponding page. Do NOT override them with Unsplash URLs unless no Target Image URL was provided.)"
+                                                "Theme: $magazineTopic\n\nRequired Structure:\n$pagesStr\n\n(CRITICAL INSTRUCTION: You MUST strictly adhere to the [CUSTOMIZATION CONFIGURATION] for each page. Adapt your language, formatting, and generation to perfectly match the requested Tone and Layout Density. You MUST also use the exact Target Image URLs provided above for each corresponding page. Do NOT override them with Unsplash URLs unless no Target Image URL was provided.)"
                                             }
-                                            viewModel.generateSchema(apiKey, backupApiKey, finalTopic, selectedTemplate)
+                                            viewModel.generateSchema(
+                                                geminiKey = apiKey, 
+                                                backupKey = backupApiKey, 
+                                                magazineTopic = finalTopic, 
+                                                templateName = selectedTemplate,
+                                                config = config
+                                            )
                                         },
                                         onBack = {
                                             currentScreen = "gallery"

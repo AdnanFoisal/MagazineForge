@@ -37,11 +37,21 @@ data class PageBlock(
     var topic: String = "",
     var imageUrl: String = "",
     var tone: String = "Professional",
-    var colorPalette: String = "Dark Mode",
-    var imageStyle: String = "Photorealistic",
-    var layoutDensity: String = "Balanced",
-    var targetAudience: String = "General"
+    var layoutDensity: String = "Balanced"
 )
+
+data class SectionComposerConfig(
+    var enableMasthead: Boolean = true,
+    var mastheadAngle: String = "",
+    var enableSidebar: Boolean = true,
+    var sidebarTopic: String = "",
+    var enablePullQuote: Boolean = true,
+    var enableBackCover: Boolean = true,
+    var enableTocTeasers: Boolean = true,
+    var enableByline: Boolean = true
+)
+
+import com.magazineforge.app.models.GenerateBriefResponse
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -50,18 +60,31 @@ fun EditorScreen(
     templateName: String = "",
     initialPrompt: String = "",
     isCompileLoading: Boolean,
-    onCompileClicked: (String, List<PageBlock>) -> Unit,
+    briefState: BriefState,
+    onGenerateBrief: (String, List<String>) -> Unit,
+    onCompileFromBrief: (String, SectionComposerConfig, GenerateBriefResponse) -> Unit,
+    onCompileClicked: (String, List<PageBlock>, SectionComposerConfig) -> Unit,
     onBack: () -> Unit
 ) {
     var prompt by remember { mutableStateOf(initialPrompt) }
     var selectedTabIndex by remember { mutableStateOf(0) }
     val pages = remember { mutableStateListOf<PageBlock>() }
-    
+    var composerConfig by remember { mutableStateOf(SectionComposerConfig()) }
+    var showComposer by remember { mutableStateOf(false) }
+
     val obsidian = PitchBlack
     val darkSurface = DarkSurface
     val gold = EditorialGold
     val borderCol = BorderDark
     val ivory = GhostWhite
+
+    if (showComposer) {
+        SectionComposerBottomSheet(
+            config = composerConfig,
+            onDismiss = { showComposer = false },
+            onSave = { composerConfig = it }
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -109,44 +132,194 @@ fun EditorScreen(
 
             if (selectedTabIndex == 0) {
                 // FULL AI MODE
-                Column(modifier = Modifier.weight(1f).padding(24.dp)) {
-                    TextField(
-                        value = prompt,
-                        onValueChange = { prompt = it },
-                        placeholder = { 
-                            Text("What are we publishing today?", color = ivory.copy(alpha = 0.4f), style = LuxeTypography.headlineMedium) 
-                        },
-                        modifier = Modifier.weight(1f).fillMaxWidth(),
-                        textStyle = LuxeTypography.headlineMedium.copy(color = ivory),
-                        colors = TextFieldDefaults.colors(
-                            focusedContainerColor = Color.Transparent,
-                            unfocusedContainerColor = Color.Transparent,
-                            focusedIndicatorColor = Color.Transparent,
-                            unfocusedIndicatorColor = Color.Transparent,
-                            cursorColor = gold
-                        )
-                    )
-                    
-                    Button(
-                        onClick = {
-                            val dummyPages = listOf(
-                                PageBlock(type = "cover", topic = prompt),
-                                PageBlock(type = "toc"),
-                                PageBlock(type = "article", topic = "Main Feature")
-                            )
-                            onCompileClicked(prompt, dummyPages)
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(56.dp),
-                        shape = RoundedCornerShape(8.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = gold, contentColor = obsidian),
-                        enabled = prompt.isNotBlank() && !isCompileLoading
+                if (briefState is BriefState.Success) {
+                    // Phase 2: Brief Review
+                    val brief = briefState.brief
+                    Column(
+                        modifier = Modifier.weight(1f).fillMaxWidth().padding(horizontal = 24.dp).verticalScroll(rememberScrollState()),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Top
                     ) {
-                        if (isCompileLoading) {
-                            CircularProgressIndicator(color = obsidian, modifier = Modifier.size(24.dp))
-                        } else {
-                            Text("Generate Issue", style = LuxeTypography.bodyLarge.copy(fontWeight = FontWeight.Bold))
+                        Spacer(modifier = Modifier.height(32.dp))
+                        Text("Generation Brief", style = LuxeTypography.headlineSmall.copy(color = gold, fontWeight = FontWeight.Bold))
+                        Spacer(modifier = Modifier.height(24.dp))
+                        
+                        Card(
+                            colors = CardDefaults.cardColors(containerColor = darkSurface),
+                            border = BorderStroke(1.dp, borderCol),
+                            modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                Text("Category: ${brief.category}", style = LuxeTypography.titleMedium.copy(color = ivory))
+                                Text("Tone: ${brief.tone}", style = LuxeTypography.titleMedium.copy(color = ivory))
+                                Text("Layout Density: ${brief.styleDna}", style = LuxeTypography.titleMedium.copy(color = ivory))
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text("Potential Titles:", style = LuxeTypography.titleMedium.copy(color = gold))
+                                brief.titles.forEach { title ->
+                                    Text("- $title", style = LuxeTypography.bodyMedium.copy(color = ivory))
+                                }
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text("Articles:", style = LuxeTypography.titleMedium.copy(color = gold))
+                                brief.articles.forEach { article ->
+                                    Text("- ${article.topic}", style = LuxeTypography.bodyMedium.copy(color = ivory))
+                                }
+                            }
+                        }
+
+                        OutlinedButton(
+                            onClick = { showComposer = true },
+                            modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = gold),
+                            border = BorderStroke(1.dp, gold)
+                        ) {
+                            Text("Customize Sections ▾", style = LuxeTypography.titleSmall)
+                        }
+
+                        Button(
+                            onClick = {
+                                onCompileFromBrief(prompt, composerConfig, brief)
+                            },
+                            modifier = Modifier.fillMaxWidth().height(56.dp).padding(bottom = 32.dp),
+                            shape = RoundedCornerShape(8.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = gold, contentColor = obsidian),
+                            enabled = !isCompileLoading
+                        ) {
+                            if (isCompileLoading) {
+                                CircularProgressIndicator(color = obsidian, modifier = Modifier.size(24.dp))
+                            } else {
+                                Text("Generate Full Issue", style = LuxeTypography.bodyLarge.copy(fontWeight = FontWeight.Bold))
+                            }
+                        }
+                    }
+                } else {
+                    // Phase 1: Initial Prompt
+                    val referenceImages = remember { mutableStateListOf<String>() }
+                    var showReferenceImages by remember { mutableStateOf(false) }
+                    
+                    val context = androidx.compose.ui.platform.LocalContext.current
+                    val scope = rememberCoroutineScope()
+                    var isUploading by remember { mutableStateOf(false) }
+                    val launcher = androidx.activity.compose.rememberLauncherForActivityResult(
+                        androidx.activity.result.contract.ActivityResultContracts.GetContent()
+                    ) { uri ->
+                        if (uri != null) {
+                            isUploading = true
+                            scope.launch {
+                                try {
+                                    val inputStream = context.contentResolver.openInputStream(uri)
+                                    val tempFile = java.io.File(context.cacheDir, "upload_${System.currentTimeMillis()}.jpg")
+                                    val outputStream = java.io.FileOutputStream(tempFile)
+                                    inputStream?.copyTo(outputStream)
+                                    inputStream?.close()
+                                    outputStream.close()
+                                    
+                                    val requestFile = okhttp3.RequestBody.create(okhttp3.MediaType.parse("image/*"), tempFile)
+                                    val body = okhttp3.MultipartBody.Part.createFormData("file", tempFile.name, requestFile)
+                                    
+                                    val response = com.magazineforge.app.network.ApiClient.retrofitService.uploadAsset(body)
+                                    if (response.isSuccessful) {
+                                        val path = response.body()?.url ?: ""
+                                        if (path.isNotEmpty()) {
+                                            referenceImages.add(path)
+                                        }
+                                    }
+                                } catch (e: Exception) {
+                                    e.printStackTrace()
+                                } finally {
+                                    isUploading = false
+                                }
+                            }
+                        }
+                    }
+
+                    Column(
+                        modifier = Modifier.weight(1f).fillMaxWidth().padding(horizontal = 24.dp).verticalScroll(rememberScrollState()),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        TextField(
+                            value = prompt,
+                            onValueChange = { prompt = it },
+                            placeholder = {
+                                Text(
+                                    "What are we publishing today?\n\ne.g. 'A special edition on the future of electric aviation.'",
+                                    style = LuxeTypography.headlineMedium.copy(color = borderCol)
+                                )
+                            },
+                            modifier = Modifier.fillMaxWidth().height(200.dp),
+                            textStyle = LuxeTypography.headlineMedium.copy(color = ivory),
+                            colors = TextFieldDefaults.colors(
+                                focusedContainerColor = Color.Transparent,
+                                unfocusedContainerColor = Color.Transparent,
+                                focusedIndicatorColor = Color.Transparent,
+                                unfocusedIndicatorColor = Color.Transparent,
+                                cursorColor = gold
+                            )
+                        )
+                        
+                        // Reference Images Disclosure
+                        Column(modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth().clickable { showReferenceImages = !showReferenceImages }.padding(vertical = 8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text("Add reference images ${if (showReferenceImages) "▴" else "▾"}", style = LuxeTypography.titleSmall.copy(color = gold))
+                            }
+                            
+                            if (showReferenceImages) {
+                                referenceImages.forEachIndexed { index, img ->
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp),
+                                        horizontalArrangement = Arrangement.SpaceBetween,
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Text("Image ${index + 1}", color = ivory)
+                                        IconButton(onClick = { referenceImages.removeAt(index) }, modifier = Modifier.size(24.dp)) {
+                                            Icon(Icons.Default.Delete, contentDescription = "Remove", tint = Color.Red.copy(alpha = 0.7f))
+                                        }
+                                    }
+                                }
+                                
+                                OutlinedButton(
+                                    onClick = { launcher.launch("image/*") },
+                                    modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                                    enabled = !isUploading,
+                                    colors = ButtonDefaults.outlinedButtonColors(contentColor = gold),
+                                    border = BorderStroke(1.dp, gold)
+                                ) {
+                                    if (isUploading) {
+                                        CircularProgressIndicator(modifier = Modifier.size(16.dp), color = gold)
+                                    } else {
+                                        Text("Upload Image")
+                                    }
+                                }
+                            }
+                        }
+                        
+                        if (briefState is BriefState.Error) {
+                            Text(
+                                text = briefState.message,
+                                color = MaterialTheme.colorScheme.error,
+                                modifier = Modifier.padding(bottom = 8.dp)
+                            )
+                        }
+
+                        Button(
+                            onClick = {
+                                onGenerateBrief(prompt, referenceImages.toList())
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(56.dp),
+                            shape = RoundedCornerShape(8.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = gold, contentColor = obsidian),
+                            enabled = prompt.isNotBlank() && briefState !is BriefState.Loading
+                        ) {
+                            if (briefState is BriefState.Loading) {
+                                CircularProgressIndicator(color = obsidian, modifier = Modifier.size(24.dp))
+                            } else {
+                                Text("Generate Brief", style = LuxeTypography.bodyLarge.copy(fontWeight = FontWeight.Bold))
+                            }
                         }
                     }
                 }
@@ -194,8 +367,17 @@ fun EditorScreen(
                         }
                     }
                     
+                    OutlinedButton(
+                        onClick = { showComposer = true },
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = gold),
+                        border = BorderStroke(1.dp, gold)
+                    ) {
+                        Text("Customize Sections ▾", style = LuxeTypography.titleSmall)
+                    }
+                    
                     Button(
-                        onClick = { onCompileClicked(prompt, pages) },
+                        onClick = { onCompileClicked(prompt, pages, composerConfig) },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(56.dp)

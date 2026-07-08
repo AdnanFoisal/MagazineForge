@@ -21,7 +21,15 @@ import com.magazineforge.app.models.GenerateSchemaRequest
 import com.magazineforge.app.models.GenerateLatexRequest
 import com.magazineforge.app.models.GenerateRawLatexRequest
 import com.magazineforge.app.models.CompileRawRequest
-import kotlinx.coroutines.flow.asStateFlow
+import com.magazineforge.app.models.GenerateBriefRequest
+import com.magazineforge.app.models.GenerateBriefResponse
+
+sealed class BriefState {
+    object Idle : BriefState()
+    object Loading : BriefState()
+    data class Success(val brief: GenerateBriefResponse) : BriefState()
+    data class Error(val message: String) : BriefState()
+}
 
 sealed class SchemaState {
     object Idle : SchemaState()
@@ -45,17 +53,20 @@ sealed class CompileState {
 }
 
 class EditorViewModel : ViewModel() {
+    private val _briefState = MutableStateFlow<BriefState>(BriefState.Idle)
+    val briefState = kotlinx.coroutines.flow.asStateFlow(_briefState)
+
     private val _schemaState = MutableStateFlow<SchemaState>(SchemaState.Idle)
-    val schemaState = _schemaState.asStateFlow()
+    val schemaState = kotlinx.coroutines.flow.asStateFlow(_schemaState)
 
     private val _latexState = MutableStateFlow<LatexState>(LatexState.Idle)
-    val latexState = _latexState.asStateFlow()
+    val latexState = kotlinx.coroutines.flow.asStateFlow(_latexState)
 
     private val _compileState = MutableStateFlow<CompileState>(CompileState.Idle)
     val compileState: StateFlow<CompileState> = _compileState
 
     private val _aiRawLatexState = MutableStateFlow<LatexState>(LatexState.Idle)
-    val aiRawLatexState: StateFlow<LatexState> = _aiRawLatexState.asStateFlow()
+    val aiRawLatexState: StateFlow<LatexState> = kotlinx.coroutines.flow.asStateFlow(_aiRawLatexState)
     
     private var currentTopic: String = ""
     private var currentVariant: String = ""
@@ -83,12 +94,62 @@ class EditorViewModel : ViewModel() {
     }
     
     fun resetState() {
+        _briefState.value = BriefState.Idle
         _schemaState.value = SchemaState.Idle
         _latexState.value = LatexState.Idle
         _compileState.value = CompileState.Idle
     }
 
-    fun generateSchema(geminiKey: String, backupKey: String?, magazineTopic: String, templateName: String) {
+    fun generateBrief(geminiKey: String, backupKey: String?, prompt: String, referenceImages: List<String> = emptyList()) {
+        if (prompt.isBlank()) {
+            _briefState.value = BriefState.Error("Prompt can't be empty")
+            return
+        }
+        currentApiKey = geminiKey
+        currentBackupKey = backupKey
+        _briefState.value = BriefState.Loading
+        
+        viewModelScope.launch {
+            try {
+                val request = GenerateBriefRequest(prompt = prompt, referenceImages = referenceImages)
+                var response = ApiClient.retrofitService.generateBrief(geminiKey, request)
+                
+                if (!response.isSuccessful && (response.code() == 401 || response.code() == 429)) {
+                    if (!backupKey.isNullOrBlank()) {
+                        response = ApiClient.retrofitService.generateBrief(backupKey, request)
+                    }
+                }
+                
+                if (response.isSuccessful) {
+                    val brief = response.body()
+                    if (brief != null) {
+                        _briefState.value = BriefState.Success(brief)
+                    } else {
+                        _briefState.value = BriefState.Error("Empty response body")
+                    }
+                } else {
+                    val code = response.code()
+                    if (code == 401 || code == 429) {
+                        _briefState.value = BriefState.Error("Your API key may be invalid or rate-limited — check it in Settings")
+                    } else {
+                        _briefState.value = BriefState.Error("Error: $code")
+                    }
+                }
+            } catch (e: Exception) {
+                _briefState.value = BriefState.Error(e.message ?: "Brief generation failed unexpectedly")
+            }
+        }
+    }
+
+    fun generateSchema(
+        geminiKey: String, 
+        backupKey: String?, 
+        magazineTopic: String, 
+        templateName: String,
+        config: SectionComposerConfig? = null,
+        tone: String = "Professional",
+        layoutDensity: String = "Balanced"
+    ) {
         if (magazineTopic.isBlank()) {
             _schemaState.value = SchemaState.Error("Topic can't be empty")
             return
@@ -104,7 +165,21 @@ class EditorViewModel : ViewModel() {
         
         viewModelScope.launch {
             try {
-                val request = GenerateSchemaRequest(topic = magazineTopic, templateVariant = currentVariant)
+                val safeConfig = config ?: SectionComposerConfig()
+                val request = GenerateSchemaRequest(
+                    topic = magazineTopic, 
+                    templateVariant = currentVariant,
+                    tone = tone,
+                    layoutDensity = layoutDensity,
+                    enableMasthead = safeConfig.enableMasthead,
+                    mastheadAngle = safeConfig.mastheadAngle,
+                    enableSidebar = safeConfig.enableSidebar,
+                    sidebarTopic = safeConfig.sidebarTopic,
+                    enablePullQuote = safeConfig.enablePullQuote,
+                    enableBackCover = safeConfig.enableBackCover,
+                    enableTocTeasers = safeConfig.enableTocTeasers,
+                    enableByline = safeConfig.enableByline
+                )
                 var response = ApiClient.retrofitService.generateSchema(geminiKey, request)
                 
                 if (!response.isSuccessful && (response.code() == 401 || response.code() == 429)) {

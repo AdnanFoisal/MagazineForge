@@ -25,18 +25,11 @@ fun CustomizerBottomSheet(
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     
-    // 33 Options as requested
-    val tones = listOf("Professional", "Casual", "Dramatic", "Humorous", "Academic", "Poetic", "Journalistic")
-    val palettes = listOf("Dark Mode", "Pastel", "Vibrant", "Monochrome", "Neon", "Sepia", "Earth Tones")
-    val imageStyles = listOf("Photorealistic", "Minimalist", "Abstract", "Vintage", "Cinematic", "Watercolor", "Cyberpunk")
-    val layoutDensities = listOf("Image-heavy", "Text-heavy", "Balanced", "Magazine-style", "Grid", "Poster-style")
-    val audiences = listOf("Teens", "Professionals", "General", "Academics", "Kids", "Enthusiasts")
+    val tones = listOf("Professional", "Casual", "Playful", "Dramatic/Literary", "Academic", "Inspirational", "Witty")
+    val layoutDensities = listOf("Image-heavy", "Balanced", "Text-heavy")
 
     var selectedTone by remember { mutableStateOf(page.tone) }
-    var selectedPalette by remember { mutableStateOf(page.colorPalette) }
-    var selectedImageStyle by remember { mutableStateOf(page.imageStyle) }
     var selectedDensity by remember { mutableStateOf(page.layoutDensity) }
-    var selectedAudience by remember { mutableStateOf(page.targetAudience) }
 
     ModalBottomSheet(
         onDismissRequest = onDismiss,
@@ -57,10 +50,7 @@ fun CustomizerBottomSheet(
             )
 
             CustomizerCategory(title = "Writing Tone", options = tones, selected = selectedTone, onSelect = { selectedTone = it })
-            CustomizerCategory(title = "Color Palette", options = palettes, selected = selectedPalette, onSelect = { selectedPalette = it })
-            CustomizerCategory(title = "Image Style", options = imageStyles, selected = selectedImageStyle, onSelect = { selectedImageStyle = it })
             CustomizerCategory(title = "Layout Density", options = layoutDensities, selected = selectedDensity, onSelect = { selectedDensity = it })
-            CustomizerCategory(title = "Target Audience", options = audiences, selected = selectedAudience, onSelect = { selectedAudience = it })
 
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -69,10 +59,7 @@ fun CustomizerBottomSheet(
                     onSave(
                         page.copy(
                             tone = selectedTone,
-                            colorPalette = selectedPalette,
-                            imageStyle = selectedImageStyle,
-                            layoutDensity = selectedDensity,
-                            targetAudience = selectedAudience
+                            layoutDensity = selectedDensity
                         )
                     )
                     onDismiss()

@@ -71,6 +71,7 @@ fun TemplateGalleryScreen(
     onEditorClicked: () -> Unit
 ) {
     val context = LocalContext.current
+    val tokens = LocalThemeTokens.current
     val templates = remember { loadTemplates(context) }
     
     // We categorize them but to match the "Newsstand" masonry look, we can show all or provide simple filter chips.

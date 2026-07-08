@@ -193,3 +193,8 @@ data class RewriteSelectionRequest(
 data class RewriteSelectionResponse(
     @SerializedName("rewrittenText") val rewrittenText: String
 )
+
+data class RenderPageRequest(
+    @SerializedName("latexCode") val latexCode: String,
+    @SerializedName("pageNumber") val pageNumber: Int
+)

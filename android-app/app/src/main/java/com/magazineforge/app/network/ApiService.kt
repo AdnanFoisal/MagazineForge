@@ -60,11 +60,11 @@ interface ApiService {
     ): Response<com.magazineforge.app.models.GenerateLatexResponse>
 
 
-    @POST("compile-raw")
-    @POST(" render-page\)
- suspend fun renderPage(@Body request: com.magazineforge.app.models.RenderPageRequest): Response<ResponseBody>
+    @POST("render-page")
+    suspend fun renderPage(@Body request: com.magazineforge.app.models.RenderPageRequest): Response<ResponseBody>
 
- suspend fun compileRaw(
+    @POST("compile-raw")
+    suspend fun compileRaw(
         @Body request: com.magazineforge.app.models.CompileRawRequest
     ): Response<com.magazineforge.app.models.CompileRawResponse>
 

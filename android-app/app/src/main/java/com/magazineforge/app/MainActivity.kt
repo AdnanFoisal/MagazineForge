@@ -49,12 +49,12 @@ import androidx.compose.material.icons.filled.Settings
 import com.magazineforge.app.ui.SettingsScreen
 import com.magazineforge.app.ui.theme.MagazineForgeTheme
 import com.magazineforge.app.ui.theme.LuxeTypography
-import com.magazineforge.app.ui.theme.PitchBlack
-import com.magazineforge.app.ui.theme.DarkSurface
-import com.magazineforge.app.ui.theme.EditorialGold
-import com.magazineforge.app.ui.theme.GoldBright
-import com.magazineforge.app.ui.theme.GhostWhite
-import com.magazineforge.app.ui.theme.AshGrey
+import com.magazineforge.app.ui.theme.LocalThemeTokens
+
+
+
+
+
 import com.magazineforge.app.ui.theme.ErrorRed
 import com.magazineforge.app.ui.theme.BorderDark
 import com.magazineforge.app.ui.theme.BorderLight
@@ -85,6 +85,8 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
+                    val tokens = LocalThemeTokens.current
+                    
                     var currentScreen by remember { mutableStateOf(if (savedKey != null) "home" else "onboarding") }
                     var selectedTemplate by remember { mutableStateOf("") }
                     var selectedTemplateName by remember { mutableStateOf("") }
@@ -392,7 +394,7 @@ class MainActivity : ComponentActivity() {
                                 ) {
                                     Card(
                                         colors = CardDefaults.cardColors(
-                                            containerColor = DarkSurface
+                                            containerColor = tokens.surface
                                         ),
                                         border = androidx.compose.foundation.BorderStroke(1.dp, BorderLight),
                                         shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
@@ -408,7 +410,7 @@ class MainActivity : ComponentActivity() {
                                         ) {
                                             CircularProgressIndicator(
                                                 progress = loadingState.progress / 100f,
-                                                color = EditorialGold,
+                                                color = tokens.primaryAccent,
                                                 modifier = Modifier.size(32.dp),
                                                 strokeWidth = 3.dp
                                             )
@@ -416,12 +418,12 @@ class MainActivity : ComponentActivity() {
                                             Column(modifier = Modifier.weight(1f)) {
                                                 Text(
                                                     text = "Compiling... ${loadingState.progress}%",
-                                                    style = LuxeTypography.labelMedium.copy(color = GhostWhite)
+                                                    style = LuxeTypography.labelMedium.copy(color = tokens.textPrimary)
                                                 )
                                                 Spacer(modifier = Modifier.height(2.dp))
                                                 Text(
                                                     text = loadingState.message,
-                                                    style = LuxeTypography.labelSmall.copy(color = AshGrey),
+                                                    style = LuxeTypography.labelSmall.copy(color = tokens.textSecondary),
                                                     maxLines = 1
                                                 )
                                             }
@@ -433,7 +435,7 @@ class MainActivity : ComponentActivity() {
                                                 Icon(
                                                     imageVector = Icons.Default.Close,
                                                     contentDescription = "Dismiss",
-                                                    tint = GhostWhite
+                                                    tint = tokens.textPrimary
                                                 )
                                             }
                                         }
@@ -487,12 +489,12 @@ class MainActivity : ComponentActivity() {
                                     },
                                     dismissButton = {
                                         TextButton(onClick = { showExitDialog = false }) {
-                                            Text("Cancel", style = LuxeTypography.labelMedium.copy(color = GhostWhite))
+                                            Text("Cancel", style = LuxeTypography.labelMedium.copy(color = tokens.textPrimary))
                                         }
                                     },
-                                    containerColor = DarkSurface,
-                                    titleContentColor = GhostWhite,
-                                    textContentColor = AshGrey
+                                    containerColor = tokens.surface,
+                                    titleContentColor = tokens.textPrimary,
+                                    textContentColor = tokens.textSecondary
                                 )
                             }
                         }

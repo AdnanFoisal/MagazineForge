@@ -353,17 +353,37 @@ class MainActivity : ComponentActivity() {
                                             verifySuccess = null
                                             coroutineScope.launch {
                                                 try {
-                                                    val response = withContext(Dispatchers.IO) {
-                                                        ApiClient.retrofitService.verifyKey(VerifyKeyRequest(newKey))
+                                                    val primaryValid = withContext(Dispatchers.IO) {
+                                                        try {
+                                                            val url = java.net.URL("https://generativelanguage.googleapis.com/v1beta/models?key=$newKey")
+                                                            val connection = url.openConnection() as java.net.HttpURLConnection
+                                                            connection.requestMethod = "GET"
+                                                            connection.responseCode == 200
+                                                        } catch (e: Exception) {
+                                                            false
+                                                        }
                                                     }
-                                                    if (response.isSuccessful && response.body()?.valid == true) {
+                                                    val backupValid = withContext(Dispatchers.IO) {
+                                                        if (newBackupKey.isBlank()) true else {
+                                                            try {
+                                                                val url = java.net.URL("https://generativelanguage.googleapis.com/v1beta/models?key=$newBackupKey")
+                                                                val connection = url.openConnection() as java.net.HttpURLConnection
+                                                                connection.requestMethod = "GET"
+                                                                connection.responseCode == 200
+                                                            } catch (e: Exception) {
+                                                                false
+                                                            }
+                                                        }
+                                                    }
+                                                    
+                                                    if (primaryValid && backupValid) {
                                                         secureStorage.saveApiKey(newKey)
                                                         apiKey = newKey
                                                         secureStorage.saveBackupApiKey(newBackupKey)
                                                         backupApiKey = newBackupKey
                                                         verifySuccess = true
                                                     } else {
-                                                        verifyError = "Invalid Primary API Key"
+                                                        verifyError = if (!primaryValid) "Invalid Primary API Key" else "Invalid Backup API Key"
                                                         verifySuccess = false
                                                     }
                                                 } catch (e: Exception) {

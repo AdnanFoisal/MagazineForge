@@ -170,11 +170,6 @@ data class GenerateLatexResponse(
 )
 
 
-data class RenderPageRequest(
-    @SerializedName(" latexCode\) val latexCode: String,
- @SerializedName(\pageNumber\) val pageNumber: Int
-)
-
 data class CompileRawRequest(
     @SerializedName("latexCode")
     val latexCode: String

@@ -383,8 +383,9 @@ fun LatexNotebookScreen(
                     Icon(Icons.Default.Save, contentDescription = "Save", tint = Color.Black, modifier = Modifier.size(20.dp).clickable { createDocumentLauncher.launch("magazine.tex") })
                 }
             }
-        },
-        containerColor = bgCream
+        }
+    },
+    containerColor = bgCream
     ) { paddingValues ->
         if (isVisualMode) {
             VisualEditor(latexCode, schemaState, onPatchAndRecompile = { newCode ->

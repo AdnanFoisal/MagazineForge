@@ -83,7 +83,7 @@ fun CoAuthorScreen(
                     }
                 },
                 actions = {
-                    val isSchemaValid = schema.title.isNotBlank() && schema.topic.isNotBlank()
+                    val isSchemaValid = schema.cover.mainTitle.isNotBlank()
                     Button(
                         onClick = { onGenerateLatex(schema) },
                         enabled = !isGeneratingLatex && isSchemaValid,

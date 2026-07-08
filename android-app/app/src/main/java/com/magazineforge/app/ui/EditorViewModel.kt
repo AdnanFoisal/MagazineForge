@@ -10,6 +10,7 @@ import com.magazineforge.app.network.ApiClient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
@@ -19,7 +20,6 @@ import java.io.FileOutputStream
 import java.util.UUID
 import com.magazineforge.app.models.GenerateSchemaRequest
 import com.magazineforge.app.models.GenerateLatexRequest
-import com.magazineforge.app.models.GenerateRawLatexRequest
 import com.magazineforge.app.models.CompileRawRequest
 import com.magazineforge.app.models.GenerateBriefRequest
 import com.magazineforge.app.models.GenerateBriefResponse
@@ -54,19 +54,19 @@ sealed class CompileState {
 
 class EditorViewModel : ViewModel() {
     private val _briefState = MutableStateFlow<BriefState>(BriefState.Idle)
-    val briefState = kotlinx.coroutines.flow.asStateFlow(_briefState)
+    val briefState = _briefState.asStateFlow()
 
     private val _schemaState = MutableStateFlow<SchemaState>(SchemaState.Idle)
-    val schemaState = kotlinx.coroutines.flow.asStateFlow(_schemaState)
+    val schemaState = _schemaState.asStateFlow()
 
     private val _latexState = MutableStateFlow<LatexState>(LatexState.Idle)
-    val latexState = kotlinx.coroutines.flow.asStateFlow(_latexState)
+    val latexState = _latexState.asStateFlow()
 
     private val _compileState = MutableStateFlow<CompileState>(CompileState.Idle)
     val compileState: StateFlow<CompileState> = _compileState
 
     private val _aiRawLatexState = MutableStateFlow<LatexState>(LatexState.Idle)
-    val aiRawLatexState: StateFlow<LatexState> = kotlinx.coroutines.flow.asStateFlow(_aiRawLatexState)
+    val aiRawLatexState: StateFlow<LatexState> = _aiRawLatexState.asStateFlow()
     
     private var currentTopic: String = ""
     private var currentVariant: String = ""

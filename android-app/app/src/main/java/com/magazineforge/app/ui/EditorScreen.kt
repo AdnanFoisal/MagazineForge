@@ -20,6 +20,9 @@ import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import com.magazineforge.app.models.GenerateBriefResponse
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -51,7 +54,6 @@ data class SectionComposerConfig(
     var enableByline: Boolean = true
 )
 
-import com.magazineforge.app.models.GenerateBriefResponse
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -214,7 +216,7 @@ fun EditorScreen(
                                     inputStream?.close()
                                     outputStream.close()
                                     
-                                    val requestFile = okhttp3.RequestBody.create(okhttp3.MediaType.parse("image/*"), tempFile)
+                                    val requestFile = okhttp3.RequestBody.create(okhttp3.MediaType.Companion.parse("image/*"), tempFile)
                                     val body = okhttp3.MultipartBody.Part.createFormData("file", tempFile.name, requestFile)
                                     
                                     val response = com.magazineforge.app.network.ApiClient.retrofitService.uploadAsset(body)

@@ -11,10 +11,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.magazineforge.app.ui.theme.EditorialGold
-import com.magazineforge.app.ui.theme.GhostWhite
 import com.magazineforge.app.ui.theme.LuxeTypography
-import com.magazineforge.app.ui.theme.PitchBlack
+import com.magazineforge.app.ui.theme.LocalThemeTokens
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -24,7 +22,8 @@ fun CustomizerBottomSheet(
     onSave: (PageBlock) -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    
+    val tokens = LocalThemeTokens.current
+
     val tones = listOf("Professional", "Casual", "Playful", "Dramatic/Literary", "Academic", "Inspirational", "Witty")
     val layoutDensities = listOf("Image-heavy", "Balanced", "Text-heavy")
 
@@ -34,7 +33,7 @@ fun CustomizerBottomSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = PitchBlack
+        containerColor = tokens.editorBackground
     ) {
         Column(
             modifier = Modifier
@@ -45,7 +44,7 @@ fun CustomizerBottomSheet(
         ) {
             Text(
                 text = "AI Page Customization",
-                style = LuxeTypography.headlineSmall.copy(color = EditorialGold, fontWeight = FontWeight.Bold),
+                style = LuxeTypography.headlineSmall.copy(color = tokens.primaryAccent, fontWeight = FontWeight.Bold),
                 modifier = Modifier.padding(bottom = 24.dp)
             )
 
@@ -65,7 +64,7 @@ fun CustomizerBottomSheet(
                     onDismiss()
                 },
                 modifier = Modifier.fillMaxWidth().height(56.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = EditorialGold, contentColor = PitchBlack)
+                colors = ButtonDefaults.buttonColors(containerColor = tokens.primaryAccent, contentColor = tokens.editorBackground)
             ) {
                 Text("Apply Customizations", style = LuxeTypography.titleMedium.copy(fontWeight = FontWeight.Bold))
             }
@@ -81,10 +80,11 @@ fun CustomizerCategory(
     selected: String,
     onSelect: (String) -> Unit
 ) {
+    val tokens = LocalThemeTokens.current
     Column(modifier = Modifier.padding(bottom = 16.dp)) {
         Text(
             text = title,
-            style = LuxeTypography.titleSmall.copy(color = GhostWhite),
+            style = LuxeTypography.titleSmall.copy(color = tokens.textPrimary),
             modifier = Modifier.padding(bottom = 8.dp)
         )
         LazyRow(
@@ -97,13 +97,13 @@ fun CustomizerCategory(
                     onClick = { onSelect(option) },
                     label = { Text(option) },
                     colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = EditorialGold,
-                        selectedLabelColor = PitchBlack,
-                        containerColor = PitchBlack,
-                        labelColor = GhostWhite
+                        selectedContainerColor = tokens.primaryAccent,
+                        selectedLabelColor = tokens.editorBackground,
+                        containerColor = tokens.editorBackground,
+                        labelColor = tokens.textPrimary
                     ),
                     border = FilterChipDefaults.filterChipBorder(
-                        borderColor = if (isSelected) EditorialGold else GhostWhite.copy(alpha = 0.3f),
+                        borderColor = if (isSelected) tokens.primaryAccent else tokens.textSecondary.copy(alpha = 0.3f),
                         enabled = true,
                         selected = isSelected
                     )

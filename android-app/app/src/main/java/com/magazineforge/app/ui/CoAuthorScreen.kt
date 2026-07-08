@@ -21,16 +21,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.google.firebase.storage.FirebaseStorage
 import com.magazineforge.app.models.MagazineSchema
 import com.magazineforge.app.models.ArticleSchema
 import com.magazineforge.app.models.TocItemSchema
-import com.magazineforge.app.ui.theme.DarkSurface
-import com.magazineforge.app.ui.theme.GhostWhite
-import com.magazineforge.app.ui.theme.GoldBright
-import com.magazineforge.app.ui.theme.PitchBlack
-import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.launch
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -40,6 +35,8 @@ fun CoAuthorScreen(
     onGenerateLatex: (MagazineSchema) -> Unit,
     onBack: () -> Unit
 ) {
+    val tokens = com.magazineforge.app.ui.theme.LocalThemeTokens.current
+    val surfaceColor = tokens.surface
     var schema by remember { mutableStateOf(initialSchema) }
     val coroutineScope = rememberCoroutineScope()
     
@@ -47,15 +44,28 @@ fun CoAuthorScreen(
     // It launches an image picker, uploads to Firebase, and calls onUrlReceived
     var onImageUploadedCallback: ((String) -> Unit)? by remember { mutableStateOf(null) }
     
+    val context = androidx.compose.ui.platform.LocalContext.current
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
         if (uri != null) {
             coroutineScope.launch {
                 try {
-                    val storageRef = FirebaseStorage.getInstance().reference
-                    val imageRef = storageRef.child("images/${System.currentTimeMillis()}_${uri.lastPathSegment}")
-                    val uploadTask = imageRef.putFile(uri).await()
-                    val downloadUrl = imageRef.downloadUrl.await().toString()
-                    onImageUploadedCallback?.invoke(downloadUrl)
+                    val inputStream = context.contentResolver.openInputStream(uri)
+                    val tempFile = java.io.File(context.cacheDir, "upload_${System.currentTimeMillis()}.jpg")
+                    val outputStream = java.io.FileOutputStream(tempFile)
+                    inputStream?.copyTo(outputStream)
+                    inputStream?.close()
+                    outputStream.close()
+                    
+                    val requestFile = okhttp3.RequestBody.create("image/*".toMediaTypeOrNull(), tempFile)
+                    val body = okhttp3.MultipartBody.Part.createFormData("file", tempFile.name, requestFile)
+                    
+                    val response = com.magazineforge.app.network.ApiClient.retrofitService.uploadAsset(body)
+                    if (response.isSuccessful) {
+                        val downloadUrl = response.body()?.url ?: ""
+                        if (downloadUrl.isNotEmpty()) {
+                            onImageUploadedCallback?.invoke(downloadUrl)
+                        }
+                    }
                 } catch (e: Exception) {
                     e.printStackTrace()
                 }
@@ -79,7 +89,7 @@ fun CoAuthorScreen(
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = obsidian),
                 navigationIcon = {
                     TextButton(onClick = onBack) {
-                        Text("Back", color = GhostWhite)
+                        Text("Back", color = tokens.textPrimary)
                     }
                 },
                 actions = {
@@ -142,7 +152,7 @@ fun CoAuthorScreen(
 
             ExpandableSection("Table of Contents") {
                 schema.toc.forEachIndexed { index, item ->
-                    Card(modifier = Modifier.padding(vertical = 4.dp).fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = DarkSurface)) {
+                    Card(modifier = Modifier.padding(vertical = 4.dp).fillMaxWidth(), colors = CardDefaults.cardColors(containerColor = surfaceColor)) {
                         Column(modifier = Modifier.padding(8.dp)) {
                             OutlinedTextField(
                                 value = item.sectionTitle,
@@ -295,7 +305,7 @@ fun ImageUploadField(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(label, style = com.magazineforge.app.ui.theme.LuxeTypography.labelSmall.copy(color = com.magazineforge.app.ui.theme.GhostWhite))
+            Text(label, style = com.magazineforge.app.ui.theme.LuxeTypography.labelSmall.copy(color = tokens.textPrimary))
             Text(
                 text = if (useDriveLink) "Use Local Image" else "Use Drive Link",
                 style = com.magazineforge.app.ui.theme.LuxeTypography.labelSmall.copy(color = com.magazineforge.app.ui.theme.LocalThemeTokens.current.primaryAccent),
@@ -307,12 +317,12 @@ fun ImageUploadField(
             OutlinedTextField(
                 value = value,
                 onValueChange = onValueChange,
-                placeholder = { Text("Paste Google Drive link here", color = com.magazineforge.app.ui.theme.GhostWhite.copy(alpha=0.5f)) },
+                placeholder = { Text("Paste Google Drive link here", color = tokens.textPrimary.copy(alpha=0.5f)) },
                 modifier = Modifier.fillMaxWidth(),
-                textStyle = com.magazineforge.app.ui.theme.LuxeTypography.bodyMedium.copy(color = com.magazineforge.app.ui.theme.GhostWhite),
+                textStyle = com.magazineforge.app.ui.theme.LuxeTypography.bodyMedium.copy(color = tokens.textPrimary),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = com.magazineforge.app.ui.theme.LocalThemeTokens.current.primaryAccent,
-                    unfocusedBorderColor = com.magazineforge.app.ui.theme.BorderDark,
+                    unfocusedBorderColor = tokens.secondaryAccent.copy(alpha = 0.3f),
                     cursorColor = com.magazineforge.app.ui.theme.LocalThemeTokens.current.primaryAccent
                 )
             )
@@ -324,12 +334,12 @@ fun ImageUploadField(
                 OutlinedTextField(
                     value = value,
                     onValueChange = onValueChange,
-                    placeholder = { Text("Or select from gallery", color = com.magazineforge.app.ui.theme.GhostWhite.copy(alpha=0.5f)) },
+                    placeholder = { Text("Or select from gallery", color = tokens.textPrimary.copy(alpha=0.5f)) },
                     modifier = Modifier.weight(1f),
-                    textStyle = com.magazineforge.app.ui.theme.LuxeTypography.bodyMedium.copy(color = com.magazineforge.app.ui.theme.GhostWhite),
+                    textStyle = com.magazineforge.app.ui.theme.LuxeTypography.bodyMedium.copy(color = tokens.textPrimary),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = com.magazineforge.app.ui.theme.LocalThemeTokens.current.primaryAccent,
-                        unfocusedBorderColor = com.magazineforge.app.ui.theme.BorderDark,
+                        unfocusedBorderColor = tokens.secondaryAccent.copy(alpha = 0.3f),
                         cursorColor = com.magazineforge.app.ui.theme.LocalThemeTokens.current.primaryAccent
                     )
                 )

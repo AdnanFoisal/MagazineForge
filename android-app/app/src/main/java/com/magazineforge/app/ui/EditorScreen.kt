@@ -27,12 +27,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.magazineforge.app.ui.theme.BorderDark
-import com.magazineforge.app.ui.theme.DarkSurface
-import com.magazineforge.app.ui.theme.EditorialGold
-import com.magazineforge.app.ui.theme.GhostWhite
 import com.magazineforge.app.ui.theme.LuxeTypography
-import com.magazineforge.app.ui.theme.PitchBlack
 
 data class PageBlock(
     val id: String = java.util.UUID.randomUUID().toString(),
@@ -76,10 +71,10 @@ fun EditorScreen(
 
     val tokens = com.magazineforge.app.ui.theme.LocalThemeTokens.current
     val obsidian = tokens.editorBackground
-    val darkSurface = DarkSurface // Keep hardcoded dark card for minimal dark mode
+    val darkSurface = tokens.surface
     val gold = tokens.primaryAccent
     val borderCol = tokens.secondaryAccent.copy(alpha = 0.3f)
-    val ivory = GhostWhite
+    val ivory = tokens.textPrimary
 
     if (showComposer) {
         SectionComposerBottomSheet(
@@ -216,7 +211,7 @@ fun EditorScreen(
                                     inputStream?.close()
                                     outputStream.close()
                                     
-                                    val requestFile = okhttp3.RequestBody.create(okhttp3.MediaType.Companion.parse("image/*"), tempFile)
+                                    val requestFile = okhttp3.RequestBody.create("image/*".toMediaTypeOrNull(), tempFile)
                                     val body = okhttp3.MultipartBody.Part.createFormData("file", tempFile.name, requestFile)
                                     
                                     val response = com.magazineforge.app.network.ApiClient.retrofitService.uploadAsset(body)
@@ -421,7 +416,7 @@ fun PageBlockCard(
     }
 
     Card(
-        colors = CardDefaults.cardColors(containerColor = DarkSurface),
+        colors = CardDefaults.cardColors(containerColor = darkSurface),
         border = BorderStroke(1.dp, tokens.secondaryAccent.copy(alpha = 0.3f)),
         shape = RoundedCornerShape(8.dp),
         modifier = Modifier.fillMaxWidth()

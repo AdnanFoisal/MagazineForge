@@ -177,7 +177,7 @@ fun MyMagazinesScreen(
                                 contentAlignment = Alignment.Center
                             ) {
                                 if (item.coverFile != null) {
-                                    coil.compose.CoverImage(
+                                    coil.compose.AsyncImage(
                                         model = coil.request.ImageRequest.Builder(LocalContext.current)
                                             .data(item.coverFile)
                                             .crossfade(true)

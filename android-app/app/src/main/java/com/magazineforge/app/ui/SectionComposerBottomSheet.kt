@@ -9,10 +9,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.magazineforge.app.ui.theme.EditorialGold
-import com.magazineforge.app.ui.theme.GhostWhite
 import com.magazineforge.app.ui.theme.LuxeTypography
-import com.magazineforge.app.ui.theme.PitchBlack
+import com.magazineforge.app.ui.theme.LocalThemeTokens
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -22,13 +20,14 @@ fun SectionComposerBottomSheet(
     onSave: (SectionComposerConfig) -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
-    
+    val tokens = LocalThemeTokens.current
+
     var enableMasthead by remember { mutableStateOf(config.enableMasthead) }
     var mastheadAngle by remember { mutableStateOf(config.mastheadAngle) }
-    
+
     var enableSidebar by remember { mutableStateOf(config.enableSidebar) }
     var sidebarTopic by remember { mutableStateOf(config.sidebarTopic) }
-    
+
     var enablePullQuote by remember { mutableStateOf(config.enablePullQuote) }
     var enableBackCover by remember { mutableStateOf(config.enableBackCover) }
     var enableTocTeasers by remember { mutableStateOf(config.enableTocTeasers) }
@@ -37,7 +36,7 @@ fun SectionComposerBottomSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = PitchBlack
+        containerColor = tokens.editorBackground
     ) {
         Column(
             modifier = Modifier
@@ -48,7 +47,7 @@ fun SectionComposerBottomSheet(
         ) {
             Text(
                 text = "Section Composer",
-                style = LuxeTypography.headlineSmall.copy(color = EditorialGold, fontWeight = FontWeight.Bold),
+                style = LuxeTypography.headlineSmall.copy(color = tokens.primaryAccent, fontWeight = FontWeight.Bold),
                 modifier = Modifier.padding(bottom = 24.dp)
             )
 
@@ -60,7 +59,7 @@ fun SectionComposerBottomSheet(
                 onTextFieldChange = { mastheadAngle = it },
                 textFieldPlaceholder = "Angle (e.g. Founder's Note)"
             )
-            
+
             SectionToggle(
                 label = "Sidebar (Per Article)",
                 checked = enableSidebar,
@@ -69,7 +68,7 @@ fun SectionComposerBottomSheet(
                 onTextFieldChange = { sidebarTopic = it },
                 textFieldPlaceholder = "Topic (e.g. Key Takeaways)"
             )
-            
+
             SectionToggle(label = "Pull Quotes", checked = enablePullQuote, onCheckedChange = { enablePullQuote = it })
             SectionToggle(label = "Back Cover", checked = enableBackCover, onCheckedChange = { enableBackCover = it })
             SectionToggle(label = "TOC Teasers", checked = enableTocTeasers, onCheckedChange = { enableTocTeasers = it })
@@ -94,7 +93,7 @@ fun SectionComposerBottomSheet(
                     onDismiss()
                 },
                 modifier = Modifier.fillMaxWidth().height(56.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = EditorialGold, contentColor = PitchBlack)
+                colors = ButtonDefaults.buttonColors(containerColor = tokens.primaryAccent, contentColor = tokens.editorBackground)
             ) {
                 Text("Apply Structure", style = LuxeTypography.titleMedium.copy(fontWeight = FontWeight.Bold))
             }
@@ -111,21 +110,22 @@ fun SectionToggle(
     onTextFieldChange: ((String) -> Unit)? = null,
     textFieldPlaceholder: String? = null
 ) {
+    val tokens = LocalThemeTokens.current
     Column(modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Text(text = label, style = LuxeTypography.titleMedium.copy(color = GhostWhite))
+            Text(text = label, style = LuxeTypography.titleMedium.copy(color = tokens.textPrimary))
             Switch(
                 checked = checked,
                 onCheckedChange = onCheckedChange,
                 colors = SwitchDefaults.colors(
-                    checkedThumbColor = PitchBlack,
-                    checkedTrackColor = EditorialGold,
-                    uncheckedThumbColor = GhostWhite,
-                    uncheckedTrackColor = PitchBlack
+                    checkedThumbColor = tokens.editorBackground,
+                    checkedTrackColor = tokens.primaryAccent,
+                    uncheckedThumbColor = tokens.textPrimary,
+                    uncheckedTrackColor = tokens.editorBackground
                 )
             )
         }
@@ -136,9 +136,9 @@ fun SectionToggle(
                 placeholder = { Text(textFieldPlaceholder) },
                 modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = EditorialGold,
-                    unfocusedTextColor = GhostWhite,
-                    focusedTextColor = GhostWhite
+                    focusedBorderColor = tokens.primaryAccent,
+                    unfocusedTextColor = tokens.textPrimary,
+                    focusedTextColor = tokens.textPrimary
                 ),
                 singleLine = true
             )

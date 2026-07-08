@@ -27,8 +27,7 @@ import com.magazineforge.app.ui.ShowcaseScreen
 import com.magazineforge.app.ui.SettingsScreen
 import com.magazineforge.app.ui.ProgressTrackerDialog
 import com.magazineforge.app.ui.FloatingProgressTracker
-import com.magazineforge.app.ui.AuthScreen
-import com.google.firebase.auth.FirebaseAuth
+
 import com.magazineforge.app.utils.SecureStorage
 import com.magazineforge.app.network.ApiClient
 import com.magazineforge.app.models.VerifyKeyRequest
@@ -39,6 +38,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.io.File
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.background
+import com.magazineforge.app.ui.HomeScreen
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Home
@@ -50,13 +51,7 @@ import com.magazineforge.app.ui.SettingsScreen
 import com.magazineforge.app.ui.theme.MagazineForgeTheme
 import com.magazineforge.app.ui.theme.LuxeTypography
 import com.magazineforge.app.ui.theme.LocalThemeTokens
-
-
-
-
-
 import com.magazineforge.app.ui.theme.ErrorRed
-import com.magazineforge.app.ui.theme.BorderDark
 import com.magazineforge.app.ui.theme.BorderLight
 
 class MainActivity : ComponentActivity() {
@@ -264,8 +259,8 @@ class MainActivity : ComponentActivity() {
                                         initialPrompt = initialEditorPrompt,
                                         isCompileLoading = schemaState is SchemaState.Loading,
                                         briefState = briefState,
-                                        onGenerateBrief = { prompt ->
-                                            viewModel.generateBrief(apiKey, backupApiKey, prompt)
+                                        onGenerateBrief = { prompt, referenceImages ->
+                                            viewModel.generateBrief(apiKey, backupApiKey, prompt, referenceImages)
                                         },
                                         onCompileFromBrief = { prompt, config, brief ->
                                             viewModel.generateSchema(
@@ -335,9 +330,7 @@ class MainActivity : ComponentActivity() {
                                                 viewModel.updateLatexCode(code)
                                             },
                                             onRewrite = { text, instruction, onResult ->
-                                                val geminiKey = sharedPreferences.getString("api_key", "") ?: ""
-                                                val backupKey = sharedPreferences.getString("backup_key", null)
-                                                viewModel.rewriteSelection(geminiKey, backupKey, text, instruction, onResult)
+                                                viewModel.rewriteSelection(apiKey, backupApiKey.ifBlank { null }, text, instruction, onResult)
                                             }
                                         )
                                     }

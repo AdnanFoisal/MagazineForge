@@ -233,7 +233,8 @@ fun EditorScreen(
                                             snackbarHostState.showSnackbar("Upload failed: empty path returned")
                                         }
                                     } else {
-                                        snackbarHostState.showSnackbar("Upload failed: ${response.message()}")
+                                        val errBody = response.errorBody()?.string()
+                                        snackbarHostState.showSnackbar("Upload failed (${response.code()}): ${errBody ?: "no body"}")
                                     }
                                 } catch (e: Exception) {
                                     e.printStackTrace()
@@ -718,7 +719,8 @@ fun PageBlockCard(
                                     onShowSnackbar("Upload failed: Empty path returned.")
                                 }
                             } else {
-                                onShowSnackbar("Upload failed: ${response.message()}")
+                                val errBody = response.errorBody()?.string()
+                                onShowSnackbar("Upload failed (${response.code()}): ${errBody ?: "no body"}")
                             }
                         } catch (e: Exception) {
                             e.printStackTrace()

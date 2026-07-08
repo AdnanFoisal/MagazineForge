@@ -26,6 +26,12 @@ val Inter = FontFamily(
     Font(googleFont = GoogleFont("Inter"), fontProvider = provider, weight = FontWeight.SemiBold)
 )
 
+val Fraunces = FontFamily(
+    Font(googleFont = GoogleFont("Fraunces"), fontProvider = provider, weight = FontWeight.Medium),
+    Font(googleFont = GoogleFont("Fraunces"), fontProvider = provider, weight = FontWeight.SemiBold),
+    Font(googleFont = GoogleFont("Fraunces"), fontProvider = provider, weight = FontWeight.Bold)
+)
+
 val LuxeTypography = Typography(
     displayLarge = TextStyle(
         fontFamily = SpaceGrotesk,

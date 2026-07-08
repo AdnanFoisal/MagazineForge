@@ -72,10 +72,11 @@ fun EditorScreen(
     var composerConfig by remember { mutableStateOf(SectionComposerConfig()) }
     var showComposer by remember { mutableStateOf(false) }
 
-    val obsidian = PitchBlack
-    val darkSurface = DarkSurface
-    val gold = EditorialGold
-    val borderCol = BorderDark
+    val tokens = com.magazineforge.app.ui.theme.LocalThemeTokens.current
+    val obsidian = tokens.editorBackground
+    val darkSurface = DarkSurface // Keep hardcoded dark card for minimal dark mode
+    val gold = tokens.primaryAccent
+    val borderCol = tokens.secondaryAccent.copy(alpha = 0.3f)
     val ivory = GhostWhite
 
     if (showComposer) {
@@ -404,6 +405,9 @@ fun PageBlockCard(
     onUpdate: (PageBlock) -> Unit,
     onDelete: () -> Unit
 ) {
+    val tokens = com.magazineforge.app.ui.theme.LocalThemeTokens.current
+    val gold = tokens.primaryAccent
+    
     var showCustomizer by remember { mutableStateOf(false) }
 
     if (showCustomizer) {
@@ -416,13 +420,13 @@ fun PageBlockCard(
 
     Card(
         colors = CardDefaults.cardColors(containerColor = DarkSurface),
-        border = BorderStroke(1.dp, BorderDark),
+        border = BorderStroke(1.dp, tokens.secondaryAccent.copy(alpha = 0.3f)),
         shape = RoundedCornerShape(8.dp),
         modifier = Modifier.fillMaxWidth()
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-                Text(page.type.uppercase(), style = LuxeTypography.labelMedium.copy(color = EditorialGold))
+                Text(page.type.uppercase(), style = LuxeTypography.labelMedium.copy(color = gold))
                 Row {
                     IconButton(onClick = { showCustomizer = true }, modifier = Modifier.size(24.dp)) {
                         Icon(Icons.Default.Settings, contentDescription = "Customize", tint = GhostWhite.copy(alpha = 0.7f))
@@ -480,7 +484,7 @@ fun PageBlockCard(
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = EditorialGold,
+                    focusedBorderColor = gold,
                     unfocusedTextColor = GhostWhite,
                     focusedTextColor = GhostWhite
                 )
@@ -504,15 +508,15 @@ fun PageBlockCard(
                 leadingIcon = { Icon(Icons.Default.Image, contentDescription = "Image") },
                 trailingIcon = {
                     if (isUploading) {
-                        CircularProgressIndicator(modifier = Modifier.size(24.dp), color = EditorialGold)
+                        CircularProgressIndicator(modifier = Modifier.size(24.dp), color = gold)
                     } else {
                         IconButton(onClick = { launcher.launch("image/*") }) {
-                            Icon(Icons.Default.Add, contentDescription = "Upload from device", tint = EditorialGold)
+                            Icon(Icons.Default.Add, contentDescription = "Upload from device", tint = gold)
                         }
                     }
                 },
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = EditorialGold,
+                    focusedBorderColor = gold,
                     unfocusedTextColor = GhostWhite,
                     focusedTextColor = GhostWhite
                 )

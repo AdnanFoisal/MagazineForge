@@ -21,7 +21,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.magazineforge.app.ui.theme.ThemeState
-import com.magazineforge.app.ui.theme.ThemeVariant
+import com.magazineforge.app.ui.theme.AllThemes
 import kotlinx.coroutines.launch
 
 @Composable
@@ -152,7 +152,7 @@ fun SettingsScreen(
                 horizontalArrangement = Arrangement.spacedBy(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                items(ThemeVariant.values()) { theme ->
+                items(AllThemes) { theme ->
                     val isSelected = theme == currentTheme
                     Box(
                         modifier = Modifier

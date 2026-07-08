@@ -1,6 +1,9 @@
 package com.magazineforge.app.ui.theme
 
 import android.app.Activity
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.animateDpAsState
+import androidx.compose.animation.core.tween
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.Color
@@ -10,76 +13,83 @@ import androidx.core.view.WindowCompat
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 
-enum class ThemeVariant(val displayName: String, val isDark: Boolean) {
-    LUXE_NOIR("Luxe Noir", true),
-    BRUTALIST_DARK("Brutalist Dark", true),
-    NEO_TOKYO("Neo Tokyo", true),
-    MIDNIGHT_VELVET("Midnight Velvet", true),
-    OBSIDIAN_MINIMAL("Obsidian Minimal", true),
-    EDITORIAL_LIGHT("Editorial Light", false),
-    PARCHMENT_IVORY("Parchment Ivory", false),
-    SWISS_MINIMAL("Swiss Minimalist", false),
-    ROSE_GOLD("Rose Gold", false),
-    GALLERY_WHITE("Gallery White", false)
-}
-
 object ThemeState {
-    private val _currentTheme = MutableStateFlow(ThemeVariant.LUXE_NOIR)
-    val currentTheme: StateFlow<ThemeVariant> = _currentTheme
+    private val _currentTheme = MutableStateFlow(SunsetEditorial)
+    val currentTheme: StateFlow<ThemeTokens> = _currentTheme
     
-    fun setTheme(theme: ThemeVariant) {
+    fun setTheme(theme: ThemeTokens) {
         _currentTheme.value = theme
     }
 }
 
-private val LuxeNoirScheme = darkColorScheme(
-    primary = EditorialGold, onPrimary = PitchBlack, background = DarkSurface, surface = SurfaceContainerLow, onBackground = GhostWhite, onSurface = GhostWhite, outline = BorderDark
-)
-private val BrutalistDarkScheme = darkColorScheme(
-    primary = BrutalAccent, onPrimary = BrutalText, background = BrutalBlack, surface = BrutalGrey, onBackground = BrutalText, onSurface = BrutalText, outline = BrutalAccent
-)
-private val NeoTokyoScheme = darkColorScheme(
-    primary = NeoCyan, onPrimary = NeoDark, secondary = NeoPink, background = NeoDark, surface = NeoSurface, onBackground = NeoText, onSurface = NeoText, outline = NeoPink
-)
-private val MidnightVelvetScheme = darkColorScheme(
-    primary = VelvetGold, onPrimary = VelvetDark, background = VelvetDark, surface = VelvetSurface, onBackground = VelvetText, onSurface = VelvetText, outline = VelvetGold
-)
-private val ObsidianMinimalScheme = darkColorScheme(
-    primary = ObsAccent, onPrimary = ObsDark, background = ObsDark, surface = ObsSurface, onBackground = ObsText, onSurface = ObsText, outline = ObsSurface
-)
-private val EditorialLightScheme = lightColorScheme(
-    primary = EdLightAccent, onPrimary = EdLightSurface, background = EdLightBg, surface = EdLightSurface, onBackground = EdLightText, onSurface = EdLightText, outline = EdLightAccent
-)
-private val ParchmentIvoryScheme = lightColorScheme(
-    primary = ParchAccent, onPrimary = ParchSurface, background = ParchBg, surface = ParchSurface, onBackground = ParchText, onSurface = ParchText, outline = ParchAccent
-)
-private val SwissMinimalScheme = lightColorScheme(
-    primary = SwissAccent, onPrimary = SwissSurface, background = SwissBg, surface = SwissSurface, onBackground = SwissText, onSurface = SwissText, outline = SwissAccent
-)
-private val RoseGoldScheme = lightColorScheme(
-    primary = RoseAccent, onPrimary = RoseSurface, background = RoseBg, surface = RoseSurface, onBackground = RoseText, onSurface = RoseText, outline = RoseAccent
-)
-private val GalleryWhiteScheme = lightColorScheme(
-    primary = GalAccent, onPrimary = GalSurface, background = GalBg, surface = GalSurface, onBackground = GalText, onSurface = GalText, outline = GalAccent
-)
+val LocalThemeTokens = staticCompositionLocalOf<ThemeTokens> {
+    error("No ThemeTokens provided")
+}
 
 @Composable
 fun MagazineForgeTheme(content: @Composable () -> Unit) {
     val currentTheme by ThemeState.currentTheme.collectAsState()
     
-    val colorScheme = when(currentTheme) {
-        ThemeVariant.LUXE_NOIR -> LuxeNoirScheme
-        ThemeVariant.BRUTALIST_DARK -> BrutalistDarkScheme
-        ThemeVariant.NEO_TOKYO -> NeoTokyoScheme
-        ThemeVariant.MIDNIGHT_VELVET -> MidnightVelvetScheme
-        ThemeVariant.OBSIDIAN_MINIMAL -> ObsidianMinimalScheme
-        ThemeVariant.EDITORIAL_LIGHT -> EditorialLightScheme
-        ThemeVariant.PARCHMENT_IVORY -> ParchmentIvoryScheme
-        ThemeVariant.SWISS_MINIMAL -> SwissMinimalScheme
-        ThemeVariant.ROSE_GOLD -> RoseGoldScheme
-        ThemeVariant.GALLERY_WHITE -> GalleryWhiteScheme
-    }
+    // Animate all token properties for seamless transitions
+    val animationSpec = tween<Color>(durationMillis = 300)
     
+    val welcomeBackground by animateColorAsState(currentTheme.welcomeBackground, animationSpec)
+    val screenBackground by animateColorAsState(currentTheme.screenBackground, animationSpec)
+    val surface by animateColorAsState(currentTheme.surface, animationSpec)
+    val textPrimary by animateColorAsState(currentTheme.textPrimary, animationSpec)
+    val textSecondary by animateColorAsState(currentTheme.textSecondary, animationSpec)
+    val primaryAccent by animateColorAsState(currentTheme.primaryAccent, animationSpec)
+    val secondaryAccent by animateColorAsState(currentTheme.secondaryAccent, animationSpec)
+    val ctaFill by animateColorAsState(currentTheme.ctaFill, animationSpec)
+    val ctaText by animateColorAsState(currentTheme.ctaText, animationSpec)
+    val iconMarkTint1 by animateColorAsState(currentTheme.iconMarkTint1, animationSpec)
+    val iconMarkTint2 by animateColorAsState(currentTheme.iconMarkTint2, animationSpec)
+    val cornerRadius by animateDpAsState(currentTheme.cornerRadius, tween(durationMillis = 300))
+    val editorBackground by animateColorAsState(currentTheme.editorBackground, animationSpec)
+    
+    // Construct the animated tokens object
+    val animatedTokens = ThemeTokens(
+        id = currentTheme.id,
+        displayName = currentTheme.displayName,
+        description = currentTheme.description,
+        welcomeBackground = welcomeBackground,
+        screenBackground = screenBackground,
+        surface = surface,
+        textPrimary = textPrimary,
+        textSecondary = textSecondary,
+        primaryAccent = primaryAccent,
+        secondaryAccent = secondaryAccent,
+        ctaFill = ctaFill,
+        ctaText = ctaText,
+        iconMarkTint1 = iconMarkTint1,
+        iconMarkTint2 = iconMarkTint2,
+        cornerRadius = cornerRadius,
+        wordmarkFontFamily = currentTheme.wordmarkFontFamily,
+        wordmarkAllCaps = currentTheme.wordmarkAllCaps,
+        decorativeMotif = currentTheme.decorativeMotif,
+        isDark = currentTheme.isDark,
+        editorBackground = editorBackground
+    )
+
+    // Map to MaterialTheme just for basic compatibility, but we prefer LocalThemeTokens
+    val colorScheme = if (currentTheme.isDark) {
+        darkColorScheme(
+            primary = animatedTokens.primaryAccent,
+            background = animatedTokens.screenBackground,
+            surface = animatedTokens.surface,
+            onBackground = animatedTokens.textPrimary,
+            onSurface = animatedTokens.textPrimary
+        )
+    } else {
+        lightColorScheme(
+            primary = animatedTokens.primaryAccent,
+            background = animatedTokens.screenBackground,
+            surface = animatedTokens.surface,
+            onBackground = animatedTokens.textPrimary,
+            onSurface = animatedTokens.textPrimary
+        )
+    }
+
     val view = LocalView.current
     if (!view.isInEditMode) {
         SideEffect {
@@ -90,9 +100,11 @@ fun MagazineForgeTheme(content: @Composable () -> Unit) {
         }
     }
 
-    MaterialTheme(
-        colorScheme = colorScheme,
-        typography = LuxeTypography,
-        content = content
-    )
+    CompositionLocalProvider(LocalThemeTokens provides animatedTokens) {
+        MaterialTheme(
+            colorScheme = colorScheme,
+            typography = LuxeTypography,
+            content = content
+        )
+    }
 }

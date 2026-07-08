@@ -74,6 +74,10 @@ class MainActivity : ComponentActivity() {
         
         val secureStorage = SecureStorage(this)
         val savedKey = secureStorage.getApiKey()
+        
+        val savedThemeId = secureStorage.getThemeId()
+        val initialTheme = com.magazineforge.app.ui.theme.AllThemes.find { it.id == savedThemeId } ?: com.magazineforge.app.ui.theme.SunsetEditorial
+        com.magazineforge.app.ui.theme.ThemeState.setTheme(initialTheme)
 
         setContent {
             MagazineForgeTheme {
@@ -81,7 +85,7 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    var currentScreen by remember { mutableStateOf(if (savedKey != null) "showcase" else "onboarding") }
+                    var currentScreen by remember { mutableStateOf(if (savedKey != null) "home" else "onboarding") }
                     var selectedTemplate by remember { mutableStateOf("") }
                     var selectedTemplateName by remember { mutableStateOf("") }
                     var initialEditorPrompt by remember { mutableStateOf("") }
@@ -133,28 +137,28 @@ class MainActivity : ComponentActivity() {
                         bottomBar = {
                             if (currentScreen != "onboarding" && selectedPdfForViewer == null && compileState !is CompileState.Success && compileState !is CompileState.Error) {
                                 NavigationBar(
-                                    containerColor = DarkSurface,
-                                    contentColor = GhostWhite
+                                    containerColor = LocalThemeTokens.current.surface,
+                                    contentColor = LocalThemeTokens.current.textSecondary
                                 ) {
                                     val items = listOf(
-                                        Triple("showcase", "Home", Icons.Default.Home),
-                                        Triple("editor", "Studio", Icons.Default.Brush),
-                                        Triple("gallery", "Gallery", Icons.Default.PhotoLibrary),
+                                        Triple("home", "Home", Icons.Default.Home),
                                         Triple("library", "Library", Icons.Default.Collections),
+                                        Triple("showcase", "Showcase", Icons.Default.PhotoLibrary),
+                                        Triple("templates", "Templates", Icons.Default.Brush),
                                         Triple("settings", "Settings", Icons.Default.Settings)
                                     )
                                     items.forEach { (route, label, icon) ->
                                         NavigationBarItem(
                                             icon = { Icon(icon, contentDescription = label) },
-                                            label = { Text(label, style = LuxeTypography.labelSmall) },
+                                            label = { Text(label, style = LocalThemeTokens.current.wordmarkFontFamily.let { LuxeTypography.labelSmall.copy(fontFamily = it) }) },
                                             selected = currentScreen == route,
                                             onClick = { currentScreen = route },
                                             colors = NavigationBarItemDefaults.colors(
-                                                selectedIconColor = DarkSurface,
-                                                unselectedIconColor = AshGrey,
-                                                selectedTextColor = EditorialGold,
-                                                unselectedTextColor = AshGrey,
-                                                indicatorColor = EditorialGold
+                                                selectedIconColor = LocalThemeTokens.current.surface,
+                                                unselectedIconColor = LocalThemeTokens.current.textSecondary,
+                                                selectedTextColor = LocalThemeTokens.current.primaryAccent,
+                                                unselectedTextColor = LocalThemeTokens.current.textSecondary,
+                                                indicatorColor = LocalThemeTokens.current.primaryAccent
                                             )
                                         )
                                     }
@@ -162,7 +166,7 @@ class MainActivity : ComponentActivity() {
                             }
                         }
                     ) { innerPadding ->
-                        Box(modifier = Modifier.fillMaxSize().padding(innerPadding)) {
+                        Box(modifier = Modifier.fillMaxSize().padding(innerPadding).background(LocalThemeTokens.current.screenBackground)) {
                             // FloatingProgressTracker added to the Box holding NavHost
 
 
@@ -207,48 +211,24 @@ class MainActivity : ComponentActivity() {
 
                             when (currentScreen) {
                                     "onboarding" -> OnboardingScreen(
-                                        onVerifyClicked = { key ->
-                                            isVerifying = true
-                                            verifyError = null
-                                            coroutineScope.launch {
-                                                try {
-                                                    if (key.startsWith("AQ") || key.startsWith("AIza")) {
-                                                        secureStorage.saveApiKey(key)
-                                                        apiKey = key
-                                                        currentScreen = "showcase"
-                                                        return@launch
-                                                    }
-
-                                                    val response = withContext(Dispatchers.IO) {
-                                                        ApiClient.retrofitService.verifyKey(VerifyKeyRequest(key))
-                                                    }
-                                                    if (response.isSuccessful) {
-                                                        if (response.body()?.valid == true) {
-                                                            secureStorage.saveApiKey(key)
-                                                            apiKey = key
-                                                            currentScreen = "showcase"
-                                                        } else {
-                                                            verifyError = "Invalid API Key"
-                                                        }
-                                                    } else {
-                                                        if (response.code() in 400..499) {
-                                                            verifyError = "Invalid API Key"
-                                                        } else {
-                                                            verifyError = "Server Booting... Try again."
-                                                        }
-                                                    }
-                                                } catch (e: Exception) {
-                                                    verifyError = "Connection Error: ${e.message}"
-                                                } finally {
-                                                    isVerifying = false
-                                                }
-                                            }
+                                        onCreateClicked = {
+                                            currentScreen = "home"
                                         },
-                                        onOpenEditorClicked = {
-                                            currentScreen = "latex_notebook"
+                                        onExploreClicked = {
+                                            currentScreen = "templates"
+                                        }
+                                    )
+                                    "home" -> HomeScreen(
+                                        viewModel = viewModel,
+                                        onMagazineSelected = { url ->
+                                            selectedPdfForViewer = url
                                         },
-                                        isVerifying = isVerifying,
-                                        verifyError = verifyError
+                                        onContinueEditing = {
+                                            currentScreen = "editor"
+                                        },
+                                        onViewLibrary = {
+                                            currentScreen = "library"
+                                        }
                                     )
                                     "showcase" -> ShowcaseScreen(
                                         viewModel = viewModel,
@@ -256,7 +236,7 @@ class MainActivity : ComponentActivity() {
                                             selectedPdfForViewer = url
                                         }
                                     )
-                                    "gallery" -> TemplateGalleryScreen(
+                                    "templates" -> TemplateGalleryScreen(
                                         onTemplateSelected = { template, description, name ->
                                             selectedTemplate = template
                                             initialEditorPrompt = description
@@ -270,24 +250,10 @@ class MainActivity : ComponentActivity() {
                                             currentScreen = "library"
                                         },
                                         onPublishClicked = {
-                                            if (FirebaseAuth.getInstance().currentUser != null) {
-                                                // Ideally, upload PDF to Firebase Storage here.
-                                                // For v2.0.0 frontend UI, we route to Showcase.
-                                                currentScreen = "showcase"
-                                            } else {
-                                                currentScreen = "auth"
-                                            }
+                                            currentScreen = "showcase"
                                         },
                                         onEditorClicked = {
                                             currentScreen = "latex_notebook"
-                                        }
-                                    )
-                                    "auth" -> AuthScreen(
-                                        onAuthSuccess = {
-                                            currentScreen = "showcase"
-                                        },
-                                        onBack = {
-                                            currentScreen = "gallery"
                                         }
                                     )
                                     "editor" -> EditorScreen(

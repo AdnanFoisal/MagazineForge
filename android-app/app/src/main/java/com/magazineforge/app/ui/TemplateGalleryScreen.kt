@@ -81,24 +81,24 @@ fun TemplateGalleryScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("MagazineForge", style = LuxeTypography.headlineMedium, color = EditorialGold) },
+                title = { Text("MagazineForge", style = LuxeTypography.headlineMedium, color = tokens.primaryAccent) },
                 navigationIcon = {
                     IconButton(onClick = onLibraryClicked) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = EditorialGold)
+                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = tokens.primaryAccent)
                     }
                 },
                 actions = {
                     IconButton(onClick = onEditorClicked) {
-                        Icon(Icons.Default.Edit, contentDescription = "Raw Editor", tint = EditorialGold)
+                        Icon(Icons.Default.Edit, contentDescription = "Raw Editor", tint = tokens.primaryAccent)
                     }
                     IconButton(onClick = onPublishClicked) {
-                        Icon(Icons.Default.Add, contentDescription = "Publish", tint = EditorialGold)
+                        Icon(Icons.Default.Add, contentDescription = "Publish", tint = tokens.primaryAccent)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = PitchBlack)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = tokens.screenBackground)
             )
         },
-        containerColor = PitchBlack
+        containerColor = tokens.screenBackground
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -108,8 +108,8 @@ fun TemplateGalleryScreen(
             // Category Chips
             ScrollableTabRow(
                 selectedTabIndex = categories.indexOf(selectedCategory),
-                containerColor = PitchBlack,
-                contentColor = EditorialGold,
+                containerColor = tokens.screenBackground,
+                contentColor = tokens.primaryAccent,
                 edgePadding = 16.dp,
                 divider = {}
             ) {
@@ -120,7 +120,7 @@ fun TemplateGalleryScreen(
                         text = { 
                             Text(
                                 category.uppercase(), 
-                                style = LuxeTypography.labelMedium.copy(color = if (selectedCategory == category) EditorialGold else GhostWhite.copy(alpha=0.6f))
+                                style = LuxeTypography.labelMedium.copy(color = if (selectedCategory == category) tokens.primaryAccent else tokens.textPrimary.copy(alpha=0.6f))
                             ) 
                         }
                     )
@@ -150,6 +150,7 @@ fun TemplateGalleryScreen(
 
 @Composable
 fun TemplateMasonryCard(template: TemplateModel, onClick: () -> Unit, onPreview: () -> Unit) {
+    val tokens = LocalThemeTokens.current
     // Generate a somewhat random aspect ratio based on ID length to simulate masonry
     val aspectRatio = if (template.id.length % 2 == 0) 0.75f else 1.2f
     
@@ -162,7 +163,7 @@ fun TemplateMasonryCard(template: TemplateModel, onClick: () -> Unit, onPreview:
             .background(Color(0xFF1A1A1A))
             .clickable(onClick = onClick)
     ) {
-        AsyncImage(
+        CoverArtImage(
             model = ImageRequest.Builder(LocalContext.current)
                 .data(template.thumbnailUrl)
                 .crossfade(true)
@@ -196,11 +197,11 @@ fun TemplateMasonryCard(template: TemplateModel, onClick: () -> Unit, onPreview:
             Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = template.name,
-                style = LuxeTypography.titleMedium.copy(color = GhostWhite, fontWeight = FontWeight.Bold)
+                style = LuxeTypography.titleMedium.copy(color = tokens.textPrimary, fontWeight = FontWeight.Bold)
             )
             Text(
                 text = "@${template.id.replace("_", "")}",
-                style = LuxeTypography.labelSmall.copy(color = GhostWhite.copy(alpha = 0.7f), letterSpacing = 1.sp)
+                style = LuxeTypography.labelSmall.copy(color = tokens.textPrimary.copy(alpha = 0.7f), letterSpacing = 1.sp)
             )
             }
             IconButton(
@@ -212,7 +213,7 @@ fun TemplateMasonryCard(template: TemplateModel, onClick: () -> Unit, onPreview:
                 Icon(
                     androidx.compose.material.icons.Icons.Default.PlayArrow,
                     contentDescription = "Preview",
-                    tint = EditorialGold,
+                    tint = tokens.primaryAccent,
                     modifier = Modifier.size(20.dp)
                 )
             }

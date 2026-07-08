@@ -63,6 +63,10 @@ fun CoAuthorScreen(
         }
     }
 
+    val tokens = com.magazineforge.app.ui.theme.LocalThemeTokens.current
+    val gold = tokens.primaryAccent
+    val obsidian = tokens.editorBackground
+
     val pickImage = { callback: (String) -> Unit ->
         onImageUploadedCallback = callback
         launcher.launch("image/*")
@@ -71,8 +75,8 @@ fun CoAuthorScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Co-Author Schema", color = GoldBright) },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = PitchBlack),
+                title = { Text("Co-Author Schema", color = gold) },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = obsidian),
                 navigationIcon = {
                     TextButton(onClick = onBack) {
                         Text("Back", color = GhostWhite)
@@ -83,14 +87,14 @@ fun CoAuthorScreen(
                     Button(
                         onClick = { onGenerateLatex(schema) },
                         enabled = !isGeneratingLatex && isSchemaValid,
-                        colors = ButtonDefaults.buttonColors(containerColor = GoldBright)
+                        colors = ButtonDefaults.buttonColors(containerColor = gold)
                     ) {
-                        Text(if (isGeneratingLatex) "Generating..." else "Next", color = PitchBlack)
+                        Text(if (isGeneratingLatex) "Generating..." else "Next", color = obsidian)
                     }
                 }
             )
         },
-        containerColor = PitchBlack
+        containerColor = obsidian
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -294,7 +298,7 @@ fun ImageUploadField(
             Text(label, style = com.magazineforge.app.ui.theme.LuxeTypography.labelSmall.copy(color = com.magazineforge.app.ui.theme.GhostWhite))
             Text(
                 text = if (useDriveLink) "Use Local Image" else "Use Drive Link",
-                style = com.magazineforge.app.ui.theme.LuxeTypography.labelSmall.copy(color = com.magazineforge.app.ui.theme.EditorialGold),
+                style = com.magazineforge.app.ui.theme.LuxeTypography.labelSmall.copy(color = com.magazineforge.app.ui.theme.LocalThemeTokens.current.primaryAccent),
                 modifier = Modifier.clickable { useDriveLink = !useDriveLink }
             )
         }
@@ -307,9 +311,9 @@ fun ImageUploadField(
                 modifier = Modifier.fillMaxWidth(),
                 textStyle = com.magazineforge.app.ui.theme.LuxeTypography.bodyMedium.copy(color = com.magazineforge.app.ui.theme.GhostWhite),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = com.magazineforge.app.ui.theme.EditorialGold,
+                    focusedBorderColor = com.magazineforge.app.ui.theme.LocalThemeTokens.current.primaryAccent,
                     unfocusedBorderColor = com.magazineforge.app.ui.theme.BorderDark,
-                    cursorColor = com.magazineforge.app.ui.theme.EditorialGold
+                    cursorColor = com.magazineforge.app.ui.theme.LocalThemeTokens.current.primaryAccent
                 )
             )
         } else {
@@ -324,20 +328,20 @@ fun ImageUploadField(
                     modifier = Modifier.weight(1f),
                     textStyle = com.magazineforge.app.ui.theme.LuxeTypography.bodyMedium.copy(color = com.magazineforge.app.ui.theme.GhostWhite),
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = com.magazineforge.app.ui.theme.EditorialGold,
+                        focusedBorderColor = com.magazineforge.app.ui.theme.LocalThemeTokens.current.primaryAccent,
                         unfocusedBorderColor = com.magazineforge.app.ui.theme.BorderDark,
-                        cursorColor = com.magazineforge.app.ui.theme.EditorialGold
+                        cursorColor = com.magazineforge.app.ui.theme.LocalThemeTokens.current.primaryAccent
                     )
                 )
                 Spacer(modifier = Modifier.width(8.dp))
                 IconButton(
                     onClick = onPickImage,
-                    modifier = Modifier.background(com.magazineforge.app.ui.theme.EditorialGold.copy(alpha = 0.1f), RoundedCornerShape(8.dp))
+                    modifier = Modifier.background(com.magazineforge.app.ui.theme.LocalThemeTokens.current.primaryAccent.copy(alpha = 0.1f), RoundedCornerShape(8.dp))
                 ) {
                     Icon(
                         imageVector = Icons.Default.Image,
                         contentDescription = "Pick Image",
-                        tint = com.magazineforge.app.ui.theme.EditorialGold
+                        tint = com.magazineforge.app.ui.theme.LocalThemeTokens.current.primaryAccent
                     )
                 }
             }

@@ -2,137 +2,164 @@ package com.magazineforge.app.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.buildAnnotatedString
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
-import com.magazineforge.app.ui.theme.*
+import androidx.compose.ui.unit.sp
+import com.magazineforge.app.ui.theme.LocalThemeTokens
+import com.magazineforge.app.ui.theme.ThemeBackground
 
-@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun IconMark(modifier: Modifier = Modifier) {
+    val tokens = LocalThemeTokens.current
+    // Two-tone folded ribbon / bookmark mark
+    androidx.compose.foundation.Canvas(modifier = modifier) {
+        val width = size.width
+        val height = size.height
+        
+        val path1 = androidx.compose.ui.graphics.Path().apply {
+            moveTo(width * 0.2f, height * 0.1f)
+            lineTo(width * 0.6f, height * 0.1f)
+            lineTo(width * 0.8f, height * 0.5f)
+            lineTo(width * 0.4f, height * 0.9f)
+            close()
+        }
+        val path2 = androidx.compose.ui.graphics.Path().apply {
+            moveTo(width * 0.6f, height * 0.1f)
+            lineTo(width * 0.8f, height * 0.1f)
+            lineTo(width * 0.8f, height * 0.8f)
+            lineTo(width * 0.4f, height * 0.9f)
+            close()
+        }
+        drawPath(path1, color = tokens.iconMarkTint1)
+        drawPath(path2, color = tokens.iconMarkTint2)
+    }
+}
+
 @Composable
 fun OnboardingScreen(
-    onVerifyClicked: (String) -> Unit,
-    onOpenEditorClicked: () -> Unit = {},
-    isVerifying: Boolean = false,
-    verifyError: String? = null
+    onExploreClicked: () -> Unit,
+    onCreateClicked: () -> Unit
 ) {
-    var apiKey by remember { mutableStateOf("") }
+    val tokens = LocalThemeTokens.current
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
-    ) {
+    ThemeBackground {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
+            Spacer(modifier = Modifier.weight(1f))
+            
+            // Icon mark
+            IconMark(modifier = Modifier.size(64.dp))
+            
+            Spacer(modifier = Modifier.height(24.dp))
+            
+            // Wordmark
+            val wordmarkStr = buildAnnotatedString {
+                if (tokens.wordmarkAllCaps) {
+                    withStyle(SpanStyle(color = tokens.textPrimary)) {
+                        append("MAGAZINE")
+                    }
+                    withStyle(SpanStyle(color = tokens.primaryAccent)) {
+                        append("FORGE")
+                    }
+                } else {
+                    withStyle(SpanStyle(color = tokens.textPrimary)) {
+                        append("Magazine")
+                    }
+                    withStyle(SpanStyle(color = tokens.primaryAccent)) {
+                        append("Forge")
+                    }
+                }
+            }
             
             Text(
-                text = "MAGAZINE FORGE",
-                style = MaterialTheme.typography.headlineMedium,
-                color = GhostWhite,
+                text = wordmarkStr,
+                fontFamily = tokens.wordmarkFontFamily,
+                fontWeight = if (tokens.wordmarkAllCaps) FontWeight.Bold else FontWeight.SemiBold,
+                fontSize = 32.sp,
                 textAlign = TextAlign.Center
             )
             
             Spacer(modifier = Modifier.height(16.dp))
             
+            // Tagline
             Text(
-                text = "Connect your creative engine.",
-                style = MaterialTheme.typography.bodyLarge,
-                color = AshGrey,
+                text = "AI-powered magazines. Made beautifully yours.",
+                color = tokens.textSecondary,
+                fontSize = 16.sp,
                 textAlign = TextAlign.Center
             )
-
-            Spacer(modifier = Modifier.height(48.dp))
-
-            OutlinedTextField(
-                value = apiKey,
-                onValueChange = { apiKey = it },
-                label = { Text("Gemini API Key", style = MaterialTheme.typography.labelMedium) },
-                placeholder = { Text("AQ...", style = MaterialTheme.typography.bodyMedium, color = BorderLight) },
-                modifier = Modifier.fillMaxWidth(),
-                singleLine = true,
-                textStyle = MaterialTheme.typography.bodyLarge.copy(color = GhostWhite),
-                colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = EditorialGold,
-                    unfocusedBorderColor = BorderDark,
-                    cursorColor = EditorialGold,
-                    focusedLabelColor = EditorialGold,
-                    unfocusedLabelColor = AshGrey,
-                    focusedContainerColor = MaterialTheme.colorScheme.surface,
-                    unfocusedContainerColor = MaterialTheme.colorScheme.surface
-                ),
-                shape = RoundedCornerShape(8.dp)
-            )
             
-            if (verifyError != null) {
-                Spacer(modifier = Modifier.height(12.dp))
-                Text(
-                    text = verifyError,
-                    color = MaterialTheme.colorScheme.error,
-                    style = MaterialTheme.typography.labelSmall,
-                    textAlign = TextAlign.Center
-                )
-            }
-
-            Spacer(modifier = Modifier.height(32.dp))
-
+            Spacer(modifier = Modifier.weight(1f))
+            
+            // Primary CTA
             Button(
-                onClick = { onVerifyClicked(apiKey) },
+                onClick = onCreateClicked,
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = EditorialGold,
-                    contentColor = PitchBlack,
-                    disabledContainerColor = BorderDark,
-                    disabledContentColor = AshGrey
+                    containerColor = tokens.ctaFill,
+                    contentColor = tokens.ctaText
                 ),
-                shape = RoundedCornerShape(8.dp),
-                enabled = apiKey.isNotBlank() && !isVerifying
+                shape = RoundedCornerShape(tokens.cornerRadius)
             ) {
-                if (isVerifying) {
-                    CircularProgressIndicator(
-                        modifier = Modifier.size(24.dp),
-                        color = PitchBlack,
-                        strokeWidth = 2.dp
-                    )
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Text(
-                        text = "Authenticating...",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = PitchBlack
-                    )
-                } else {
-                    Text(
-                        text = "Initialize",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = PitchBlack
-                    )
-                }
+                Text(
+                    text = "Create Your First Magazine",
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 16.sp
+                )
             }
             
             Spacer(modifier = Modifier.height(16.dp))
             
-            TextButton(onClick = onOpenEditorClicked) {
-                Text("Open Raw Editor", style = MaterialTheme.typography.labelLarge, color = EditorialGold)
+            // Secondary CTA
+            OutlinedButton(
+                onClick = onExploreClicked,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    contentColor = tokens.textPrimary
+                ),
+                border = androidx.compose.foundation.BorderStroke(1.dp, tokens.textSecondary.copy(alpha = 0.3f)),
+                shape = RoundedCornerShape(tokens.cornerRadius)
+            ) {
+                Text(
+                    text = "Explore Templates",
+                    fontWeight = FontWeight.SemiBold,
+                    fontSize = 16.sp
+                )
             }
             
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(32.dp))
             
-            Text(
-                text = "Get an API key from Google AI Studio",
-                style = MaterialTheme.typography.labelSmall,
-                color = EditorialGold,
-                textAlign = TextAlign.Center
-            )
+            // Page indicators
+            Row(
+                horizontalArrangement = Arrangement.Center,
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(tokens.primaryAccent))
+                Spacer(modifier = Modifier.width(8.dp))
+                Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(tokens.textSecondary.copy(alpha = 0.3f)))
+                Spacer(modifier = Modifier.width(8.dp))
+                Box(modifier = Modifier.size(8.dp).clip(CircleShape).background(tokens.textSecondary.copy(alpha = 0.3f)))
+            }
+            
+            Spacer(modifier = Modifier.height(16.dp))
         }
     }
 }

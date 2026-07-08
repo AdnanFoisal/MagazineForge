@@ -22,10 +22,10 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.magazineforge.app.models.ShowcaseItem
 import com.magazineforge.app.network.ShowcaseRepository
-import com.magazineforge.app.ui.theme.DarkSurface
-import com.magazineforge.app.ui.theme.EditorialGold
-import com.magazineforge.app.ui.theme.GhostWhite
-import com.magazineforge.app.ui.theme.AshGrey
+import com.magazineforge.app.ui.theme.LocalThemeTokens
+
+
+
 import com.magazineforge.app.ui.theme.LuxeTypography
 import kotlinx.coroutines.launch
 
@@ -34,12 +34,13 @@ fun ShowcaseScreen(
     viewModel: EditorViewModel,
     onMagazineSelected: (String) -> Unit
 ) {
+    val tokens = LocalThemeTokens.current
     val repository = remember { ShowcaseRepository() }
     val context = LocalContext.current
     var showcaseItems by remember { mutableStateOf<List<ShowcaseItem>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
     var selectedFilter by remember { mutableStateOf("All") }
-    val filters = listOf("All", "Luxe Noir", "Brutalist", "Minimalist", "Editorial")
+    val filters = listOf("All", "Sunset Editorial", "Amber Noir", "Cosmic Purple", "Nature Sage", "Riso Print", "Emerald Editorial")
 
     LaunchedEffect(Unit) {
         isLoading = true
@@ -60,7 +61,7 @@ fun ShowcaseScreen(
     ) {
         Text(
             text = "Community Showcase",
-            style = LuxeTypography.headlineMedium.copy(color = GhostWhite),
+            style = LuxeTypography.headlineMedium.copy(color = tokens.textPrimary),
             modifier = Modifier.padding(horizontal = 24.dp, vertical = 16.dp)
         )
         
@@ -77,14 +78,14 @@ fun ShowcaseScreen(
                     onClick = { selectedFilter = filter },
                     label = { Text(filter, style = LuxeTypography.labelMedium) },
                     colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = EditorialGold,
-                        selectedLabelColor = DarkSurface,
-                        containerColor = DarkSurface,
-                        labelColor = AshGrey
+                        selectedContainerColor = tokens.primaryAccent,
+                        selectedLabelColor = tokens.surface,
+                        containerColor = tokens.surface,
+                        labelColor = tokens.textSecondary
                     ),
                     border = FilterChipDefaults.filterChipBorder(
-                        borderColor = AshGrey.copy(alpha = 0.5f),
-                        selectedBorderColor = EditorialGold,
+                        borderColor = tokens.textSecondary.copy(alpha = 0.5f),
+                        selectedBorderColor = tokens.primaryAccent,
                         enabled = true,
                         selected = selectedFilter == filter
                     )
@@ -96,13 +97,13 @@ fun ShowcaseScreen(
 
         if (isLoading) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = EditorialGold)
+                CircularProgressIndicator(color = tokens.primaryAccent)
             }
         } else if (filteredItems.isEmpty()) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text(
                     text = "No magazines found.",
-                    style = LuxeTypography.bodyLarge.copy(color = AshGrey)
+                    style = LuxeTypography.bodyLarge.copy(color = tokens.textSecondary)
                 )
             }
         } else {
@@ -134,6 +135,7 @@ fun ShowcaseScreen(
 
 @Composable
 fun ShowcaseCard(item: ShowcaseItem, onClick: () -> Unit) {
+    val tokens = LocalThemeTokens.current
     // Generate an aspect ratio based on title length to create masonry effect
     val aspectRatio = if (item.title.length % 2 == 0) 0.75f else 1.0f
 
@@ -153,7 +155,7 @@ fun ShowcaseCard(item: ShowcaseItem, onClick: () -> Unit) {
                 .padding(bottom = 12.dp)
             ) {
                 if (item.coverImageUrl.isNotEmpty()) {
-                    AsyncImage(
+                    CoverArtImage(
                         model = coil.request.ImageRequest.Builder(LocalContext.current)
                             .data(item.coverImageUrl)
                             .crossfade(true)
@@ -191,7 +193,7 @@ fun ShowcaseCard(item: ShowcaseItem, onClick: () -> Unit) {
             }
             Text(
                 text = item.title,
-                style = LuxeTypography.headlineSmall.copy(color = GhostWhite, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold),
+                style = LuxeTypography.headlineSmall.copy(color = tokens.textPrimary, fontWeight = androidx.compose.ui.text.font.FontWeight.Bold),
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.padding(bottom = 4.dp)
@@ -199,7 +201,7 @@ fun ShowcaseCard(item: ShowcaseItem, onClick: () -> Unit) {
             Text(
                 text = "@${item.templateVariant.replace("_", "")}".uppercase(),
                 style = LuxeTypography.labelSmall.copy(
-                    color = AshGrey, 
+                    color = tokens.textSecondary, 
                     letterSpacing = 1.sp,
                     fontWeight = androidx.compose.ui.text.font.FontWeight.Medium
                 )

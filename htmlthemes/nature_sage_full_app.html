@@ -1,0 +1,883 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>MagazineForge — Nature Sage Full App</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,700;9..144,900&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root {
+      --page-bg: #d9d6ca;
+      --shell: #2A332A;
+      --screen-bg: #E8E5D8;
+      --welcome-bg: #E8E5D8;
+      --surface: #FFFFFF;
+      --text: #2A332A;
+      --muted: #6B7268;
+      --primary: #4A5D48;
+      --secondary: #9BAE93;
+      --accent3: #DDE8D8;
+      --cta-text: #F0EDE0;
+      --nav-border: rgba(0,0,0,.08);
+      --chip-bg: #DDE8D8;
+      --chip-text: #2A332A;
+      --mode2-bg: #DCE5D8;
+      --text-on-dark: #2A332A;
+      --font-title: 'Fraunces';
+      --font-ui: 'Inter';
+    }
+    
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body {
+    font-family: var(--font-ui), system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--page-bg);
+    color: var(--text);
+  }
+  .page {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 28px 16px 56px;
+  }
+  .hero {
+    text-align: center;
+    margin-bottom: 24px;
+  }
+  .hero h1 {
+    margin: 0;
+    font-family: var(--font-title), serif;
+    font-size: 28px;
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+  }
+  .hero p {
+    margin: 10px auto 0;
+    max-width: 720px;
+    color: color-mix(in srgb, var(--muted) 92%, black 8%);
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  .stack {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 22px;
+  }
+  .phone {
+    width: min(92vw, 330px);
+    min-height: 690px;
+    border-radius: 38px;
+    background: var(--shell);
+    padding: 8px;
+    box-shadow: 0 26px 64px rgba(0,0,0,.22);
+  }
+  .screen {
+    min-height: 674px;
+    border-radius: 30px;
+    background: var(--screen-bg);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+  }
+  .welcome.screen { background: var(--welcome-bg); }
+  .statusbar {
+    height: 28px;
+    padding: 10px 16px 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text);
+    opacity: .95;
+  }
+  .welcome .statusbar { color: var(--text-on-dark, var(--text)); }
+  .content {
+    flex: 1;
+    padding: 14px 16px 16px;
+    display: flex;
+    flex-direction: column;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .logo {
+    width: 34px; height: 34px;
+    flex: 0 0 auto;
+  }
+  .wordmark {
+    font-family: var(--font-title), serif;
+    font-size: 21px;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -0.02em;
+  }
+  .wordmark .accent { color: var(--primary); }
+  .tagline {
+    margin-top: 10px;
+    color: var(--muted);
+    font-size: 12px;
+    line-height: 1.45;
+  }
+  .cta {
+    display: grid;
+    gap: 8px;
+    margin-top: auto;
+  }
+  .btn {
+    border-radius: 999px;
+    text-align: center;
+    padding: 13px 14px;
+    font-weight: 800;
+    font-size: 12.5px;
+    letter-spacing: .01em;
+  }
+  .btn.primary { background: var(--primary); color: var(--cta-text); }
+  .btn.secondary { border: 1.6px solid var(--text); color: var(--text); background: transparent; }
+  .dots {
+    display: flex;
+    gap: 5px;
+    justify-content: center;
+    margin-top: 11px;
+  }
+  .dots span {
+    width: 6px; height: 6px; border-radius: 999px; background: color-mix(in srgb, var(--muted) 32%, transparent);
+  }
+  .dots span.active { width: 18px; background: var(--primary); border-radius: 999px; }
+  .top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .icon-btn {
+    width: 28px; height: 28px;
+    border-radius: 999px;
+    display: grid; place-items: center;
+    background: var(--surface);
+    color: var(--text);
+    border: 1px solid color-mix(in srgb, var(--nav-border) 80%, transparent);
+    font-weight: 800;
+  }
+  .heading {
+    margin-top: 14px;
+    font-family: var(--font-title), serif;
+    font-size: 20px;
+    line-height: 1.06;
+    letter-spacing: -0.02em;
+  }
+  .subhead { color: var(--muted); font-size: 12px; line-height: 1.45; margin-top: 6px; }
+  .card {
+    background: var(--surface);
+    border-radius: 16px;
+    padding: 12px;
+    border: 1px solid color-mix(in srgb, var(--nav-border) 16%, transparent);
+  }
+  .glass {
+    background: color-mix(in srgb, var(--surface) 92%, transparent);
+    backdrop-filter: blur(10px);
+  }
+  .section {
+    margin-top: 14px;
+  }
+  .section-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+  }
+  .section-head h3 {
+    margin: 0;
+    font-size: 12px;
+    letter-spacing: .02em;
+    text-transform: uppercase;
+  }
+  .section-head span {
+    color: var(--primary);
+    font-size: 10.5px;
+    font-weight: 800;
+  }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .grid3 { display: grid; grid-template-columns: repeat(3,1fr); gap: 7px; }
+  .mini {
+    border-radius: 14px;
+    padding: 10px;
+    min-height: 92px;
+  }
+  .mini h4 {
+    margin: 8px 0 2px;
+    font-size: 13px;
+    font-family: var(--font-title), serif;
+    line-height: 1.1;
+  }
+  .mini p {
+    margin: 0;
+    font-size: 9.5px;
+    color: var(--muted);
+    line-height: 1.35;
+  }
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 8px;
+    font-weight: 800;
+    border-radius: 999px;
+    padding: 4px 7px;
+    background: var(--chip-bg);
+    color: var(--chip-text);
+  }
+  .list {
+    display: grid;
+    gap: 8px;
+  }
+  .rowitem {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    padding: 10px;
+    border-radius: 14px;
+    background: var(--surface);
+    border: 1px solid color-mix(in srgb, var(--nav-border) 16%, transparent);
+  }
+  .thumb {
+    width: 54px; height: 54px; border-radius: 12px;
+    flex: 0 0 auto;
+    overflow: hidden;
+  }
+  .thumb.sm { width: 44px; height: 44px; }
+  .rowitem h4 { margin: 0; font-size: 12px; font-family: var(--font-title), serif; }
+  .rowitem p { margin: 2px 0 0; font-size: 9px; color: var(--muted); line-height: 1.35; }
+  .progress {
+    margin-top: 6px;
+    height: 3px;
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--muted) 18%, transparent);
+    overflow: hidden;
+  }
+  .progress > span {
+    display: block;
+    height: 100%;
+    width: 58%;
+    background: var(--primary);
+  }
+  .nav {
+    margin-top: auto;
+    padding-top: 10px;
+    border-top: 1px solid var(--nav-border);
+    display: flex;
+    justify-content: space-between;
+    gap: 4px;
+  }
+  .nav .item {
+    flex: 1;
+    text-align: center;
+    font-size: 7.7px;
+    color: var(--muted);
+  }
+  .nav .dot {
+    width: 16px; height: 16px; border-radius: 5px;
+    margin: 0 auto 3px;
+    background: color-mix(in srgb, var(--muted) 22%, transparent);
+  }
+  .nav .item.active { color: var(--primary); font-weight: 800; }
+  .nav .item.active .dot { background: var(--primary); }
+  .toggle {
+    width: 28px; height: 16px; border-radius: 999px; background: var(--primary); position: relative; flex: 0 0 auto;
+  }
+  .toggle::after {
+    content: "";
+    width: 12px; height: 12px; border-radius: 50%;
+    background: white; position: absolute; top: 2px; right: 2px;
+  }
+  .toggle.off { background: color-mix(in srgb, var(--muted) 24%, transparent); }
+  .toggle.off::after { right: auto; left: 2px; }
+  .cover {
+    height: 210px;
+    border-radius: 18px;
+    overflow: hidden;
+    position: relative;
+  }
+  .cover h2 {
+    margin: 0;
+    position: absolute;
+    left: 12px;
+    top: 12px;
+    right: 12px;
+    font-family: var(--font-title), serif;
+    font-size: 21px;
+    line-height: 1.05;
+    letter-spacing: -0.02em;
+  }
+  .palette { display:flex; gap:6px; margin-top:10px; }
+  .swatch { width: 18px; height: 18px; border-radius: 999px; }
+  .footerbtn {
+    margin-top: auto;
+    padding: 12px 14px;
+    border-radius: 999px;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 800;
+    background: var(--primary);
+    color: var(--cta-text);
+  }
+
+    
+</style>
+</head>
+<body>
+  <div class="page">
+    <div class="hero">
+      <h1>Nature Sage — full app prototype</h1>
+      <p>Every screen is stacked vertically so the layout stays readable on phones. The app flow is the same across themes; only the visual language changes.</p>
+    </div>
+    <div class="stack">
+      
+<div class="phone">
+  <div class="screen welcome">
+    <div class="statusbar"><span>9:41</span><span>••• 🔋</span></div>
+    <div class="content">
+      <div class="brand"><svg class="logo" viewBox="0 0 40 40" aria-hidden="true"><path d="M20 6 L8 11 V32 L20 27 Z" fill="var(--primary)"/><path d="M20 6 L32 11 V32 L20 27 Z" fill="var(--secondary)"/></svg>
+        <div>
+          <div class="wordmark" style="font-size:22px;">Magazine<span class="accent">Forge</span></div>
+          <div class="tagline" style="color:rgba(42,51,42,.72)">AI-powered magazines.<br>Made beautifully yours.</div>
+        </div>
+      </div>
+      <div style="position:relative; flex:1; margin-top:12px; border-radius:22px; overflow:hidden;"><div style="position:absolute; inset:0; background:radial-gradient(circle at 24% 30%, rgba(155,174,147,.72), transparent 26%), radial-gradient(circle at 70% 38%, rgba(74,93,72,.5), transparent 22%), radial-gradient(circle at 50% 80%, rgba(42,51,42,.22), transparent 30%), linear-gradient(180deg, #E8E5D8, #E8E5D8);"></div>
+            <svg viewBox="0 0 260 220" width="260" height="220" style="position:absolute; left:0; top:14px; opacity:.9">
+              <path d="M40 192 Q52 120 82 50" fill="none" stroke="#4a5d48" stroke-width="2"/>
+              <path d="M78 58 C96 40, 120 40, 130 60 C114 66, 96 70, 78 58Z" fill="#9bae93"/>
+              <path d="M116 96 C132 78, 154 78, 164 100 C148 106, 130 110, 116 96Z" fill="#7a9070" opacity=".7"/>
+              <path d="M150 140 C168 122, 190 122, 198 144 C184 150, 166 154, 150 140Z" fill="#4a5d48" opacity=".55"/>
+            </svg></div>
+      <div style="margin-top:8px; font-family:var(--font-title),serif; font-size:22px; line-height:1.05; white-space:pre-line; color:var(--text);">Soft, earthy,
+calm and editorial.</div>
+      <div class="cta" style="margin-top:16px;">
+        <div class="btn primary">Create Your First Magazine ✦</div>
+        <div class="btn secondary" style="border-color:var(--text); color:var(--text);">Explore Templates</div>
+      </div>
+      <div class="dots"><span class="active"></span><span></span><span></span></div>
+    </div>
+  </div>
+</div>
+
+
+<div class="phone">
+  <div class="screen">
+    <div class="statusbar"><span>9:41</span><span>Skip</span></div>
+    <div class="content">
+      <div class="section-head"><h3>Onboarding</h3><span>1 / 3</span></div>
+      <div class="card">
+        <div class="badge">Full AI Mode</div>
+        <div class="heading">Type one line.<br>Get a magazine.</div>
+        <div class="subhead">Pick a topic and let the app propose the title, structure, tone, and layout.</div>
+      </div>
+      <div class="section grid2">
+        <div class="card mini" style="background:linear-gradient(160deg, var(--primary), var(--accent3)); color:#F0EDE0;">
+          <div class="badge" style="background:rgba(255,255,255,.2); color:#F0EDE0;">Smart plan</div>
+          <h4>Before it writes, it asks.</h4>
+          <p style="color:#F0EDE0">A quick proposal keeps the AI aligned with your idea.</p>
+        </div>
+        <div class="card mini">
+          <div class="badge">Assisted Mode</div>
+          <h4>More control.</h4>
+          <p>Choose the tone, images, and page density yourself.</p>
+        </div>
+      </div>
+      <div class="section-head"><h3>Highlights</h3><span>beautifully yours</span></div>
+      <div class="list">
+        <div class="rowitem"><div class="thumb" style="background:linear-gradient(160deg,#4A5D48,#9BAE93);"></div><div><h4>Template Gallery</h4><p>18 professionally designed starting points.</p></div></div>
+        <div class="rowitem"><div class="thumb" style="background:linear-gradient(160deg,#9BAE93,#DDE8D8);"></div><div><h4>Visual Editor</h4><p>Tap directly on text, images, and titles.</p></div></div>
+      </div>
+      <div class="footerbtn">Next</div>
+    </div>
+  </div>
+</div>
+
+
+<div class="phone">
+  <div class="screen">
+    <div class="statusbar"><span>9:41</span><span>Skip</span></div>
+    <div class="content">
+      <div class="section-head"><h3>Onboarding</h3><span>2 / 3</span></div>
+      <div class="card">
+        <div class="badge">Templates + Themes</div>
+        <div class="heading">Every issue can have its own style.</div>
+        <div class="subhead">Switch from light editorial to dramatic dark, or playful print-inspired visuals instantly.</div>
+      </div>
+      <div class="grid3 section">
+        <div class="card mini" style="background:#FFFFFF"><h4>Warm Editorial</h4><p>Friendly and magazine-like.</p></div>
+        <div class="card mini" style="background:#FFFFFF"><h4>Studio Dark</h4><p>Premium and cinematic.</p></div>
+        <div class="card mini" style="background:#FFFFFF"><h4>Print Play</h4><p>Handmade, fun, tactile.</p></div>
+      </div>
+      <div class="section-head"><h3>Theme Controls</h3><span>settings</span></div>
+      <div class="rowitem"><div class="thumb sm" style="background:linear-gradient(160deg,#4A5D48,#9BAE93);"></div><div style="flex:1"><h4>Instant switching</h4><p>Change colors, typography, and component styling without changing the app structure.</p></div></div>
+      <div class="footerbtn">Next</div>
+    </div>
+  </div>
+</div>
+
+
+<div class="phone">
+  <div class="screen">
+    <div class="statusbar"><span>9:41</span><span>Skip</span></div>
+    <div class="content">
+      <div class="section-head"><h3>Onboarding</h3><span>3 / 3</span></div>
+      <div class="card">
+        <div class="badge">Print-ready export</div>
+        <div class="heading">Export a magazine you can actually share.</div>
+        <div class="subhead">PDF, print, or web preview — all saved locally and ready when you are.</div>
+      </div>
+      <div class="section">
+        <div class="rowitem"><div class="thumb" style="background:linear-gradient(160deg,#4A5D48,#DDE8D8);"></div><div><h4>Saved library</h4><p>Your drafts and finished issues stay organized on-device.</p></div></div>
+        <div class="rowitem" style="margin-top:8px"><div class="thumb" style="background:linear-gradient(160deg,#9BAE93,#4A5D48);"></div><div><h4>Help when stuck</h4><p>Clear error messages and quick fixes instead of silent failure.</p></div></div>
+      </div>
+      <div class="cta" style="margin-top:auto;">
+        <div class="btn primary">Get Started</div>
+        <div class="btn secondary">I already have an account</div>
+      </div>
+      <div class="dots"><span></span><span></span><span class="active"></span></div>
+    </div>
+  </div>
+</div>
+
+
+<div class="phone">
+  <div class="screen">
+    <div class="statusbar"><span>9:41</span><span>••• 🔋</span></div>
+    <div class="content">
+      <div class="top"><div class="icon-btn">‹</div><div class="badge">Sign In</div></div>
+      <div class="heading">Welcome back.</div>
+      <div class="subhead">Continue where you left off.</div>
+      <div class="section">
+        <div class="card" style="margin-bottom:10px"><div style="font-size:10px;font-weight:800;margin-bottom:6px">Email</div><div style="height:38px;border-radius:12px;background:color-mix(in srgb, var(--surface) 86%, var(--screen-bg)); border:1px solid color-mix(in srgb, var(--nav-border) 12%, transparent);"></div></div>
+        <div class="card"><div style="font-size:10px;font-weight:800;margin-bottom:6px">Password</div><div style="height:38px;border-radius:12px;background:color-mix(in srgb, var(--surface) 86%, var(--screen-bg)); border:1px solid color-mix(in srgb, var(--nav-border) 12%, transparent);"></div></div>
+      </div>
+      <div class="btn primary" style="margin-top:14px;">Sign In</div>
+      <div class="subhead" style="text-align:center;margin-top:10px">Forgot password?</div>
+      <div class="section-head" style="margin-top:auto"><h3>Theme</h3><span>Nature Sage</span></div>
+    </div>
+  </div>
+</div>
+
+
+<div class="phone">
+  <div class="screen">
+    <div class="statusbar"><span>9:41</span><span>••• 🔋</span></div>
+    <div class="content">
+      <div class="top"><div class="icon-btn">‹</div><div class="badge">Sign Up</div></div>
+      <div class="heading">Create your account.</div>
+      <div class="subhead">Start designing magazines in minutes.</div>
+      <div class="list">
+        <div class="rowitem"><div class="thumb sm" style="background:linear-gradient(160deg,#4A5D48,#9BAE93);"></div><div style="flex:1"><h4>Name</h4><p>Your display name for issues and profile.</p></div></div>
+        <div class="rowitem"><div class="thumb sm" style="background:linear-gradient(160deg,#9BAE93,#DDE8D8);"></div><div style="flex:1"><h4>Email</h4><p>Used for login and export notifications.</p></div></div>
+        <div class="rowitem"><div class="thumb sm" style="background:linear-gradient(160deg,#4A5D48,#DDE8D8);"></div><div style="flex:1"><h4>Password</h4><p>Keep your account secure.</p></div></div>
+      </div>
+      <div class="btn primary" style="margin-top:auto;">Create Account</div>
+      <div class="subhead" style="text-align:center;margin-top:10px">Already have an account?</div>
+    </div>
+  </div>
+</div>
+
+
+<div class="phone">
+  <div class="screen">
+    <div class="statusbar"><span>9:41</span><span>••• 🔋</span></div>
+    <div class="content">
+      <div class="top"><svg class="logo" viewBox="0 0 40 40" aria-hidden="true"><path d="M20 6 L8 11 V32 L20 27 Z" fill="var(--primary)"/><path d="M20 6 L32 11 V32 L20 27 Z" fill="var(--secondary)"/></svg><div class="icon-btn">🔔</div></div>
+      <div class="heading">Good morning, Maker 👋</div>
+      <div class="subhead">What will we create today?</div>
+      <div class="grid2 section">
+        <div class="card mini" style="background:linear-gradient(160deg,#4A5D48,#DDE8D8); color:#F0EDE0;">
+          <div class="badge" style="background:rgba(255,255,255,.2);color:#F0EDE0;">Full AI Mode</div>
+          <h4 style="color:#F0EDE0">Generate from one idea.</h4>
+          <p style="color:#F0EDE0">AI handles title, structure, visuals, and content.</p>
+        </div>
+        <div class="card mini" style="background:#DCE5D8">
+          <div class="badge">Assisted Mode</div>
+          <h4>Fine tune every choice.</h4>
+          <p>Take control of tone, layout, and images.</p>
+        </div>
+      </div>
+      <div class="section-head"><h3>Your Library</h3><span>View all</span></div>
+      <div class="list">
+        <div class="rowitem"><div class="thumb" style="background:linear-gradient(160deg,#9bae93,#4a5d48,#2a332a);"></div><div style="flex:1"><h4>Coastal Escapes</h4><p>Draft • 2h ago</p><div class="progress"><span></span></div></div></div>
+        <div class="rowitem"><div class="thumb" style="background:linear-gradient(160deg,#9BAE93,#4A5D48);"></div><div style="flex:1"><h4>Hidden Japan</h4><p>Finished • 1d ago</p></div></div>
+      </div>
+      <div class="section-head"><h3>Continue Editing</h3><span>open</span></div>
+      <div class="rowitem"><div class="thumb" style="background:linear-gradient(160deg,#4A5D48,#9BAE93);"></div><div style="flex:1"><h4>Weekend Bite</h4><p>Travel • 6 articles</p><div class="progress"><span style="width:42%"></span></div></div></div>
+      <div class="nav">
+<div class="item active"><div class="dot"></div><div>Home</div></div>
+<div class="item"><div class="dot"></div><div>Library</div></div>
+<div class="item"><div class="dot"></div><div>Showcase</div></div>
+<div class="item"><div class="dot"></div><div>Templates</div></div>
+<div class="item"><div class="dot"></div><div>Settings</div></div>
+</div>
+    </div>
+  </div>
+</div>
+
+
+<div class="phone">
+  <div class="screen">
+    <div class="statusbar"><span>9:41</span><span>••• 🔋</span></div>
+    <div class="content">
+      <div class="top"><div class="icon-btn">‹</div><div class="badge">Choose Mode</div></div>
+      <div class="heading">Two ways to create.</div>
+      <div class="subhead">Pick the workflow that matches how much control you want.</div>
+      <div class="section grid2">
+        <div class="card mini" style="background:linear-gradient(160deg,#4A5D48,#9BAE93); color:#F0EDE0;">
+          <div class="badge" style="background:rgba(255,255,255,.2); color:#F0EDE0;">Full AI Mode</div>
+          <h4 style="color:#F0EDE0">Fast and guided.</h4>
+          <p style="color:#F0EDE0">Describe the issue and approve the plan.</p>
+        </div>
+        <div class="card mini">
+          <div class="badge">Assisted Mode</div>
+          <h4>Hands-on creation.</h4>
+          <p>Build article by article with AI support.</p>
+        </div>
+      </div>
+      <div class="section-head"><h3>What AI can do</h3><span>smart plan</span></div>
+      <div class="list">
+        <div class="rowitem"><div class="thumb sm" style="background:linear-gradient(160deg,#9BAE93,#DDE8D8);"></div><div><h4>Suggest issue structure</h4><p>Title, sections, and article count.</p></div></div>
+        <div class="rowitem"><div class="thumb sm" style="background:linear-gradient(160deg,#4A5D48,#DDE8D8);"></div><div><h4>Match tone and layout</h4><p>Text-heavy, image-heavy, or balanced.</p></div></div>
+      </div>
+      <div class="footerbtn">Continue</div>
+    </div>
+  </div>
+</div>
+
+
+<div class="phone">
+  <div class="screen">
+    <div class="statusbar"><span>9:41</span><span>••• 🔋</span></div>
+    <div class="content">
+      <div class="top"><div class="icon-btn">‹</div><div class="badge">Create</div></div>
+      <div class="heading">Describe your magazine.</div>
+      <div class="subhead">One line is enough — the app proposes the rest.</div>
+      <div class="card section" style="min-height: 132px;">
+        <div style="font-size:10px;font-weight:800;margin-bottom:8px">Prompt</div>
+        <div style="font-size:11px;color:var(--muted);line-height:1.55">A weekend food and travel zine about coastal towns, with a calm editorial feel.</div>
+      </div>
+      <div class="section grid2">
+        <div class="card mini"><div class="badge">Mood</div><h4>Calm editorial</h4><p>Refined, airy, and magazine-like.</p></div>
+        <div class="card mini"><div class="badge">Layout</div><h4>Balanced</h4><p>Text and images share the page.</p></div>
+      </div>
+      <div class="footerbtn">Generate Plan</div>
+    </div>
+  </div>
+</div>
+
+
+<div class="phone">
+  <div class="screen">
+    <div class="statusbar"><span>9:41</span><span>••• 🔋</span></div>
+    <div class="content">
+      <div class="top"><div class="icon-btn">‹</div><div class="badge">Generating</div></div>
+      <div class="heading">Building your issue.</div>
+      <div class="subhead">The AI is drafting the structure, articles, and cover direction.</div>
+      <div class="section card" style="margin-top:16px; text-align:center; min-height:220px; display:flex; flex-direction:column; justify-content:center; align-items:center;">
+        <div style="width:112px; height:112px; border-radius:50%; background:radial-gradient(circle at 35% 35%, var(--accent3), var(--primary));"></div>
+        <div style="margin-top:14px; font-family:var(--font-title),serif; font-size:18px;">78% complete</div>
+        <div style="margin-top:8px; font-size:11px; color:var(--muted)">Writing headlines, composing pages, matching visuals.</div>
+        <div class="progress" style="width:100%; margin-top:16px;"><span style="width:78%"></span></div>
+      </div>
+      <div class="section-head"><h3>Status</h3><span>alive</span></div>
+      <div class="list">
+        <div class="rowitem"><div class="thumb sm" style="background:linear-gradient(160deg,#4A5D48,#9BAE93);"></div><div><h4>Issue plan approved</h4><p>Title, tone, and article count locked.</p></div></div>
+        <div class="rowitem"><div class="thumb sm" style="background:linear-gradient(160deg,#9BAE93,#DDE8D8);"></div><div><h4>Assets matched</h4><p>Images and palette aligned to theme.</p></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<div class="phone">
+  <div class="screen">
+    <div class="statusbar"><span>9:41</span><span>••• 🔋</span></div>
+    <div class="content">
+      <div class="top"><div class="icon-btn">‹</div><div class="badge">Library</div></div>
+      <div class="heading">Your issues.</div>
+      <div class="subhead">Drafts and finished PDFs stored on your device.</div>
+      <div class="list section">
+        <div class="rowitem"><div class="thumb" style="background:linear-gradient(160deg,#4A5D48,#9BAE93);"></div><div style="flex:1"><h4>Coastal Escapes</h4><p>Draft • 6 articles • 18 pages</p></div></div>
+        <div class="rowitem"><div class="thumb" style="background:linear-gradient(160deg,#9BAE93,#DDE8D8);"></div><div style="flex:1"><h4>Hidden Japan</h4><p>Finished • PDF exported</p></div></div>
+        <div class="rowitem"><div class="thumb" style="background:linear-gradient(160deg,#4A5D48,#DDE8D8);"></div><div style="flex:1"><h4>Weekend Bite</h4><p>Draft • waiting for cover</p></div></div>
+      </div>
+      <div class="section-head"><h3>Saved locally</h3><span>device</span></div>
+      <div class="card"><div class="badge">Backup safe</div><div class="subhead" style="margin-top:8px;">Finished PDFs remain available even if the server changes.</div></div>
+      <div class="nav">
+<div class="item"><div class="dot"></div><div>Home</div></div>
+<div class="item active"><div class="dot"></div><div>Library</div></div>
+<div class="item"><div class="dot"></div><div>Showcase</div></div>
+<div class="item"><div class="dot"></div><div>Templates</div></div>
+<div class="item"><div class="dot"></div><div>Settings</div></div>
+</div>
+    </div>
+  </div>
+</div>
+
+
+<div class="phone">
+  <div class="screen">
+    <div class="statusbar"><span>9:41</span><span>••• 🔋</span></div>
+    <div class="content">
+      <div class="top"><div class="icon-btn">‹</div><div class="badge">Templates</div></div>
+      <div class="heading">Start from a style.</div>
+      <div class="subhead">Browse template families for food, travel, tech, and lifestyle issues.</div>
+      <div class="grid2 section">
+        <div class="card mini">
+          <div class="thumb" style="width:100%; height:78px; background:<div style="position:absolute; inset:0; background:linear-gradient(160deg,#dde8d0,#9bae93 40%,#4a5d48 75%,#2a332a);"></div>;"></div>
+          <h4>Coastal Editorial</h4><p>Airy, photo-forward, warm and polished.</p>
+        </div>
+        <div class="card mini">
+          <div class="thumb" style="width:100%; height:78px; background:linear-gradient(160deg,#9BAE93,#4A5D48);"></div>
+          <h4>Midnight Studio</h4><p>Dark, premium, cinematic.</p>
+        </div>
+      </div>
+      <div class="section-head"><h3>Style chips</h3><span>18 styles</span></div>
+      <div class="palette">
+        <div class="swatch" style="background:#4A5D48"></div>
+        <div class="swatch" style="background:#9BAE93"></div>
+        <div class="swatch" style="background:#DDE8D8"></div>
+        <div class="swatch" style="background:#FFFFFF; border:1px solid color-mix(in srgb, var(--nav-border) 20%, transparent)"></div>
+      </div>
+      <div class="footerbtn">Use This Template</div>
+    </div>
+  </div>
+</div>
+
+
+<div class="phone">
+  <div class="screen">
+    <div class="statusbar"><span>9:41</span><span>••• 🔋</span></div>
+    <div class="content">
+      <div class="top"><div class="icon-btn">‹</div><div class="icon-btn">♡</div></div>
+      <div class="cover"><div style="position:absolute; inset:0; background:linear-gradient(160deg,#dde8d0,#9bae93 40%,#4a5d48 75%,#2a332a);"></div><h2>COASTAL<br>ESCAPES</h2></div>
+      <div class="section-head"><h3>Template detail</h3><span>Travel</span></div>
+      <div class="subhead">A clean, airy template that makes room for strong cover typography and flexible article layouts.</div>
+      <div class="section">
+        <div class="badge">Includes masthead</div>
+        <div class="badge" style="margin-left:6px">Pull quotes</div>
+        <div class="badge" style="margin-left:6px">Sidebar</div>
+        <div class="badge" style="margin-left:6px">Back cover</div>
+      </div>
+      <div class="section-head"><h3>Palette</h3><span>tone</span></div>
+      <div class="palette">
+        <div class="swatch" style="background:#4A5D48"></div>
+        <div class="swatch" style="background:#9BAE93"></div>
+        <div class="swatch" style="background:#DDE8D8"></div>
+        <div class="swatch" style="background:#e6dfd2"></div>
+      </div>
+      <div class="footerbtn">Start With This</div>
+    </div>
+  </div>
+</div>
+
+
+<div class="phone">
+  <div class="screen">
+    <div class="statusbar"><span>9:41</span><span>••• 🔋</span></div>
+    <div class="content">
+      <div class="top"><div class="icon-btn">‹</div><div class="icon-btn">⋯</div></div>
+      <div class="badge">Article 2 of 6</div>
+      <div class="heading">Morning Markets & Ocean Views</div>
+      <div class="subhead">Tweak tone, layout, and optional elements before generating.</div>
+      <div class="cover" style="height:76px; margin-top:10px;"><div style="height:100%; background:linear-gradient(160deg,#9bae93,#7a9070 50%,#4a5d48);"></div></div>
+      <div class="card section">
+        <div class="section-head" style="margin-top:0"><h3>Article settings</h3><span>reset</span></div>
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:7px 0; border-bottom:1px solid color-mix(in srgb, var(--nav-border) 12%, transparent);"><span style="font-size:10.5px">Tone</span><span style="font-size:10px; color:var(--muted)">Casual ⌄</span></div>
+        <div style="display:flex; justify-content:space-between; align-items:center; padding:7px 0; border-bottom:1px solid color-mix(in srgb, var(--nav-border) 12%, transparent);"><span style="font-size:10.5px">Layout</span><span style="font-size:10px; color:var(--muted)">Image heavy ⌄</span></div>
+        <div class="section-head" style="margin-top:8px"><h3>Optional elements</h3><span>on/off</span></div>
+        <div class="list">
+          <div class="rowitem" style="padding:8px 10px"><div style="flex:1"><h4 style="font-size:11px">Masthead</h4></div><div class="toggle"></div></div>
+          <div class="rowitem" style="padding:8px 10px"><div style="flex:1"><h4 style="font-size:11px">Pull quote</h4></div><div class="toggle off"></div></div>
+          <div class="rowitem" style="padding:8px 10px"><div style="flex:1"><h4 style="font-size:11px">Sidebar</h4></div><div class="toggle"></div></div>
+        </div>
+      </div>
+      <div class="footerbtn">Generate This Article ✦</div>
+    </div>
+  </div>
+</div>
+
+
+<div class="phone">
+  <div class="screen">
+    <div class="statusbar"><span>9:41</span><span>••• 🔋</span></div>
+    <div class="content">
+      <div class="top"><div class="icon-btn">‹</div><div class="badge">Theme Gallery</div></div>
+      <div class="heading">Choose your workspace.</div>
+      <div class="subhead">Switch themes anytime in Settings without changing the app flow.</div>
+      <div class="grid2 section">
+        <div class="card mini"><div style="height:72px; border-radius:12px; background:linear-gradient(160deg,#4A5D48,#9BAE93);"></div><h4>Editorial Light</h4><p>Bright, warm, and welcoming.</p></div>
+        <div class="card mini"><div style="height:72px; border-radius:12px; background:linear-gradient(160deg,#9BAE93,#4A5D48);"></div><h4>Studio Dark</h4><p>Moody, premium, dramatic.</p></div>
+      </div>
+      <div class="grid2 section">
+        <div class="card mini"><div style="height:72px; border-radius:12px; background:linear-gradient(160deg,#DDE8D8,#4A5D48);"></div><h4>Riso Print</h4><p>Playful, tactile, punchy.</p></div>
+        <div class="card mini"><div style="height:72px; border-radius:12px; background:linear-gradient(160deg,#9BAE93,#DDE8D8);"></div><h4>Nature Sage</h4><p>Calm, earthy, balanced.</p></div>
+      </div>
+      <div class="footerbtn">Apply Theme</div>
+    </div>
+  </div>
+</div>
+
+
+<div class="phone">
+  <div class="screen">
+    <div class="statusbar"><span>9:41</span><span>••• 🔋</span></div>
+    <div class="content">
+      <div class="top"><div class="icon-btn">‹</div><div class="badge">Export</div></div>
+      <div class="heading">Ready to publish.</div>
+      <div class="subhead">Choose how you want to share the issue.</div>
+      <div class="section grid2">
+        <div class="card mini"><div class="badge">PDF</div><h4>Print-ready</h4><p>High quality export for sharing or printing.</p></div>
+        <div class="card mini"><div class="badge">Web</div><h4>Preview link</h4><p>Generate a lightweight view for browsers.</p></div>
+      </div>
+      <div class="section">
+        <div class="rowitem"><div class="thumb sm" style="background:linear-gradient(160deg,#4A5D48,#9BAE93);"></div><div><h4>Export summary</h4><p>18 pages • 6 articles • 3 cover variations</p></div></div>
+      </div>
+      <div class="footerbtn">Export PDF</div>
+    </div>
+  </div>
+</div>
+
+
+<div class="phone">
+  <div class="screen">
+    <div class="statusbar"><span>9:41</span><span>••• 🔋</span></div>
+    <div class="content">
+      <div class="top"><div class="icon-btn">‹</div><div class="badge">Showcase</div></div>
+      <div class="heading">Browse by style.</div>
+      <div class="subhead">A visual archive of issues sorted by theme and mood.</div>
+      <div class="list section">
+        <div class="rowitem"><div class="thumb" style="background:linear-gradient(160deg,#4A5D48,#9BAE93);"></div><div><h4>Warm Editorial</h4><p>Food + travel issues with creamy palettes.</p></div></div>
+        <div class="rowitem"><div class="thumb" style="background:linear-gradient(160deg,#9BAE93,#DDE8D8);"></div><div><h4>Dark Premium</h4><p>High contrast, bold, cinematic.</p></div></div>
+        <div class="rowitem"><div class="thumb" style="background:linear-gradient(160deg,#DDE8D8,#4A5D48);"></div><div><h4>Print Play</h4><p>Fun, tactile, experimental layouts.</p></div></div>
+      </div>
+      <div class="nav">
+<div class="item"><div class="dot"></div><div>Home</div></div>
+<div class="item"><div class="dot"></div><div>Library</div></div>
+<div class="item active"><div class="dot"></div><div>Showcase</div></div>
+<div class="item"><div class="dot"></div><div>Templates</div></div>
+<div class="item"><div class="dot"></div><div>Settings</div></div>
+</div>
+    </div>
+  </div>
+</div>
+
+
+<div class="phone">
+  <div class="screen">
+    <div class="statusbar"><span>9:41</span><span>••• 🔋</span></div>
+    <div class="content">
+      <div class="top"><div class="icon-btn">‹</div><div class="badge">Search</div></div>
+      <div class="heading">Find a page or issue.</div>
+      <div class="subhead">Search by title, article, or template style.</div>
+      <div class="card section" style="height:42px; display:flex; align-items:center; color:var(--muted);">Search “coastal”, “travel”, “dark”, “riso”</div>
+      <div class="section-head"><h3>Recent</h3><span>clear</span></div>
+      <div class="list">
+        <div class="rowitem"><div class="thumb sm" style="background:linear-gradient(160deg,#4A5D48,#9BAE93);"></div><div><h4>Coastal Escapes</h4><p>Issue • Template • Article</p></div></div>
+        <div class="rowitem"><div class="thumb sm" style="background:linear-gradient(160deg,#9BAE93,#4A5D48);"></div><div><h4>Midnight Studio</h4><p>Template family</p></div></div>
+      </div>
+      <div class="footerbtn">Search</div>
+    </div>
+  </div>
+</div>
+
+
+<div class="phone">
+  <div class="screen">
+    <div class="statusbar"><span>9:41</span><span>••• 🔋</span></div>
+    <div class="content">
+      <div class="top"><div class="icon-btn">‹</div><div class="badge">Notifications</div></div>
+      <div class="heading">Updates.</div>
+      <div class="subhead">Generation status, export alerts, and feedback prompts.</div>
+      <div class="list section">
+        <div class="rowitem"><div class="thumb sm" style="background:linear-gradient(160deg,#4A5D48,#9BAE93);"></div><div><h4>PDF export complete</h4><p>Your finished issue is saved locally.</p></div></div>
+        <div class="rowitem"><div class="thumb sm" style="background:linear-gradient(160deg,#9BAE93,#DDE8D8);"></div><div><h4>Theme applied</h4><p>Settings switched to Nature Sage.</p></div></div>
+        <div class="rowitem"><div class="thumb sm" style="background:linear-gradient(160deg,#DDE8D8,#4A5D48);"></div><div><h4>Backup API key ready</h4><p>Available if the main key hits a limit.</p></div></div>
+      </div>
+      <div class="nav">
+<div class="item active"><div class="dot"></div><div>Home</div></div>
+<div class="item"><div class="dot"></div><div>Library</div></div>
+<div class="item"><div class="dot"></div><div>Showcase</div></div>
+<div class="item"><div class="dot"></div><div>Templates</div></div>
+<div class="item"><div class="dot"></div><div>Settings</div></div>
+</div>
+    </div>
+  </div>
+</div>
+
+
+<div class="phone">
+  <div class="screen">
+    <div class="statusbar"><span>9:41</span><span>••• 🔋</span></div>
+    <div class="content">
+      <div class="top"><div class="icon-btn">‹</div><div class="badge">Settings</div></div>
+      <div class="heading">Customize the app.</div>
+      <div class="subhead">Theme, exports, backups, and help all live here.</div>
+      <div class="section">
+        <div class="rowitem"><div class="thumb sm" style="background:linear-gradient(160deg,#4A5D48,#9BAE93);"></div><div style="flex:1"><h4>Theme Gallery</h4><p>Nature Sage selected</p></div><div class="toggle"></div></div>
+        <div class="rowitem" style="margin-top:8px"><div class="thumb sm" style="background:linear-gradient(160deg,#9BAE93,#DDE8D8);"></div><div style="flex:1"><h4>Backup API key</h4><p>Auto-switch when limits are reached</p></div><div class="toggle"></div></div>
+        <div class="rowitem" style="margin-top:8px"><div class="thumb sm" style="background:linear-gradient(160deg,#DDE8D8,#4A5D48);"></div><div style="flex:1"><h4>Local saves</h4><p>Keep PDFs and covers on device</p></div><div class="toggle"></div></div>
+      </div>
+      <div class="nav">
+<div class="item"><div class="dot"></div><div>Home</div></div>
+<div class="item"><div class="dot"></div><div>Library</div></div>
+<div class="item"><div class="dot"></div><div>Showcase</div></div>
+<div class="item"><div class="dot"></div><div>Templates</div></div>
+<div class="item active"><div class="dot"></div><div>Settings</div></div>
+</div>
+    </div>
+  </div>
+</div>
+
+
+<div class="phone">
+  <div class="screen">
+    <div class="statusbar"><span>9:41</span><span>••• 🔋</span></div>
+    <div class="content">
+      <div class="top"><div class="icon-btn">‹</div><div class="badge">Premium</div></div>
+      <div class="heading">Unlock more creative control.</div>
+      <div class="subhead">More templates, more exports, more issue slots.</div>
+      <div class="card section" style="background:linear-gradient(160deg,#4A5D48,#9BAE93); color:#F0EDE0; min-height:166px;">
+        <div class="badge" style="background:rgba(255,255,255,.18); color:#F0EDE0;">Pro</div>
+        <div style="font-family:var(--font-title),serif; font-size:20px; line-height:1.05; margin-top:10px;">Everything the app can do.</div>
+        <div style="font-size:11px; opacity:.92; margin-top:8px;">Unlimited projects, advanced styles, and polished exports.</div>
+      </div>
+      <div class="list section">
+        <div class="rowitem"><div class="thumb sm" style="background:linear-gradient(160deg,#4A5D48,#DDE8D8);"></div><div><h4>Pro templates</h4><p>Premium themes and layouts.</p></div></div>
+        <div class="rowitem"><div class="thumb sm" style="background:linear-gradient(160deg,#9BAE93,#4A5D48);"></div><div><h4>Priority generation</h4><p>Faster issue builds.</p></div></div>
+      </div>
+      <div class="footerbtn">Start Free Trial</div>
+    </div>
+  </div>
+</div>
+
+
+<div class="phone">
+  <div class="screen">
+    <div class="statusbar"><span>9:41</span><span>••• 🔋</span></div>
+    <div class="content">
+      <div class="top"><div class="icon-btn">‹</div><div class="badge">Help & About</div></div>
+      <div class="heading">Peace of mind.</div>
+      <div class="subhead">Clear support, transparent status, and a calm way to fix issues.</div>
+      <div class="list section">
+        <div class="rowitem"><div class="thumb sm" style="background:linear-gradient(160deg,#4A5D48,#9BAE93);"></div><div><h4>Clear error messages</h4><p>Specific fixes instead of vague failure states.</p></div></div>
+        <div class="rowitem"><div class="thumb sm" style="background:linear-gradient(160deg,#9BAE93,#DDE8D8);"></div><div><h4>About the app</h4><p>Built for creative magazine makers.</p></div></div>
+      </div>
+      <div class="card section">
+        <div class="badge">Version 1.0</div>
+        <div class="subhead" style="margin-top:8px;">A fully themed creative workspace for designing magazine-style issues on mobile.</div>
+      </div>
+      <div class="footerbtn">Done</div>
+    </div>
+  </div>
+</div>
+
+    </div>
+  </div>
+</body>
+</html>

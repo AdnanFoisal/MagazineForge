@@ -51,8 +51,7 @@ import com.magazineforge.app.ui.SettingsScreen
 import com.magazineforge.app.ui.theme.MagazineForgeTheme
 import com.magazineforge.app.ui.theme.LuxeTypography
 import com.magazineforge.app.ui.theme.LocalThemeTokens
-import com.magazineforge.app.ui.theme.ErrorRed
-import com.magazineforge.app.ui.theme.BorderLight
+
 
 class MainActivity : ComponentActivity() {
     private lateinit var viewModel: EditorViewModel
@@ -396,7 +395,7 @@ class MainActivity : ComponentActivity() {
                                         colors = CardDefaults.cardColors(
                                             containerColor = tokens.surface
                                         ),
-                                        border = androidx.compose.foundation.BorderStroke(1.dp, BorderLight),
+                                        border = androidx.compose.foundation.BorderStroke(1.dp, tokens.secondaryAccent.copy(alpha = 0.3f)),
                                         shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp),
                                         modifier = Modifier
                                             .fillMaxWidth()
@@ -484,7 +483,7 @@ class MainActivity : ComponentActivity() {
                                     text = { Text("Are you sure you want to exit the application?", style = LuxeTypography.bodyMedium) },
                                     confirmButton = {
                                         TextButton(onClick = { finish() }) {
-                                            Text("Exit", style = LuxeTypography.labelMedium.copy(color = ErrorRed))
+                                            Text("Exit", style = LuxeTypography.labelMedium.copy(color = tokens.primaryAccent))
                                         }
                                     },
                                     dismissButton = {

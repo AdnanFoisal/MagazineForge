@@ -73,7 +73,6 @@ fun CoAuthorScreen(
         }
     }
 
-    val tokens = com.magazineforge.app.ui.theme.LocalThemeTokens.current
     val gold = tokens.primaryAccent
     val obsidian = tokens.editorBackground
 
@@ -247,13 +246,14 @@ fun CoAuthorScreen(
 
 @Composable
 fun ExpandableSection(title: String, content: @Composable () -> Unit) {
+    val tokens = com.magazineforge.app.ui.theme.LocalThemeTokens.current
     var expanded by remember { mutableStateOf(false) }
     Card(
         modifier = Modifier
             .fillMaxWidth()
             .padding(vertical = 12.dp),
-        colors = CardDefaults.cardColors(containerColor = com.magazineforge.app.ui.theme.SurfaceContainerLow),
-        border = BorderStroke(1.dp, com.magazineforge.app.ui.theme.SurfaceContainerHigh),
+        colors = CardDefaults.cardColors(containerColor = tokens.surface),
+        border = BorderStroke(1.dp, tokens.secondaryAccent.copy(alpha = 0.3f)),
         shape = RoundedCornerShape(8.dp)
     ) {
         Column {
@@ -268,14 +268,14 @@ fun ExpandableSection(title: String, content: @Composable () -> Unit) {
                 Text(
                     text = title.uppercase(),
                     style = com.magazineforge.app.ui.theme.LuxeTypography.labelMedium.copy(
-                        color = com.magazineforge.app.ui.theme.OnSurfaceVariant,
+                        color = tokens.textSecondary,
                         letterSpacing = 2.sp
                     )
                 )
                 Icon(
                     imageVector = if (expanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
                     contentDescription = "Expand",
-                    tint = com.magazineforge.app.ui.theme.OnSurfaceVariant
+                    tint = tokens.textSecondary
                 )
             }
             AnimatedVisibility(visible = expanded) {
@@ -297,6 +297,7 @@ fun ImageUploadField(
     onValueChange: (String) -> Unit,
     onPickImage: () -> Unit
 ) {
+    val tokens = com.magazineforge.app.ui.theme.LocalThemeTokens.current
     var useDriveLink by remember { mutableStateOf(false) }
 
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {

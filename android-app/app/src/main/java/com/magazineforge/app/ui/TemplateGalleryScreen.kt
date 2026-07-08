@@ -160,7 +160,7 @@ fun TemplateMasonryCard(template: TemplateModel, onClick: () -> Unit, onPreview:
             .fillMaxWidth()
             .aspectRatio(aspectRatio)
             .clip(RoundedCornerShape(8.dp))
-            .border(1.dp, SurfaceContainerHigh, RoundedCornerShape(8.dp))
+            .border(1.dp, tokens.secondaryAccent.copy(alpha = 0.3f), RoundedCornerShape(8.dp))
             .background(Color(0xFF1A1A1A))
             .clickable(onClick = onClick)
     ) {

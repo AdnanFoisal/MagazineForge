@@ -397,12 +397,9 @@ fun EditorScreen(
 }
 
 @Composable
-fun PageBlockCard(
-    page: PageBlock,
-    onUpdate: (PageBlock) -> Unit,
-    onDelete: () -> Unit
-) {
+fun PageBlockCard(page: PageBlock, onUpdate: (PageBlock) -> Unit, onDelete: () -> Unit) {
     val tokens = com.magazineforge.app.ui.theme.LocalThemeTokens.current
+    val darkSurface = tokens.surface
     val gold = tokens.primaryAccent
     
     var showCustomizer by remember { mutableStateOf(false) }
@@ -426,7 +423,7 @@ fun PageBlockCard(
                 Text(page.type.uppercase(), style = LuxeTypography.labelMedium.copy(color = gold))
                 Row {
                     IconButton(onClick = { showCustomizer = true }, modifier = Modifier.size(24.dp)) {
-                        Icon(Icons.Default.Settings, contentDescription = "Customize", tint = GhostWhite.copy(alpha = 0.7f))
+                        Icon(Icons.Default.Settings, contentDescription = "Customize", tint = tokens.textPrimary.copy(alpha = 0.7f))
                     }
                     Spacer(modifier = Modifier.width(8.dp))
                     IconButton(onClick = onDelete, modifier = Modifier.size(24.dp)) {
@@ -482,8 +479,8 @@ fun PageBlockCard(
                 singleLine = true,
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = gold,
-                    unfocusedTextColor = GhostWhite,
-                    focusedTextColor = GhostWhite
+                    unfocusedTextColor = tokens.textPrimary,
+                    focusedTextColor = tokens.textPrimary
                 )
             )
             
@@ -514,8 +511,8 @@ fun PageBlockCard(
                 },
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = gold,
-                    unfocusedTextColor = GhostWhite,
-                    focusedTextColor = GhostWhite
+                    unfocusedTextColor = tokens.textPrimary,
+                    focusedTextColor = tokens.textPrimary
                 )
             )
         }

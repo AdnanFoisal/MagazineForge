@@ -19,7 +19,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.magazineforge.app.ui.theme.EditorialGold
 import com.magazineforge.app.ui.theme.LuxeTypography
 
 @Composable
@@ -29,6 +28,7 @@ fun FloatingProgressTracker(
     compileState: CompileState
 ) {
     var isExpanded by remember { mutableStateOf(false) }
+    val tokens = com.magazineforge.app.ui.theme.LocalThemeTokens.current
 
     val isActive = schemaState is SchemaState.Loading ||
             latexState is LatexState.Loading ||
@@ -83,7 +83,7 @@ fun FloatingProgressTracker(
                         Text(
                             text = statusText,
                             style = LuxeTypography.titleSmall.copy(
-                                color = EditorialGold,
+                                color = tokens.primaryAccent,
                                 fontWeight = FontWeight.Bold
                             ),
                             modifier = Modifier.padding(bottom = 8.dp)
@@ -98,12 +98,12 @@ fun FloatingProgressTracker(
                             LinearProgressIndicator(
                                 progress = currentProgress,
                                 modifier = Modifier.fillMaxWidth().height(4.dp),
-                                color = EditorialGold,
+                                color = tokens.primaryAccent,
                                 trackColor = Color.DarkGray
                             )
                             Text(
                                 text = "${(currentProgress * 100).toInt()}%",
-                                style = LuxeTypography.labelSmall.copy(color = EditorialGold),
+                                style = LuxeTypography.labelSmall.copy(color = tokens.primaryAccent),
                                 modifier = Modifier.align(Alignment.End).padding(top = 4.dp)
                             )
                         }
@@ -114,7 +114,7 @@ fun FloatingProgressTracker(
             // Floating Action Button
             Surface(
                 shape = CircleShape,
-                color = EditorialGold,
+                color = tokens.primaryAccent,
                 modifier = Modifier
                     .size(56.dp)
                     .clip(CircleShape)

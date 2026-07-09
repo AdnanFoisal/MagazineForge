@@ -154,7 +154,9 @@ data class GenerateSchemaRequest(
     @SerializedName("enableTocTeasers")
     val enableTocTeasers: Boolean = true,
     @SerializedName("enableByline")
-    val enableByline: Boolean = true
+    val enableByline: Boolean = true,
+    @SerializedName("coverImageUrl")
+    val coverImageUrl: String = ""
 )
 
 data class GenerateLatexRequest(

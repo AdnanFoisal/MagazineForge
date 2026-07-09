@@ -31,8 +31,6 @@ import com.magazineforge.app.ui.FloatingProgressTracker
 import com.magazineforge.app.utils.SecureStorage
 import com.magazineforge.app.network.ApiClient
 import com.magazineforge.app.models.VerifyKeyRequest
-import coil.Coil
-import coil.ImageLoader
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -53,14 +51,18 @@ import com.magazineforge.app.ui.theme.LuxeTypography
 import com.magazineforge.app.ui.theme.LocalThemeTokens
 
 
+import coil.ImageLoader
+import coil.Coil
+
 class MainActivity : ComponentActivity() {
     private lateinit var viewModel: EditorViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
+        // Configure Coil globally to use our custom OkHttpClient (which injects HF_TOKEN)
         val imageLoader = ImageLoader.Builder(this)
-            .okHttpClient { ApiClient.okHttpClient }
+            .okHttpClient(ApiClient.okHttpClient)
             .build()
         Coil.setImageLoader(imageLoader)
         
@@ -87,6 +89,7 @@ class MainActivity : ComponentActivity() {
                     var initialEditorPrompt by remember { mutableStateOf("") }
                     var apiKey by remember { mutableStateOf(savedKey ?: "") }
                     var backupApiKey by remember { mutableStateOf(secureStorage.getBackupApiKey() ?: "") }
+                    var tertiaryApiKey by remember { mutableStateOf(secureStorage.getTertiaryApiKey() ?: "") }
                     var selectedPdfForViewer by remember { mutableStateOf<String?>(null) }
                     
                     val coroutineScope = rememberCoroutineScope()
@@ -240,7 +243,7 @@ class MainActivity : ComponentActivity() {
                                             currentScreen = "editor"
                                         },
                                         onPreviewSelected = { templateVariant ->
-                                            viewModel.generateSchema(apiKey, backupApiKey, "Magazine Preview", templateVariant)
+                                            viewModel.generateSchema(apiKey, backupApiKey, tertiaryApiKey, "Magazine Preview", templateVariant)
                                         },
                                         onLibraryClicked = {
                                             currentScreen = "library"
@@ -262,12 +265,13 @@ class MainActivity : ComponentActivity() {
                                         latexState = latexState,
                                         compileState = compileState,
                                         onGenerateBrief = { prompt, referenceImages ->
-                                            viewModel.generateBrief(apiKey, backupApiKey, prompt, referenceImages)
+                                            viewModel.generateBrief(apiKey, backupApiKey, tertiaryApiKey, prompt, referenceImages)
                                         },
                                         onCompileFromBrief = { prompt, config, brief ->
                                             viewModel.generateSchema(
                                                 geminiKey = apiKey, 
-                                                backupKey = backupApiKey, 
+                                                backupKey = backupApiKey,
+                                                tertiaryKey = tertiaryApiKey,
                                                 magazineTopic = prompt, 
                                                 templateName = selectedTemplate,
                                                 config = config,
@@ -275,7 +279,7 @@ class MainActivity : ComponentActivity() {
                                                 layoutDensity = brief.styleDna
                                             )
                                         },
-                                        onCompileClicked = { magazineTopic, pages, config ->
+                                        onCompileClicked = { magazineTopic, pages, config, coverImgUrl ->
                                             val finalTopic = if (pages.isEmpty()) {
                                                 magazineTopic
                                             } else {
@@ -289,14 +293,16 @@ class MainActivity : ComponentActivity() {
                                                     - Layout Density: ${it.layoutDensity}
                                                     """.trimIndent()
                                                 }
-                                                "Theme: $magazineTopic\n\nRequired Structure:\n$pagesStr\n\n(CRITICAL INSTRUCTION: You MUST strictly adhere to the [CUSTOMIZATION CONFIGURATION] for each page. Adapt your language, formatting, and generation to perfectly match the requested Tone and Layout Density. You MUST also use the exact Target Image URLs provided above for each corresponding page. Do NOT override them with Unsplash URLs unless no Target Image URL was provided.)"
+                                                "Theme: $magazineTopic\n\nRequired Structure:\n$pagesStr\n\n(CRITICAL INSTRUCTION: You MUST strictly adhere to the [CUSTOMIZATION CONFIGURATION] for each page. Adapt your language, formatting, and generation to perfectly match the requested Tone and Layout Density. You MUST also use the exact Target Image URLs provided above for each corresponding page. Do NOT override them with Pollinations URLs unless no Target Image URL was provided.)"
                                             }
                                             viewModel.generateSchema(
                                                 geminiKey = apiKey, 
                                                 backupKey = backupApiKey, 
+                                                tertiaryKey = tertiaryApiKey,
                                                 magazineTopic = finalTopic, 
                                                 templateName = selectedTemplate,
-                                                config = config
+                                                config = config,
+                                                coverImageUrl = coverImgUrl
                                             )
                                         },
                                         onCancel = {
@@ -335,7 +341,9 @@ class MainActivity : ComponentActivity() {
                                                 viewModel.updateLatexCode(code)
                                             },
                                             onRewrite = { text, instruction, onResult ->
-                                                viewModel.rewriteSelection(apiKey, backupApiKey.ifBlank { null }, text, instruction, onResult)
+                                                coroutineScope.launch {
+                                                    viewModel.rewriteSelection(apiKey, backupApiKey, tertiaryApiKey, text, instruction, onResult)
+                                                }
                                             }
                                         )
                                     }
@@ -350,10 +358,11 @@ class MainActivity : ComponentActivity() {
                                     "settings" -> SettingsScreen(
                                         currentApiKey = apiKey,
                                         currentBackupApiKey = backupApiKey,
+                                        currentTertiaryApiKey = tertiaryApiKey,
                                         isVerifying = isVerifying,
                                         verifyError = verifyError,
                                         verifySuccess = verifySuccess,
-                                        onSaveApiKeys = { newKey, newBackupKey ->
+                                        onSaveApiKeys = { newKey, newBackupKey, newTertiaryKey ->
                                             isVerifying = true
                                             verifyError = null
                                             verifySuccess = null
@@ -381,15 +390,29 @@ class MainActivity : ComponentActivity() {
                                                             }
                                                         }
                                                     }
+                                                    val tertiaryValid = withContext(Dispatchers.IO) {
+                                                        if (newTertiaryKey.isBlank()) true else {
+                                                            try {
+                                                                val url = java.net.URL("https://generativelanguage.googleapis.com/v1beta/models?key=$newTertiaryKey")
+                                                                val connection = url.openConnection() as java.net.HttpURLConnection
+                                                                connection.requestMethod = "GET"
+                                                                connection.responseCode == 200
+                                                            } catch (e: Exception) {
+                                                                false
+                                                            }
+                                                        }
+                                                    }
                                                     
-                                                    if (primaryValid && backupValid) {
+                                                    if (primaryValid && backupValid && tertiaryValid) {
                                                         secureStorage.saveApiKey(newKey)
                                                         apiKey = newKey
                                                         secureStorage.saveBackupApiKey(newBackupKey)
                                                         backupApiKey = newBackupKey
+                                                        secureStorage.saveTertiaryApiKey(newTertiaryKey)
+                                                        tertiaryApiKey = newTertiaryKey
                                                         verifySuccess = true
                                                     } else {
-                                                        verifyError = if (!primaryValid) "Invalid Primary API Key" else "Invalid Backup API Key"
+                                                        verifyError = if (!primaryValid) "Invalid Primary API Key" else if (!backupValid) "Invalid Secondary API Key" else "Invalid Tertiary API Key"
                                                         verifySuccess = false
                                                     }
                                                 } catch (e: Exception) {

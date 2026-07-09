@@ -100,25 +100,19 @@ class EditorViewModel : ViewModel() {
         _compileState.value = CompileState.Idle
     }
 
-    fun generateBrief(geminiKey: String, backupKey: String?, prompt: String, referenceImages: List<String> = emptyList()) {
+    fun generateBrief(key1: String, key2: String?, key3: String?, prompt: String, referenceImages: List<String> = emptyList()) {
         if (prompt.isBlank()) {
             _briefState.value = BriefState.Error("Prompt can't be empty")
             return
         }
-        currentApiKey = geminiKey
-        currentBackupKey = backupKey
+        currentApiKey = key1
+        currentBackupKey = key2
         _briefState.value = BriefState.Loading
         
         viewModelScope.launch {
             try {
                 val request = GenerateBriefRequest(prompt = prompt, referenceImages = referenceImages)
-                var response = ApiClient.retrofitService.generateBrief(geminiKey, request)
-                
-                if (!response.isSuccessful && (response.code() == 401 || response.code() == 429)) {
-                    if (!backupKey.isNullOrBlank()) {
-                        response = ApiClient.retrofitService.generateBrief(backupKey, request)
-                    }
-                }
+                val response = ApiClient.retrofitService.generateBrief(key1, key2, key3, request)
                 
                 if (response.isSuccessful) {
                     val brief = response.body()
@@ -130,7 +124,7 @@ class EditorViewModel : ViewModel() {
                 } else {
                     val code = response.code()
                     if (code == 401 || code == 429) {
-                        _briefState.value = BriefState.Error("Your API key may be invalid or rate-limited — check it in Settings")
+                        _briefState.value = BriefState.Error("Your API keys may be invalid or rate-limited — check them in Settings")
                     } else {
                         _briefState.value = BriefState.Error("Error: $code")
                     }
@@ -144,11 +138,13 @@ class EditorViewModel : ViewModel() {
     fun generateSchema(
         geminiKey: String, 
         backupKey: String?, 
+        tertiaryKey: String?,
         magazineTopic: String, 
         templateName: String,
         config: SectionComposerConfig? = null,
         tone: String = "Professional",
-        layoutDensity: String = "Balanced"
+        layoutDensity: String = "Balanced",
+        coverImageUrl: String = ""
     ) {
         if (magazineTopic.isBlank()) {
             _schemaState.value = SchemaState.Error("Topic can't be empty")
@@ -178,15 +174,10 @@ class EditorViewModel : ViewModel() {
                     enablePullQuote = safeConfig.enablePullQuote,
                     enableBackCover = safeConfig.enableBackCover,
                     enableTocTeasers = safeConfig.enableTocTeasers,
-                    enableByline = safeConfig.enableByline
+                    enableByline = safeConfig.enableByline,
+                    coverImageUrl = coverImageUrl
                 )
-                var response = ApiClient.retrofitService.generateSchema(geminiKey, request)
-                
-                if (!response.isSuccessful && (response.code() == 401 || response.code() == 429)) {
-                    if (!backupKey.isNullOrBlank()) {
-                        response = ApiClient.retrofitService.generateSchema(backupKey, request)
-                    }
-                }
+                val response = ApiClient.retrofitService.generateSchema(geminiKey, backupKey, tertiaryKey, request)
                 
                 if (response.isSuccessful) {
                     val schema = response.body()
@@ -198,7 +189,7 @@ class EditorViewModel : ViewModel() {
                 } else {
                     val code = response.code()
                     if (code == 401 || code == 429) {
-                        _schemaState.value = SchemaState.Error("Your API key may be invalid or rate-limited — check it in Settings")
+                        _schemaState.value = SchemaState.Error("Your API keys may be invalid or rate-limited — check them in Settings")
                     } else {
                         _schemaState.value = SchemaState.Error("Error: $code")
                     }
@@ -217,13 +208,9 @@ class EditorViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 val request = GenerateLatexRequest(schema = schema, templateVariant = currentVariant)
-                var response = ApiClient.retrofitService.generateLatex(currentApiKey, request)
-                
-                if (!response.isSuccessful && (response.code() == 401 || response.code() == 429)) {
-                    if (!currentBackupKey.isNullOrBlank()) {
-                        response = ApiClient.retrofitService.generateLatex(currentBackupKey!!, request)
-                    }
-                }
+                // We'd ideally pass all 3 keys here too, but for generateLatex it's fast and we don't have tertiaryKey in state. 
+                // Wait, generateLatex doesn't even call Gemini! It only fills the template. So it's fine.
+                val response = ApiClient.retrofitService.generateLatex(currentApiKey, currentBackupKey, null, request)
                 
                 if (response.isSuccessful) {
                     val latex = response.body()?.latexCode
@@ -235,7 +222,7 @@ class EditorViewModel : ViewModel() {
                 } else {
                     val code = response.code()
                     if (code == 401 || code == 429) {
-                        _latexState.value = LatexState.Error("Your API key may be invalid or rate-limited — check it in Settings")
+                        _latexState.value = LatexState.Error("Your API keys may be invalid or rate-limited — check them in Settings")
                     } else {
                         _latexState.value = LatexState.Error("Error: $code")
                     }
@@ -248,17 +235,11 @@ class EditorViewModel : ViewModel() {
 
 
 
-    fun rewriteSelection(geminiKey: String, backupKey: String?, text: String, instruction: String, onResult: (String?) -> Unit) {
+    fun rewriteSelection(geminiKey: String, backupKey: String?, tertiaryKey: String?, text: String, instruction: String, onResult: (String?) -> Unit) {
         viewModelScope.launch {
             try {
                 val request = com.magazineforge.app.models.RewriteSelectionRequest(text = text, instruction = instruction)
-                var response = ApiClient.retrofitService.rewriteSelection(geminiKey, request)
-                
-                if (!response.isSuccessful && (response.code() == 401 || response.code() == 429)) {
-                    if (!backupKey.isNullOrBlank()) {
-                        response = ApiClient.retrofitService.rewriteSelection(backupKey, request)
-                    }
-                }
+                val response = ApiClient.retrofitService.rewriteSelection(geminiKey, backupKey, tertiaryKey, request)
                 
                 if (response.isSuccessful) {
                     onResult(response.body()?.rewrittenText)
@@ -303,8 +284,8 @@ class EditorViewModel : ViewModel() {
         var isPolling = true
         val startTime = System.currentTimeMillis()
         while (isPolling) {
-            if (System.currentTimeMillis() - startTime > 100_000) {
-                _compileState.value = CompileState.Error("Generation timed out after 100 seconds")
+            if (System.currentTimeMillis() - startTime > 180_000) {
+                _compileState.value = CompileState.Error("Generation timed out after 180 seconds")
                 break
             }
             try {

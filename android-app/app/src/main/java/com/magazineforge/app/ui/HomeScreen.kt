@@ -251,10 +251,7 @@ fun RecentIssueCard(file: File, onClick: (String) -> Unit) {
         ) {
             if (coverFile.exists()) {
                 CoverArtImage(
-                    model = coil.request.ImageRequest.Builder(LocalContext.current)
-                        .data(coverFile)
-                        .crossfade(true)
-                        .build(),
+                    model = coverFile,
                     contentDescription = "Cover",
                     contentScale = ContentScale.Crop,
                     modifier = Modifier.fillMaxSize()

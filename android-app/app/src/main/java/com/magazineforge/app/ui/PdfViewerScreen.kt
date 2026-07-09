@@ -23,6 +23,8 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import java.io.File
 import java.io.FileOutputStream
 import java.net.URL
@@ -41,6 +43,7 @@ fun PdfViewerScreen(
     
     val density = LocalDensity.current.density
     var currentFile by remember { mutableStateOf<File?>(null) }
+    val renderMutex = remember { Mutex() }
     
     LaunchedEffect(pdfUrlOrPath) {
         isLoading = true
@@ -162,16 +165,18 @@ fun PdfViewerScreen(
                         LaunchedEffect(index) {
                             withContext(Dispatchers.IO) {
                                 pdfRenderer?.let { renderer ->
-                                    val page = renderer.openPage(index)
-                                    // Render at 2x resolution for better quality
-                                    val width = (page.width * density * 1.5).toInt()
-                                    val height = (page.height * density * 1.5).toInt()
-                                    val bmp = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
-                                    // Fill white background first
-                                    bmp.eraseColor(android.graphics.Color.WHITE)
-                                    page.render(bmp, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
-                                    page.close()
-                                    bitmap = bmp
+                                    renderMutex.withLock {
+                                        val page = renderer.openPage(index)
+                                        // Render at 2x resolution for better quality
+                                        val width = (page.width * density * 1.5).toInt()
+                                        val height = (page.height * density * 1.5).toInt()
+                                        val bmp = Bitmap.createBitmap(width, height, Bitmap.Config.ARGB_8888)
+                                        // Fill white background first
+                                        bmp.eraseColor(android.graphics.Color.WHITE)
+                                        page.render(bmp, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+                                        page.close()
+                                        bitmap = bmp
+                                    }
                                 }
                             }
                         }

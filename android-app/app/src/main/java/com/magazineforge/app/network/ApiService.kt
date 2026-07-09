@@ -43,19 +43,25 @@ interface ApiService {
 
     @POST("generate-brief")
     suspend fun generateBrief(
-        @Header("X-Gemini-Key") geminiKey: String,
+        @Header("X-Gemini-Key-1") key1: String,
+        @Header("X-Gemini-Key-2") key2: String?,
+        @Header("X-Gemini-Key-3") key3: String?,
         @Body request: com.magazineforge.app.models.GenerateBriefRequest
     ): Response<com.magazineforge.app.models.GenerateBriefResponse>
 
     @POST("generate-schema")
     suspend fun generateSchema(
-        @Header("X-Gemini-Key") geminiKey: String,
+        @Header("X-Gemini-Key-1") key1: String,
+        @Header("X-Gemini-Key-2") key2: String?,
+        @Header("X-Gemini-Key-3") key3: String?,
         @Body request: com.magazineforge.app.models.GenerateSchemaRequest
     ): Response<com.magazineforge.app.models.MagazineSchema>
 
     @POST("generate-latex")
     suspend fun generateLatex(
-        @Header("X-Gemini-Key") geminiKey: String,
+        @Header("X-Gemini-Key-1") key1: String,
+        @Header("X-Gemini-Key-2") key2: String?,
+        @Header("X-Gemini-Key-3") key3: String?,
         @Body request: com.magazineforge.app.models.GenerateLatexRequest
     ): Response<com.magazineforge.app.models.GenerateLatexResponse>
 
@@ -70,7 +76,9 @@ interface ApiService {
 
     @POST("rewrite-selection")
     suspend fun rewriteSelection(
-        @Header("X-Gemini-Key") geminiKey: String,
+        @Header("X-Gemini-Key-1") key1: String,
+        @Header("X-Gemini-Key-2") key2: String?,
+        @Header("X-Gemini-Key-3") key3: String?,
         @Body request: com.magazineforge.app.models.RewriteSelectionRequest
     ): Response<com.magazineforge.app.models.RewriteSelectionResponse>
 }

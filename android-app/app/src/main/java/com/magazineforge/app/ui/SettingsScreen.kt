@@ -28,14 +28,16 @@ import kotlinx.coroutines.launch
 fun SettingsScreen(
     currentApiKey: String,
     currentBackupApiKey: String?,
+    currentTertiaryApiKey: String?,
     isVerifying: Boolean,
     verifyError: String?,
     verifySuccess: Boolean?,
-    onSaveApiKeys: (String, String) -> Unit,
+    onSaveApiKeys: (String, String, String) -> Unit,
     onClearFeedback: () -> Unit
 ) {
     var apiKeyInput by remember { mutableStateOf(currentApiKey) }
     var backupApiKeyInput by remember { mutableStateOf(currentBackupApiKey ?: "") }
+    var tertiaryApiKeyInput by remember { mutableStateOf(currentTertiaryApiKey ?: "") }
     var passwordVisible by remember { mutableStateOf(false) }
     val currentTheme by ThemeState.currentTheme.collectAsState()
     
@@ -89,12 +91,35 @@ fun SettingsScreen(
                             onClearFeedback()
                         },
                         modifier = Modifier.fillMaxWidth(),
-                        label = { Text("Backup API Key (Optional)") },
+                        label = { Text("Secondary API Key (Optional)") },
                         visualTransformation = if (backupPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                         trailingIcon = {
                             val image = if (backupPasswordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff
                             val description = if (backupPasswordVisible) "Hide API Key" else "Show API Key"
                             IconButton(onClick = { backupPasswordVisible = !backupPasswordVisible }) {
+                                Icon(imageVector = image, contentDescription = description)
+                            }
+                        },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            focusedLabelColor = MaterialTheme.colorScheme.primary
+                        )
+                    )
+
+                    var tertiaryPasswordVisible by remember { mutableStateOf(false) }
+                    OutlinedTextField(
+                        value = tertiaryApiKeyInput,
+                        onValueChange = {
+                            tertiaryApiKeyInput = it
+                            onClearFeedback()
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        label = { Text("Tertiary API Key (Optional)") },
+                        visualTransformation = if (tertiaryPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                        trailingIcon = {
+                            val image = if (tertiaryPasswordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff
+                            val description = if (tertiaryPasswordVisible) "Hide API Key" else "Show API Key"
+                            IconButton(onClick = { tertiaryPasswordVisible = !tertiaryPasswordVisible }) {
                                 Icon(imageVector = image, contentDescription = description)
                             }
                         },
@@ -121,7 +146,7 @@ fun SettingsScreen(
                     }
                 }
                 Button(
-                    onClick = { onSaveApiKeys(apiKeyInput, backupApiKeyInput) },
+                    onClick = { onSaveApiKeys(apiKeyInput, backupApiKeyInput, tertiaryApiKeyInput) },
                     enabled = !isVerifying,
                     colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                     modifier = Modifier.align(Alignment.End)

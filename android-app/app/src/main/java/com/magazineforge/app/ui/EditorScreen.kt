@@ -65,11 +65,12 @@ fun EditorScreen(
     compileState: CompileState,
     onGenerateBrief: (String, List<String>) -> Unit,
     onCompileFromBrief: (String, SectionComposerConfig, GenerateBriefResponse) -> Unit,
-    onCompileClicked: (String, List<PageBlock>, SectionComposerConfig) -> Unit,
+    onCompileClicked: (String, List<PageBlock>, SectionComposerConfig, String) -> Unit,
     onCancel: () -> Unit,
     onBack: () -> Unit
 ) {
     var prompt by remember { mutableStateOf(initialPrompt) }
+    var coverImageUrl by remember { mutableStateOf("") }
     var selectedTabIndex by remember { mutableStateOf(0) }
     val pages = remember { mutableStateListOf<PageBlock>() }
     var composerConfig by remember { mutableStateOf(SectionComposerConfig()) }
@@ -346,6 +347,93 @@ fun EditorScreen(
                             unfocusedLabelColor = tokens.editorTextSecondary
                         )
                     )
+                    
+                    // Cover Art Card
+                    var isUploadingCover by remember { mutableStateOf(false) }
+                    val context = androidx.compose.ui.platform.LocalContext.current
+                    val coverLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+                        androidx.activity.result.contract.ActivityResultContracts.GetContent()
+                    ) { uri ->
+                        if (uri != null) {
+                            isUploadingCover = true
+                            coroutineScope.launch {
+                                try {
+                                    val inputStream = context.contentResolver.openInputStream(uri)
+                                    val tempFile = java.io.File(context.cacheDir, "cover_upload_${System.currentTimeMillis()}.jpg")
+                                    val outputStream = java.io.FileOutputStream(tempFile)
+                                    inputStream?.copyTo(outputStream)
+                                    inputStream?.close()
+                                    outputStream.close()
+                                    
+                                    val requestFile = okhttp3.RequestBody.create("image/*".toMediaTypeOrNull(), tempFile)
+                                    val body = okhttp3.MultipartBody.Part.createFormData("file", tempFile.name, requestFile)
+                                    
+                                    val response = com.magazineforge.app.network.ApiClient.retrofitService.uploadAsset(body)
+                                    if (response.isSuccessful) {
+                                        val path = response.body()?.url ?: ""
+                                        if (path.isNotEmpty()) {
+                                            coverImageUrl = "${com.magazineforge.app.network.ApiClient.BASE_URL}$path"
+                                            snackbarHostState.showSnackbar("Cover image uploaded successfully")
+                                        } else {
+                                            snackbarHostState.showSnackbar("Upload failed: empty path returned")
+                                        }
+                                    } else {
+                                        val errBody = response.errorBody()?.string()
+                                        snackbarHostState.showSnackbar("Upload failed (${response.code()}): ${errBody ?: "no body"}")
+                                    }
+                                } catch (e: Exception) {
+                                    e.printStackTrace()
+                                    snackbarHostState.showSnackbar("Upload failed: ${e.localizedMessage ?: e.message}")
+                                } finally {
+                                    isUploadingCover = false
+                                }
+                            }
+                        }
+                    }
+
+                    Card(
+                        colors = CardDefaults.cardColors(containerColor = darkSurface),
+                        border = BorderStroke(1.dp, tokens.secondaryAccent.copy(alpha = 0.3f)),
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text("COVER ART", style = LuxeTypography.labelMedium.copy(color = gold))
+                            Spacer(modifier = Modifier.height(8.dp))
+                            OutlinedTextField(
+                                value = coverImageUrl,
+                                onValueChange = { newValue -> 
+                                    // Auto verify and convert Google Drive links
+                                    val driveRegex = Regex("https://drive\\.google\\.com/file/d/([a-zA-Z0-9_-]+)/view.*")
+                                    val convertedUrl = driveRegex.replace(newValue) { result ->
+                                        "https://drive.google.com/uc?export=download&id=${result.groupValues[1]}"
+                                    }
+                                    coverImageUrl = convertedUrl
+                                },
+                                placeholder = { Text("Image URL or Google Drive Link") },
+                                modifier = Modifier.fillMaxWidth(),
+                                singleLine = true,
+                                leadingIcon = { Icon(Icons.Default.Image, contentDescription = "Image", tint = tokens.editorTextSecondary) },
+                                trailingIcon = {
+                                    if (isUploadingCover) {
+                                        CircularProgressIndicator(modifier = Modifier.size(24.dp), color = gold)
+                                    } else {
+                                        IconButton(onClick = { coverLauncher.launch("image/*") }) {
+                                            Icon(Icons.Default.Add, contentDescription = "Upload from device", tint = gold)
+                                        }
+                                    }
+                                },
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = gold,
+                                    unfocusedBorderColor = tokens.editorBorder,
+                                    unfocusedTextColor = tokens.editorText,
+                                    focusedTextColor = tokens.editorText,
+                                    unfocusedPlaceholderColor = tokens.editorTextSecondary,
+                                    focusedPlaceholderColor = tokens.editorTextSecondary
+                                )
+                            )
+                        }
+                    }
 
                     LazyColumn(modifier = Modifier.weight(1f)) {
                         items(pages) { page ->
@@ -390,7 +478,7 @@ fun EditorScreen(
                     }
                     
                     Button(
-                        onClick = { onCompileClicked(prompt, pages, composerConfig) },
+                        onClick = { onCompileClicked(prompt, pages, composerConfig, coverImageUrl) },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(56.dp)
@@ -624,7 +712,7 @@ fun EditorScreen(
                                         onCompileFromBrief(prompt, composerConfig, brief)
                                     }
                                 } else {
-                                    onCompileClicked(prompt, pages, composerConfig)
+                                    onCompileClicked(prompt, pages, composerConfig, coverImageUrl)
                                 }
                             }
                         ) {

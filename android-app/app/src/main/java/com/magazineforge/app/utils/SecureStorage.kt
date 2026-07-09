@@ -41,6 +41,18 @@ class SecureStorage(context: Context) {
     fun clearBackupApiKey() {
         sharedPreferences.edit().remove("gemini_backup_api_key").apply()
     }
+
+    fun saveTertiaryApiKey(key: String) {
+        sharedPreferences.edit().putString("gemini_tertiary_api_key", key).apply()
+    }
+
+    fun getTertiaryApiKey(): String? {
+        return sharedPreferences.getString("gemini_tertiary_api_key", null)
+    }
+
+    fun clearTertiaryApiKey() {
+        sharedPreferences.edit().remove("gemini_tertiary_api_key").apply()
+    }
     
     fun saveThemeId(themeId: String) {
         sharedPreferences.edit().putString("active_theme_id", themeId).apply()

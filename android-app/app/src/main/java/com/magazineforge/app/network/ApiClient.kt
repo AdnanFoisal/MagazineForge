@@ -14,6 +14,9 @@ object ApiClient {
     private val HF_TOKEN = com.magazineforge.app.BuildConfig.HF_TOKEN
 
     val okHttpClient = OkHttpClient.Builder()
+        .connectTimeout(60, java.util.concurrent.TimeUnit.SECONDS)
+        .readTimeout(300, java.util.concurrent.TimeUnit.SECONDS)
+        .writeTimeout(60, java.util.concurrent.TimeUnit.SECONDS)
         .addInterceptor { chain: Interceptor.Chain ->
             val request = chain.request().newBuilder()
                 .addHeader("Authorization", "Bearer $HF_TOKEN")

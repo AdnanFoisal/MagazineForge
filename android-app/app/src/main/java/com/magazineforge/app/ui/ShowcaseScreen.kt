@@ -156,10 +156,7 @@ fun ShowcaseCard(item: ShowcaseItem, onClick: () -> Unit) {
             ) {
                 if (item.coverImageUrl.isNotEmpty()) {
                     CoverArtImage(
-                        model = coil.request.ImageRequest.Builder(LocalContext.current)
-                            .data(item.coverImageUrl)
-                            .crossfade(true)
-                            .build(),
+                        model = item.coverImageUrl,
                         contentDescription = "Cover Image",
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.fillMaxSize()

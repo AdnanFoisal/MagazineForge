@@ -165,10 +165,7 @@ fun TemplateMasonryCard(template: TemplateModel, onClick: () -> Unit, onPreview:
             .clickable(onClick = onClick)
     ) {
         CoverArtImage(
-            model = ImageRequest.Builder(LocalContext.current)
-                .data(template.thumbnailUrl)
-                .crossfade(true)
-                .build(),
+            model = template.thumbnailUrl,
             contentDescription = template.name,
             contentScale = ContentScale.Crop,
             modifier = Modifier.fillMaxSize()

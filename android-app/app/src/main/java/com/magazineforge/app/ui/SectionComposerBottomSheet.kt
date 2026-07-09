@@ -41,6 +41,7 @@ fun SectionComposerBottomSheet(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
+                .windowInsetsPadding(WindowInsets.navigationBars)
                 .padding(horizontal = 24.dp)
                 .padding(bottom = 32.dp)
                 .verticalScroll(rememberScrollState())
@@ -117,7 +118,7 @@ fun SectionToggle(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Text(text = label, style = LuxeTypography.titleMedium.copy(color = tokens.textPrimary))
+            Text(text = label, style = LuxeTypography.titleMedium.copy(color = tokens.editorText))
             Switch(
                 checked = checked,
                 onCheckedChange = onCheckedChange,
@@ -133,12 +134,12 @@ fun SectionToggle(
             OutlinedTextField(
                 value = textFieldValue,
                 onValueChange = onTextFieldChange,
-                placeholder = { Text(textFieldPlaceholder) },
+                placeholder = { Text(textFieldPlaceholder, color = tokens.editorTextSecondary) },
                 modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = tokens.primaryAccent,
-                    unfocusedTextColor = tokens.textPrimary,
-                    focusedTextColor = tokens.textPrimary
+                    unfocusedTextColor = tokens.editorText,
+                    focusedTextColor = tokens.editorText
                 ),
                 singleLine = true
             )

@@ -32,19 +32,18 @@ import okhttp3.MediaType.Companion.toMediaTypeOrNull
 fun CoAuthorScreen(
     initialSchema: MagazineSchema,
     isGeneratingLatex: Boolean,
+    isFullAiMode: Boolean,
     onGenerateLatex: (MagazineSchema) -> Unit,
+    onNext: () -> Unit,
     onBack: () -> Unit
 ) {
     val tokens = com.magazineforge.app.ui.theme.LocalThemeTokens.current
     val surfaceColor = tokens.surface
     var schema by remember { mutableStateOf(initialSchema) }
-    val coroutineScope = rememberCoroutineScope()
-    
-    // We will pass down this helper to any field that wants an image
-    // It launches an image picker, uploads to Firebase, and calls onUrlReceived
-    var onImageUploadedCallback: ((String) -> Unit)? by remember { mutableStateOf(null) }
-    
     val context = androidx.compose.ui.platform.LocalContext.current
+    val coroutineScope = rememberCoroutineScope()
+    var onImageUploadedCallback by remember { mutableStateOf<((String) -> Unit)?>(null) }
+    
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
         if (uri != null) {
             coroutineScope.launch {
@@ -93,12 +92,22 @@ fun CoAuthorScreen(
                 },
                 actions = {
                     val isSchemaValid = schema.cover.mainTitle.isNotBlank()
-                    Button(
-                        onClick = { onGenerateLatex(schema) },
-                        enabled = !isGeneratingLatex && isSchemaValid,
-                        colors = ButtonDefaults.buttonColors(containerColor = gold)
-                    ) {
-                        Text(if (isGeneratingLatex) "Generating..." else "Next", color = obsidian)
+                    if (isFullAiMode) {
+                        Button(
+                            onClick = onNext,
+                            enabled = isSchemaValid,
+                            colors = ButtonDefaults.buttonColors(containerColor = gold)
+                        ) {
+                            Text("Open Editor", color = obsidian)
+                        }
+                    } else {
+                        Button(
+                            onClick = { onGenerateLatex(schema) },
+                            enabled = !isGeneratingLatex && isSchemaValid,
+                            colors = ButtonDefaults.buttonColors(containerColor = gold)
+                        ) {
+                            Text(if (isGeneratingLatex) "Generating..." else "Next", color = obsidian)
+                        }
                     }
                 }
             )

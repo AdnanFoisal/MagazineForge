@@ -18,40 +18,28 @@ class SecureStorage(context: Context) {
         EncryptedSharedPreferences.PrefValueEncryptionScheme.AES256_GCM
     )
 
-    fun saveApiKey(key: String) {
-        sharedPreferences.edit().putString("gemini_api_key", key).apply()
+    fun saveLiteLLMUrl(url: String) {
+        sharedPreferences.edit().putString("litellm_url", url).apply()
     }
 
-    fun getApiKey(): String? {
-        return sharedPreferences.getString("gemini_api_key", null)
+    fun getLiteLLMUrl(): String? {
+        return sharedPreferences.getString("litellm_url", null)
     }
 
-    fun clearApiKey() {
-        sharedPreferences.edit().remove("gemini_api_key").apply()
+    fun clearLiteLLMUrl() {
+        sharedPreferences.edit().remove("litellm_url").apply()
     }
 
-    fun saveBackupApiKey(key: String) {
-        sharedPreferences.edit().putString("gemini_backup_api_key", key).apply()
+    fun saveLiteLLMKey(key: String) {
+        sharedPreferences.edit().putString("litellm_key", key).apply()
     }
 
-    fun getBackupApiKey(): String? {
-        return sharedPreferences.getString("gemini_backup_api_key", null)
+    fun getLiteLLMKey(): String? {
+        return sharedPreferences.getString("litellm_key", null)
     }
 
-    fun clearBackupApiKey() {
-        sharedPreferences.edit().remove("gemini_backup_api_key").apply()
-    }
-
-    fun saveTertiaryApiKey(key: String) {
-        sharedPreferences.edit().putString("gemini_tertiary_api_key", key).apply()
-    }
-
-    fun getTertiaryApiKey(): String? {
-        return sharedPreferences.getString("gemini_tertiary_api_key", null)
-    }
-
-    fun clearTertiaryApiKey() {
-        sharedPreferences.edit().remove("gemini_tertiary_api_key").apply()
+    fun clearLiteLLMKey() {
+        sharedPreferences.edit().remove("litellm_key").apply()
     }
     
     fun saveThemeId(themeId: String) {

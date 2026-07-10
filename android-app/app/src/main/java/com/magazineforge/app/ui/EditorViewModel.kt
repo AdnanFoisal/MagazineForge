@@ -71,16 +71,40 @@ class EditorViewModel : ViewModel() {
     private var currentTopic: String = ""
     private var currentVariant: String = ""
     private var isFromShowcase: Boolean = false
-    private var currentApiKey: String = ""
-    private var currentBackupKey: String? = null
+    private var currentLiteLLMUrl: String = ""
+    private var currentLiteLLMKey: String = ""
     private var currentRawLatex: String = ""
     private var currentCoverUrl: String = ""
     private var currentEditedLatex: String? = null
 
-    fun getLatexCode(): String? = currentEditedLatex
+    var isFullAiMode: Boolean = false
+    private var appContext: Context? = null
+
+    fun initContext(context: Context) {
+        if (appContext == null) {
+            appContext = context.applicationContext
+        }
+    }
+
+    fun getLatexCode(): String? {
+        val memoryCode = currentEditedLatex ?: currentRawLatex.takeIf { it.isNotEmpty() }
+        if (memoryCode != null) return memoryCode
+        
+        // Try loading from preferences if memory is empty
+        val prefs = appContext?.getSharedPreferences("MagBoyPrefs", Context.MODE_PRIVATE)
+        val saved = prefs?.getString("saved_latex", null)
+        if (saved != null) {
+            currentEditedLatex = saved
+        }
+        return saved
+    }
 
     fun updateLatexCode(code: String) {
         currentEditedLatex = code
+        appContext?.getSharedPreferences("MagBoyPrefs", Context.MODE_PRIVATE)
+            ?.edit()
+            ?.putString("saved_latex", code)
+            ?.apply()
     }
 
     private fun normalizeTemplateVariant(templateName: String): String {
@@ -100,19 +124,19 @@ class EditorViewModel : ViewModel() {
         _compileState.value = CompileState.Idle
     }
 
-    fun generateBrief(key1: String, key2: String?, key3: String?, prompt: String, referenceImages: List<String> = emptyList()) {
+    fun generateBrief(litellmUrl: String, litellmKey: String, prompt: String, referenceImages: List<String> = emptyList(), articleCount: Int? = null) {
         if (prompt.isBlank()) {
             _briefState.value = BriefState.Error("Prompt can't be empty")
             return
         }
-        currentApiKey = key1
-        currentBackupKey = key2
+        currentLiteLLMUrl = litellmUrl
+        currentLiteLLMKey = litellmKey
         _briefState.value = BriefState.Loading
         
         viewModelScope.launch {
             try {
-                val request = GenerateBriefRequest(prompt = prompt, referenceImages = referenceImages)
-                val response = ApiClient.retrofitService.generateBrief(key1, key2, key3, request)
+                val request = GenerateBriefRequest(prompt = prompt, referenceImages = referenceImages, articleCount = articleCount)
+                val response = ApiClient.retrofitService.generateBrief(litellmUrl, litellmKey, request)
                 
                 if (response.isSuccessful) {
                     val brief = response.body()
@@ -136,9 +160,8 @@ class EditorViewModel : ViewModel() {
     }
 
     fun generateSchema(
-        geminiKey: String, 
-        backupKey: String?, 
-        tertiaryKey: String?,
+        litellmUrl: String, 
+        litellmKey: String, 
         magazineTopic: String, 
         templateName: String,
         config: SectionComposerConfig? = null,
@@ -151,8 +174,8 @@ class EditorViewModel : ViewModel() {
             return
         }
         currentTopic = magazineTopic
-        currentApiKey = geminiKey
-        currentBackupKey = backupKey
+        currentLiteLLMUrl = litellmUrl
+        currentLiteLLMKey = litellmKey
         currentVariant = normalizeTemplateVariant(templateName)
         currentRawLatex = ""
         currentEditedLatex = null
@@ -177,12 +200,19 @@ class EditorViewModel : ViewModel() {
                     enableByline = safeConfig.enableByline,
                     coverImageUrl = coverImageUrl
                 )
-                val response = ApiClient.retrofitService.generateSchema(geminiKey, backupKey, tertiaryKey, request)
+                val response = ApiClient.retrofitService.generateSchema(
+                    litellmUrl = litellmUrl,
+                    litellmKey = litellmKey,
+                    request = request
+                )
                 
                 if (response.isSuccessful) {
                     val schema = response.body()
                     if (schema != null) {
                         _schemaState.value = SchemaState.Success(schema)
+                        if (isFullAiMode) {
+                            generateLatex(schema)
+                        }
                     } else {
                         _schemaState.value = SchemaState.Error("Empty response body")
                     }
@@ -208,13 +238,16 @@ class EditorViewModel : ViewModel() {
         viewModelScope.launch {
             try {
                 val request = GenerateLatexRequest(schema = schema, templateVariant = currentVariant)
-                // We'd ideally pass all 3 keys here too, but for generateLatex it's fast and we don't have tertiaryKey in state. 
-                // Wait, generateLatex doesn't even call Gemini! It only fills the template. So it's fine.
-                val response = ApiClient.retrofitService.generateLatex(currentApiKey, currentBackupKey, null, request)
+                val response = ApiClient.retrofitService.generateLatex(currentLiteLLMUrl, currentLiteLLMKey, request)
                 
                 if (response.isSuccessful) {
                     val latex = response.body()?.latexCode
                     if (latex != null) {
+                        currentRawLatex = latex
+                        appContext?.getSharedPreferences("MagBoyPrefs", Context.MODE_PRIVATE)
+                            ?.edit()
+                            ?.putString("saved_latex", latex)
+                            ?.apply()
                         _latexState.value = LatexState.Success(latex)
                     } else {
                         _latexState.value = LatexState.Error("Received empty latex")
@@ -235,11 +268,11 @@ class EditorViewModel : ViewModel() {
 
 
 
-    fun rewriteSelection(geminiKey: String, backupKey: String?, tertiaryKey: String?, text: String, instruction: String, onResult: (String?) -> Unit) {
+    fun rewriteSelection(litellmUrl: String, litellmKey: String, text: String, instruction: String, onResult: (String?) -> Unit) {
         viewModelScope.launch {
             try {
                 val request = com.magazineforge.app.models.RewriteSelectionRequest(text = text, instruction = instruction)
-                val response = ApiClient.retrofitService.rewriteSelection(geminiKey, backupKey, tertiaryKey, request)
+                val response = ApiClient.retrofitService.rewriteSelection(litellmUrl, litellmKey, request)
                 
                 if (response.isSuccessful) {
                     onResult(response.body()?.rewrittenText)

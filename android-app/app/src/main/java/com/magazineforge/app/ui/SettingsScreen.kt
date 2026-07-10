@@ -4,9 +4,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Visibility
@@ -22,166 +21,147 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.magazineforge.app.ui.theme.ThemeState
 import com.magazineforge.app.ui.theme.AllThemes
-import kotlinx.coroutines.launch
 
 @Composable
 fun SettingsScreen(
-    currentApiKey: String,
-    currentBackupApiKey: String?,
-    currentTertiaryApiKey: String?,
+    currentLiteLLMUrl: String,
+    currentLiteLLMKey: String,
     isVerifying: Boolean,
     verifyError: String?,
     verifySuccess: Boolean?,
-    onSaveApiKeys: (String, String, String) -> Unit,
+    onSaveCredentials: (String, String) -> Unit,
     onClearFeedback: () -> Unit
 ) {
-    var apiKeyInput by remember { mutableStateOf(currentApiKey) }
-    var backupApiKeyInput by remember { mutableStateOf(currentBackupApiKey ?: "") }
-    var tertiaryApiKeyInput by remember { mutableStateOf(currentTertiaryApiKey ?: "") }
+    var urlInput by remember { mutableStateOf(currentLiteLLMUrl) }
+    var keyInput by remember { mutableStateOf(currentLiteLLMKey) }
     var passwordVisible by remember { mutableStateOf(false) }
     val currentTheme by ThemeState.currentTheme.collectAsState()
     
-    Column(
+    LazyColumn(
         modifier = Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
             .padding(horizontal = 24.dp, vertical = 32.dp),
         verticalArrangement = Arrangement.spacedBy(32.dp)
     ) {
-        Text(
-            text = "Settings",
-            style = MaterialTheme.typography.headlineMedium.copy(color = MaterialTheme.colorScheme.onBackground)
-        )
+        item {
+            Text(
+                text = "Settings",
+                style = MaterialTheme.typography.headlineMedium.copy(color = MaterialTheme.colorScheme.onBackground)
+            )
+        }
         
-        // API Key Section
-        Card(
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-            shape = RoundedCornerShape(12.dp)
-        ) {
-            Column(modifier = Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(24.dp)) {
-                Text("Gemini API Keys", style = MaterialTheme.typography.titleMedium.copy(color = MaterialTheme.colorScheme.onSurface))
-                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    OutlinedTextField(
-                        value = apiKeyInput,
-                        onValueChange = {
-                            apiKeyInput = it
-                            onClearFeedback()
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        label = { Text("Primary API Key") },
-                        visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                        trailingIcon = {
-                            val image = if (passwordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff
-                            val description = if (passwordVisible) "Hide API Key" else "Show API Key"
-                            IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                                Icon(imageVector = image, contentDescription = description)
+        item {
+            Card(
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Column(modifier = Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(24.dp)) {
+                    Text("LLM Configuration (LiteLLM)", style = MaterialTheme.typography.titleMedium.copy(color = MaterialTheme.colorScheme.onSurface))
+                    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                        OutlinedTextField(
+                            value = urlInput,
+                            onValueChange = {
+                                urlInput = it
+                                onClearFeedback()
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            label = { Text("LiteLLM Base URL") },
+                            placeholder = { Text("http://YOUR_IP:4000/v1") },
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                focusedLabelColor = MaterialTheme.colorScheme.primary
+                            )
+                        )
+                        
+                        OutlinedTextField(
+                            value = keyInput,
+                            onValueChange = {
+                                keyInput = it
+                                onClearFeedback()
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            label = { Text("LiteLLM Master Key") },
+                            visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                            trailingIcon = {
+                                val image = if (passwordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff
+                                val description = if (passwordVisible) "Hide API Key" else "Show API Key"
+                                IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                                    Icon(imageVector = image, contentDescription = description)
+                                }
+                            },
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = MaterialTheme.colorScheme.primary,
+                                focusedLabelColor = MaterialTheme.colorScheme.primary
+                            )
+                        )
+                        
+                        if (verifySuccess == true) {
+                            Column {
+                                Text(
+                                    text = "Credentials saved successfully!",
+                                    color = Color(0xFF4CAF50),
+                                    style = MaterialTheme.typography.bodySmall,
+                                    modifier = Modifier.padding(top = 4.dp)
+                                )
+                                if (verifyError != null) {
+                                    Text(
+                                        text = verifyError,
+                                        color = Color(0xFF4CAF50),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        modifier = Modifier.padding(top = 2.dp)
+                                    )
+                                }
                             }
-                        },
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = MaterialTheme.colorScheme.primary,
-                            focusedLabelColor = MaterialTheme.colorScheme.primary
-                        )
-                    )
-                    
-                    var backupPasswordVisible by remember { mutableStateOf(false) }
-                    OutlinedTextField(
-                        value = backupApiKeyInput,
-                        onValueChange = {
-                            backupApiKeyInput = it
-                            onClearFeedback()
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        label = { Text("Secondary API Key (Optional)") },
-                        visualTransformation = if (backupPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                        trailingIcon = {
-                            val image = if (backupPasswordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff
-                            val description = if (backupPasswordVisible) "Hide API Key" else "Show API Key"
-                            IconButton(onClick = { backupPasswordVisible = !backupPasswordVisible }) {
-                                Icon(imageVector = image, contentDescription = description)
-                            }
-                        },
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = MaterialTheme.colorScheme.primary,
-                            focusedLabelColor = MaterialTheme.colorScheme.primary
-                        )
-                    )
-
-                    var tertiaryPasswordVisible by remember { mutableStateOf(false) }
-                    OutlinedTextField(
-                        value = tertiaryApiKeyInput,
-                        onValueChange = {
-                            tertiaryApiKeyInput = it
-                            onClearFeedback()
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        label = { Text("Tertiary API Key (Optional)") },
-                        visualTransformation = if (tertiaryPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                        trailingIcon = {
-                            val image = if (tertiaryPasswordVisible) Icons.Filled.Visibility else Icons.Filled.VisibilityOff
-                            val description = if (tertiaryPasswordVisible) "Hide API Key" else "Show API Key"
-                            IconButton(onClick = { tertiaryPasswordVisible = !tertiaryPasswordVisible }) {
-                                Icon(imageVector = image, contentDescription = description)
-                            }
-                        },
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = MaterialTheme.colorScheme.primary,
-                            focusedLabelColor = MaterialTheme.colorScheme.primary
-                        )
-                    )
-                    
-                    if (verifySuccess == true) {
-                        Text(
-                            text = "Keys saved successfully!",
-                            color = Color(0xFF4CAF50),
-                            style = MaterialTheme.typography.bodySmall,
-                            modifier = Modifier.padding(top = 4.dp)
-                        )
-                    } else if (verifyError != null) {
-                        Text(
-                            text = verifyError,
-                            color = MaterialTheme.colorScheme.error,
-                            style = MaterialTheme.typography.bodySmall,
-                            modifier = Modifier.padding(top = 4.dp)
-                        )
+                        } else if (verifyError != null) {
+                            Text(
+                                text = verifyError,
+                                color = MaterialTheme.colorScheme.error,
+                                style = MaterialTheme.typography.bodySmall,
+                                modifier = Modifier.padding(top = 4.dp)
+                            )
+                        }
                     }
-                }
-                Button(
-                    onClick = { onSaveApiKeys(apiKeyInput, backupApiKeyInput, tertiaryApiKeyInput) },
-                    enabled = !isVerifying,
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                    modifier = Modifier.align(Alignment.End)
-                ) {
-                    if (isVerifying) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(16.dp),
-                            color = MaterialTheme.colorScheme.onPrimary,
-                            strokeWidth = 2.dp
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text("Verifying...", color = MaterialTheme.colorScheme.onPrimary)
-                    } else {
-                        Text("Verify & Save", color = MaterialTheme.colorScheme.onPrimary)
+                    Button(
+                        onClick = { onSaveCredentials(urlInput, keyInput) },
+                        enabled = !isVerifying,
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
+                        modifier = Modifier.align(Alignment.End)
+                    ) {
+                        if (isVerifying) {
+                            CircularProgressIndicator(
+                                modifier = Modifier.size(16.dp),
+                                color = MaterialTheme.colorScheme.onPrimary,
+                                strokeWidth = 2.dp
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Verifying...", color = MaterialTheme.colorScheme.onPrimary)
+                        } else {
+                            Text("Verify & Save", color = MaterialTheme.colorScheme.onPrimary)
+                        }
                     }
                 }
             }
         }
         
-        // Theme Section
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.weight(1f)) {
+        item {
             Text(
                 "Appearance", 
                 style = MaterialTheme.typography.titleLarge.copy(color = MaterialTheme.colorScheme.onBackground)
             )
-            LazyVerticalGrid(
-                columns = GridCells.Fixed(2),
-                horizontalArrangement = Arrangement.spacedBy(16.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+        }
+        
+        val chunkedThemes = AllThemes.chunked(2)
+        items(chunkedThemes) { rowThemes ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                items(AllThemes) { theme ->
+                for (theme in rowThemes) {
                     val isSelected = theme == currentTheme
                     Box(
                         modifier = Modifier
-                            .fillMaxWidth()
+                            .weight(1f)
                             .height(100.dp)
                             .clip(RoundedCornerShape(8.dp))
                             .background(if (theme.isDark) Color(0xFF1A1A1A) else Color(0xFFF5F5F5))
@@ -201,7 +181,14 @@ fun SettingsScreen(
                         )
                     }
                 }
+                if (rowThemes.size == 1) {
+                    Spacer(modifier = Modifier.weight(1f))
+                }
             }
+        }
+        
+        item {
+            Spacer(modifier = Modifier.height(100.dp))
         }
     }
 }

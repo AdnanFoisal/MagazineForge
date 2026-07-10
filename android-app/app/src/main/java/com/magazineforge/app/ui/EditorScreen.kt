@@ -63,7 +63,7 @@ fun EditorScreen(
     schemaState: SchemaState,
     latexState: LatexState,
     compileState: CompileState,
-    onGenerateBrief: (String, List<String>) -> Unit,
+    onGenerateBrief: (String, List<String>, Int) -> Unit,
     onCompileFromBrief: (String, SectionComposerConfig, GenerateBriefResponse) -> Unit,
     onCompileClicked: (String, List<PageBlock>, SectionComposerConfig, String) -> Unit,
     onCancel: () -> Unit,
@@ -71,6 +71,7 @@ fun EditorScreen(
 ) {
     var prompt by remember { mutableStateOf(initialPrompt) }
     var coverImageUrl by remember { mutableStateOf("") }
+    var coverTopic by remember { mutableStateOf("") }
     var selectedTabIndex by remember { mutableStateOf(0) }
     val pages = remember { mutableStateListOf<PageBlock>() }
     var composerConfig by remember { mutableStateOf(SectionComposerConfig()) }
@@ -189,7 +190,7 @@ fun EditorScreen(
                             onClick = {
                                 onCompileFromBrief(prompt, composerConfig, brief)
                             },
-                            modifier = Modifier.fillMaxWidth().height(56.dp).padding(bottom = 32.dp),
+                            modifier = Modifier.fillMaxWidth().padding(bottom = 32.dp).height(56.dp),
                             shape = RoundedCornerShape(8.dp),
                             colors = ButtonDefaults.buttonColors(containerColor = gold, contentColor = obsidian),
                             enabled = !isCompileLoading
@@ -204,6 +205,8 @@ fun EditorScreen(
                 } else {
                     // Phase 1: Initial Prompt
                     var showReferenceImages by remember { mutableStateOf(false) }
+                    var totalPages by remember { mutableIntStateOf(5) }
+                    var showPageDropdown by remember { mutableStateOf(false) }
                     
                     val context = androidx.compose.ui.platform.LocalContext.current
                     var isUploading by remember { mutableStateOf(false) }
@@ -272,6 +275,33 @@ fun EditorScreen(
                             )
                         )
                         
+                        // Page Count Selector
+                        Box(modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp)) {
+                            OutlinedButton(
+                                onClick = { showPageDropdown = true },
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = ButtonDefaults.outlinedButtonColors(contentColor = ivory),
+                                border = BorderStroke(1.dp, borderCol)
+                            ) {
+                                Text("Total Pages: $totalPages", style = LuxeTypography.titleSmall)
+                            }
+                            DropdownMenu(
+                                expanded = showPageDropdown,
+                                onDismissRequest = { showPageDropdown = false },
+                                modifier = Modifier.background(darkSurface)
+                            ) {
+                                (4..10).forEach { count ->
+                                    DropdownMenuItem(
+                                        text = { Text("$count Pages", color = ivory) },
+                                        onClick = {
+                                            totalPages = count
+                                            showPageDropdown = false
+                                        }
+                                    )
+                                }
+                            }
+                        }
+
                         // Reference Images Disclosure
                         Column(modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)) {
                             Row(
@@ -313,7 +343,7 @@ fun EditorScreen(
 
                         Button(
                             onClick = {
-                                onGenerateBrief(prompt, referenceImages.toList())
+                                onGenerateBrief(prompt, referenceImages.toList(), totalPages - 2)
                             },
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -398,7 +428,24 @@ fun EditorScreen(
                         modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
                     ) {
                         Column(modifier = Modifier.padding(16.dp)) {
-                            Text("COVER ART", style = LuxeTypography.labelMedium.copy(color = gold))
+                            Text("FRONT COVER", style = LuxeTypography.labelMedium.copy(color = gold))
+                            Spacer(modifier = Modifier.height(8.dp))
+                            
+                            OutlinedTextField(
+                                value = coverTopic,
+                                onValueChange = { coverTopic = it },
+                                placeholder = { Text("What should be written on the cover?") },
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = OutlinedTextFieldDefaults.colors(
+                                    focusedBorderColor = gold,
+                                    unfocusedBorderColor = tokens.editorBorder,
+                                    unfocusedTextColor = tokens.editorText,
+                                    focusedTextColor = tokens.editorText,
+                                    unfocusedPlaceholderColor = tokens.editorTextSecondary,
+                                    focusedPlaceholderColor = tokens.editorTextSecondary
+                                )
+                            )
+                            
                             Spacer(modifier = Modifier.height(8.dp))
                             OutlinedTextField(
                                 value = coverImageUrl,
@@ -455,15 +502,34 @@ fun EditorScreen(
                             Spacer(modifier = Modifier.height(12.dp))
                         }
                         item {
-                            OutlinedButton(
-                                onClick = { pages.add(PageBlock()) },
+                            val hasBackCover = pages.any { it.type == "back_cover" }
+                            Row(
                                 modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-                                colors = ButtonDefaults.outlinedButtonColors(contentColor = gold),
-                                border = BorderStroke(1.dp, gold)
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-                                Icon(Icons.Default.Add, contentDescription = "Add Page")
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Text("Add Page Block")
+                                OutlinedButton(
+                                    onClick = { pages.add(PageBlock(type = "article")) },
+                                    modifier = Modifier.weight(1f),
+                                    colors = ButtonDefaults.outlinedButtonColors(contentColor = gold),
+                                    border = BorderStroke(1.dp, gold),
+                                    enabled = !hasBackCover
+                                ) {
+                                    Icon(Icons.Default.Add, contentDescription = "Add Article")
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text("Article")
+                                }
+                                
+                                OutlinedButton(
+                                    onClick = { pages.add(PageBlock(type = "back_cover")) },
+                                    modifier = Modifier.weight(1f),
+                                    colors = ButtonDefaults.outlinedButtonColors(contentColor = gold),
+                                    border = BorderStroke(1.dp, gold),
+                                    enabled = !hasBackCover
+                                ) {
+                                    Icon(Icons.Default.Add, contentDescription = "Add Back Cover")
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text("Back Cover")
+                                }
                             }
                         }
                     }
@@ -478,14 +544,18 @@ fun EditorScreen(
                     }
                     
                     Button(
-                        onClick = { onCompileClicked(prompt, pages, composerConfig, coverImageUrl) },
+                        onClick = { 
+                            val coverBlock = PageBlock(type = "cover", topic = coverTopic, imageUrl = coverImageUrl)
+                            val allPages = listOf(coverBlock) + pages
+                            onCompileClicked(prompt, allPages, composerConfig, coverImageUrl) 
+                        },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(56.dp)
                             .padding(top = 8.dp),
                         shape = RoundedCornerShape(8.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = gold, contentColor = obsidian),
-                        enabled = prompt.isNotBlank() && pages.isNotEmpty() && !isCompileLoading
+                        enabled = prompt.isNotBlank() && coverTopic.isNotBlank() && !isCompileLoading
                     ) {
                         if (isCompileLoading) {
                             CircularProgressIndicator(color = obsidian, modifier = Modifier.size(24.dp))
@@ -764,7 +834,12 @@ fun PageBlockCard(
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(horizontalArrangement = Arrangement.SpaceBetween, modifier = Modifier.fillMaxWidth()) {
-                Text(page.type.uppercase(), style = LuxeTypography.labelMedium.copy(color = gold))
+                val blockTitle = when(page.type) {
+                    "article" -> "ARTICLE"
+                    "back_cover" -> "BACK COVER"
+                    else -> page.type.uppercase()
+                }
+                Text(blockTitle, style = LuxeTypography.labelMedium.copy(color = gold))
                 Row {
                     IconButton(onClick = { showCustomizer = true }, modifier = Modifier.size(24.dp)) {
                         Icon(Icons.Default.Settings, contentDescription = "Customize", tint = tokens.editorTextSecondary)

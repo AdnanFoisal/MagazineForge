@@ -127,7 +127,9 @@ data class GenerateBriefRequest(
     @SerializedName("prompt")
     val prompt: String,
     @SerializedName("referenceImages")
-    val referenceImages: List<String> = emptyList()
+    val referenceImages: List<String> = emptyList(),
+    @SerializedName("articleCount")
+    val articleCount: Int? = null
 )
 
 data class GenerateSchemaRequest(

@@ -69,7 +69,7 @@ class MainActivity : ComponentActivity() {
         viewModel = ViewModelProvider(this)[EditorViewModel::class.java]
         
         val secureStorage = SecureStorage(this)
-        val savedKey = secureStorage.getApiKey()
+        val savedUrl = secureStorage.getLiteLLMUrl()
         
         val savedThemeId = secureStorage.getThemeId()
         val initialTheme = com.magazineforge.app.ui.theme.AllThemes.find { it.id == savedThemeId } ?: com.magazineforge.app.ui.theme.SunsetEditorial
@@ -82,20 +82,29 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background
                 ) {
                     val tokens = LocalThemeTokens.current
+                    val context = androidx.compose.ui.platform.LocalContext.current
                     
-                    var currentScreen by remember { mutableStateOf(if (savedKey != null) "home" else "onboarding") }
+                    var currentScreen by remember { mutableStateOf(if (savedUrl != null) "home" else "onboarding") }
                     var selectedTemplate by remember { mutableStateOf("") }
                     var selectedTemplateName by remember { mutableStateOf("") }
                     var initialEditorPrompt by remember { mutableStateOf("") }
-                    var apiKey by remember { mutableStateOf(savedKey ?: "") }
-                    var backupApiKey by remember { mutableStateOf(secureStorage.getBackupApiKey() ?: "") }
-                    var tertiaryApiKey by remember { mutableStateOf(secureStorage.getTertiaryApiKey() ?: "") }
+                    val secureStorage = remember { SecureStorage(context) }
+                    var litellmUrl by remember { mutableStateOf(secureStorage.getLiteLLMUrl() ?: "") }
+                    var litellmKey by remember { mutableStateOf(secureStorage.getLiteLLMKey() ?: "") }
+
+                    // Reload credentials whenever we enter the editor or AI modes to ensure we have the latest
+                    LaunchedEffect(currentScreen) {
+                        litellmUrl = secureStorage.getLiteLLMUrl() ?: ""
+                        litellmKey = secureStorage.getLiteLLMKey() ?: ""
+                    }
                     var selectedPdfForViewer by remember { mutableStateOf<String?>(null) }
                     
                     val coroutineScope = rememberCoroutineScope()
                     var isVerifying by remember { mutableStateOf(false) }
                     var verifyError by remember { mutableStateOf<String?>(null) }
                     var verifySuccess by remember { mutableStateOf<Boolean?>(null) }
+                    
+                    viewModel.initContext(androidx.compose.ui.platform.LocalContext.current)
                     
                     val briefState by viewModel.briefState.collectAsState()
                     val schemaState by viewModel.schemaState.collectAsState()
@@ -113,7 +122,7 @@ class MainActivity : ComponentActivity() {
                     }
 
                     LaunchedEffect(latexState) {
-                        if (latexState is LatexState.Success) {
+                        if (latexState is LatexState.Success && !viewModel.isFullAiMode) {
                             showProgressCard = false
                             currentScreen = "latex_notebook"
                         } else if (latexState is LatexState.Loading) {
@@ -141,9 +150,9 @@ class MainActivity : ComponentActivity() {
                                 ) {
                                     val items = listOf(
                                         Triple("home", "Home", Icons.Default.Home),
-                                        Triple("library", "Library", Icons.Default.Collections),
-                                        Triple("showcase", "Showcase", Icons.Default.PhotoLibrary),
-                                        Triple("templates", "Templates", Icons.Default.Brush),
+                                        Triple("library", "Library", Icons.Default.Book),
+                                        Triple("latex_notebook", "Editor", Icons.Default.Edit),
+                                        Triple("templates", "Templates", Icons.Default.Style),
                                         Triple("settings", "Settings", Icons.Default.Settings)
                                     )
                                     items.forEach { (route, label, icon) ->
@@ -195,20 +204,8 @@ class MainActivity : ComponentActivity() {
                                 }
                             } else {
                                 val isCompileLoading = compileState is CompileState.Loading
-                                // State-driven navigation
-                            LaunchedEffect(schemaState) {
-                                if (schemaState is SchemaState.Success) {
-                                    currentScreen = "co_author"
-                                }
-                            }
 
-                            LaunchedEffect(latexState) {
-                                if (latexState is LatexState.Success) {
-                                    currentScreen = "latex_notebook"
-                                }
-                            }
-
-                            when (currentScreen) {
+                                when (currentScreen) {
                                     "onboarding" -> OnboardingScreen(
                                         onCreateClicked = {
                                             currentScreen = "home"
@@ -223,7 +220,7 @@ class MainActivity : ComponentActivity() {
                                             selectedPdfForViewer = url
                                         },
                                         onContinueEditing = {
-                                            currentScreen = "editor"
+                                            currentScreen = "latex_notebook"
                                         },
                                         onViewLibrary = {
                                             currentScreen = "library"
@@ -243,7 +240,7 @@ class MainActivity : ComponentActivity() {
                                             currentScreen = "editor"
                                         },
                                         onPreviewSelected = { templateVariant ->
-                                            viewModel.generateSchema(apiKey, backupApiKey, tertiaryApiKey, "Magazine Preview", templateVariant)
+                                            viewModel.generateSchema(litellmUrl, litellmKey, "Magazine Preview", templateVariant)
                                         },
                                         onLibraryClicked = {
                                             currentScreen = "library"
@@ -264,15 +261,28 @@ class MainActivity : ComponentActivity() {
                                         schemaState = schemaState,
                                         latexState = latexState,
                                         compileState = compileState,
-                                        onGenerateBrief = { prompt, referenceImages ->
-                                            viewModel.generateBrief(apiKey, backupApiKey, tertiaryApiKey, prompt, referenceImages)
+                                        onGenerateBrief = { prompt, referenceImages, articleCount ->
+                                            viewModel.generateBrief(litellmUrl, litellmKey, prompt, referenceImages, articleCount)
                                         },
                                         onCompileFromBrief = { prompt, config, brief ->
+                                            viewModel.isFullAiMode = true
+                                            
+                                            val pagesStr = brief.articles.map { 
+                                                """
+                                                Page Type: ARTICLE
+                                                Topic: ${it.topic}
+                                                [CUSTOMIZATION CONFIGURATION]:
+                                                - Writing Tone: ${brief.tone}
+                                                - Layout Density: ${brief.styleDna}
+                                                """.trimIndent()
+                                            }.joinToString("\n\n")
+
+                                            val finalTopic = "Theme: $prompt\n\nRequired Structure:\n$pagesStr\n\n(CRITICAL INSTRUCTION: Generate EXACTLY ${brief.articles.size} articles corresponding to the topics above.)"
+                                            
                                             viewModel.generateSchema(
-                                                geminiKey = apiKey, 
-                                                backupKey = backupApiKey,
-                                                tertiaryKey = tertiaryApiKey,
-                                                magazineTopic = prompt, 
+                                                litellmUrl = litellmUrl, 
+                                                litellmKey = litellmKey,
+                                                magazineTopic = finalTopic, 
                                                 templateName = selectedTemplate,
                                                 config = config,
                                                 tone = brief.tone,
@@ -280,6 +290,7 @@ class MainActivity : ComponentActivity() {
                                             )
                                         },
                                         onCompileClicked = { magazineTopic, pages, config, coverImgUrl ->
+                                            viewModel.isFullAiMode = false
                                             val finalTopic = if (pages.isEmpty()) {
                                                 magazineTopic
                                             } else {
@@ -296,9 +307,8 @@ class MainActivity : ComponentActivity() {
                                                 "Theme: $magazineTopic\n\nRequired Structure:\n$pagesStr\n\n(CRITICAL INSTRUCTION: You MUST strictly adhere to the [CUSTOMIZATION CONFIGURATION] for each page. Adapt your language, formatting, and generation to perfectly match the requested Tone and Layout Density. You MUST also use the exact Target Image URLs provided above for each corresponding page. Do NOT override them with Pollinations URLs unless no Target Image URL was provided.)"
                                             }
                                             viewModel.generateSchema(
-                                                geminiKey = apiKey, 
-                                                backupKey = backupApiKey, 
-                                                tertiaryKey = tertiaryApiKey,
+                                                litellmUrl = litellmUrl, 
+                                                litellmKey = litellmKey, 
                                                 magazineTopic = finalTopic, 
                                                 templateName = selectedTemplate,
                                                 config = config,
@@ -317,8 +327,12 @@ class MainActivity : ComponentActivity() {
                                             CoAuthorScreen(
                                                 initialSchema = (schemaState as SchemaState.Success).schema,
                                                 isGeneratingLatex = latexState is LatexState.Loading,
+                                                isFullAiMode = viewModel.isFullAiMode,
                                                 onGenerateLatex = { schema ->
                                                     viewModel.generateLatex(schema)
+                                                },
+                                                onNext = {
+                                                    currentScreen = "latex_notebook"
                                                 },
                                                 onBack = {
                                                     viewModel.resetState()
@@ -336,13 +350,13 @@ class MainActivity : ComponentActivity() {
                                             onCompile = { code ->
                                                 viewModel.compileRaw(applicationContext, code)
                                             },
-                                            onBack = { currentScreen = "gallery" },
+                                            onBack = { currentScreen = "home" },
                                             onCodeChange = { code ->
                                                 viewModel.updateLatexCode(code)
                                             },
                                             onRewrite = { text, instruction, onResult ->
                                                 coroutineScope.launch {
-                                                    viewModel.rewriteSelection(apiKey, backupApiKey, tertiaryApiKey, text, instruction, onResult)
+                                                    viewModel.rewriteSelection(litellmUrl, litellmKey, text, instruction, onResult)
                                                 }
                                             }
                                         )
@@ -356,67 +370,33 @@ class MainActivity : ComponentActivity() {
                                         }
                                     )
                                     "settings" -> SettingsScreen(
-                                        currentApiKey = apiKey,
-                                        currentBackupApiKey = backupApiKey,
-                                        currentTertiaryApiKey = tertiaryApiKey,
+                                        currentLiteLLMUrl = litellmUrl,
+                                        currentLiteLLMKey = litellmKey,
                                         isVerifying = isVerifying,
                                         verifyError = verifyError,
                                         verifySuccess = verifySuccess,
-                                        onSaveApiKeys = { newKey, newBackupKey, newTertiaryKey ->
+                                        onSaveCredentials = { newUrl, newKey ->
                                             isVerifying = true
                                             verifyError = null
                                             verifySuccess = null
                                             coroutineScope.launch {
                                                 try {
-                                                    val primaryValid = withContext(Dispatchers.IO) {
-                                                        try {
-                                                            val url = java.net.URL("https://generativelanguage.googleapis.com/v1beta/models?key=$newKey")
-                                                            val connection = url.openConnection() as java.net.HttpURLConnection
-                                                            connection.requestMethod = "GET"
-                                                            connection.responseCode == 200
-                                                        } catch (e: Exception) {
-                                                            false
-                                                        }
-                                                    }
-                                                    val backupValid = withContext(Dispatchers.IO) {
-                                                        if (newBackupKey.isBlank()) true else {
-                                                            try {
-                                                                val url = java.net.URL("https://generativelanguage.googleapis.com/v1beta/models?key=$newBackupKey")
-                                                                val connection = url.openConnection() as java.net.HttpURLConnection
-                                                                connection.requestMethod = "GET"
-                                                                connection.responseCode == 200
-                                                            } catch (e: Exception) {
-                                                                false
-                                                            }
-                                                        }
-                                                    }
-                                                    val tertiaryValid = withContext(Dispatchers.IO) {
-                                                        if (newTertiaryKey.isBlank()) true else {
-                                                            try {
-                                                                val url = java.net.URL("https://generativelanguage.googleapis.com/v1beta/models?key=$newTertiaryKey")
-                                                                val connection = url.openConnection() as java.net.HttpURLConnection
-                                                                connection.requestMethod = "GET"
-                                                                connection.responseCode == 200
-                                                            } catch (e: Exception) {
-                                                                false
-                                                            }
-                                                        }
-                                                    }
-                                                    
-                                                    if (primaryValid && backupValid && tertiaryValid) {
-                                                        secureStorage.saveApiKey(newKey)
-                                                        apiKey = newKey
-                                                        secureStorage.saveBackupApiKey(newBackupKey)
-                                                        backupApiKey = newBackupKey
-                                                        secureStorage.saveTertiaryApiKey(newTertiaryKey)
-                                                        tertiaryApiKey = newTertiaryKey
+                                                    val res = com.magazineforge.app.network.ApiClient.retrofitService.verifyKey(
+                                                        com.magazineforge.app.models.VerifyKeyRequest(newUrl, newKey)
+                                                    )
+                                                    if (res.isSuccessful && res.body()?.valid == true) {
+                                                        secureStorage.saveLiteLLMUrl(newUrl)
+                                                        secureStorage.saveLiteLLMKey(newKey)
+                                                        litellmUrl = newUrl
+                                                        litellmKey = newKey
                                                         verifySuccess = true
+                                                        verifyError = "Status: ${res.body()?.status ?: "Active"}"
                                                     } else {
-                                                        verifyError = if (!primaryValid) "Invalid Primary API Key" else if (!backupValid) "Invalid Secondary API Key" else "Invalid Tertiary API Key"
                                                         verifySuccess = false
+                                                        verifyError = "Verification Failed: ${res.body()?.status ?: "Unknown error"}"
                                                     }
                                                 } catch (e: Exception) {
-                                                    verifyError = "Connection Error"
+                                                    verifyError = "Backend Connection Error"
                                                     verifySuccess = false
                                                 } finally {
                                                     isVerifying = false
@@ -515,7 +495,11 @@ class MainActivity : ComponentActivity() {
                                             currentScreen = "editor"
                                         }
                                         "latex_notebook" -> {
-                                            currentScreen = "co_author"
+                                            if (schemaState is SchemaState.Success) {
+                                                currentScreen = "co_author"
+                                            } else {
+                                                currentScreen = "editor"
+                                            }
                                         }
                                         "showcase", "onboarding" -> {
                                             showExitDialog = true

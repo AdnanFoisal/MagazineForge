@@ -189,14 +189,15 @@ fun LatexNotebookScreen(
                         Icon(Icons.Default.Search, "Search", tint = if (showSearch) accentColor else tokens.textPrimary)
                     }
                     
+                    val currentContext = androidx.compose.ui.platform.LocalContext.current
                     Box {
                         IconButton(onClick = { showMenu = true }) {
-                            Icon(Icons.Default.MoreVert, "More", tint = tokens.textPrimary)
+                            Icon(Icons.Default.MoreVert, contentDescription = "More options", tint = tokens.textPrimary)
                         }
                         DropdownMenu(
                             expanded = showMenu,
                             onDismissRequest = { showMenu = false },
-                            modifier = Modifier.background(editorBg)
+                            modifier = Modifier.background(tokens.surface)
                         ) {
                             DropdownMenuItem(
                                 text = { Text("Clear Editor", color = Color.Red) },
@@ -211,7 +212,7 @@ fun LatexNotebookScreen(
                                 text = { Text("Save .tex File", color = tokens.textPrimary) },
                                 onClick = { 
                                     showMenu = false
-                                    saveLatexToDownloads(androidx.compose.ui.platform.LocalContext.current, latexCode)
+                                    saveLatexToDownloads(currentContext, latexCode)
                                 }
                             )
                         }

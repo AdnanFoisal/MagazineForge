@@ -76,6 +76,7 @@ fun EditorScreen(
     val pages = remember { mutableStateListOf<PageBlock>() }
     var composerConfig by remember { mutableStateOf(SectionComposerConfig()) }
     var showComposer by remember { mutableStateOf(false) }
+    var totalPages by remember { mutableIntStateOf(5) }
 
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
@@ -205,7 +206,6 @@ fun EditorScreen(
                 } else {
                     // Phase 1: Initial Prompt
                     var showReferenceImages by remember { mutableStateOf(false) }
-                    var totalPages by remember { mutableIntStateOf(5) }
                     var showPageDropdown by remember { mutableStateOf(false) }
                     
                     val context = androidx.compose.ui.platform.LocalContext.current
@@ -648,7 +648,7 @@ fun EditorScreen(
                     if (briefState is BriefState.Error) {
                         TextButton(
                             onClick = {
-                                onGenerateBrief(prompt, referenceImages.toList())
+                                onGenerateBrief(prompt, referenceImages.toList(), totalPages - 2)
                             }
                         ) {
                             Text("Retry", color = tokens.primaryAccent)

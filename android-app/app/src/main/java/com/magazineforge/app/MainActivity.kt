@@ -45,6 +45,9 @@ import androidx.compose.material.icons.filled.Brush
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.Collections
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Book
+import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Style
 import com.magazineforge.app.ui.SettingsScreen
 import com.magazineforge.app.ui.theme.MagazineForgeTheme
 import com.magazineforge.app.ui.theme.LuxeTypography

@@ -228,10 +228,12 @@ class MainActivity : ComponentActivity() {
                                         },
                                         onFullAiModeClicked = {
                                             editorInitialTab = 0
+                                            viewModel.resetState()
                                             currentScreen = "templates"
                                         },
                                         onAssistedModeClicked = {
                                             editorInitialTab = 1
+                                            viewModel.resetState()
                                             currentScreen = "templates"
                                         },
                                         onViewLibrary = {
@@ -500,8 +502,11 @@ class MainActivity : ComponentActivity() {
                                     selectedPdfForViewer = null
                                 } else {
                                     when (currentScreen) {
-                                        "editor", "library", "gallery" -> {
-                                            currentScreen = "showcase"
+                                        "editor" -> {
+                                            currentScreen = "templates"
+                                        }
+                                        "templates", "library", "gallery", "showcase" -> {
+                                            currentScreen = "home"
                                         }
                                         "co_author" -> {
                                             viewModel.resetState()
@@ -514,7 +519,7 @@ class MainActivity : ComponentActivity() {
                                                 currentScreen = "editor"
                                             }
                                         }
-                                        "showcase", "onboarding" -> {
+                                        "home", "onboarding" -> {
                                             showExitDialog = true
                                         }
                                     }

@@ -115,6 +115,7 @@ class MainActivity : ComponentActivity() {
                     val compileState by viewModel.compileState.collectAsState()
                     var showExitDialog by remember { mutableStateOf(false) }
                     var showProgressCard by remember { mutableStateOf(false) }
+                    var editorInitialTab by remember { mutableIntStateOf(0) }
                     
                     LaunchedEffect(schemaState) {
                         if (schemaState is SchemaState.Success) {
@@ -225,6 +226,14 @@ class MainActivity : ComponentActivity() {
                                         onContinueEditing = {
                                             currentScreen = "latex_notebook"
                                         },
+                                        onFullAiModeClicked = {
+                                            editorInitialTab = 0
+                                            currentScreen = "editor"
+                                        },
+                                        onAssistedModeClicked = {
+                                            editorInitialTab = 1
+                                            currentScreen = "editor"
+                                        },
                                         onViewLibrary = {
                                             currentScreen = "library"
                                         }
@@ -264,6 +273,7 @@ class MainActivity : ComponentActivity() {
                                         schemaState = schemaState,
                                         latexState = latexState,
                                         compileState = compileState,
+                                        initialTabIndex = editorInitialTab,
                                         onGenerateBrief = { prompt, referenceImages, articleCount ->
                                             viewModel.generateBrief(litellmUrl, litellmKey, prompt, referenceImages, articleCount)
                                         },

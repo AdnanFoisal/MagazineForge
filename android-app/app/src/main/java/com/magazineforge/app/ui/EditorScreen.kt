@@ -65,14 +65,15 @@ fun EditorScreen(
     compileState: CompileState,
     onGenerateBrief: (String, List<String>, Int) -> Unit,
     onCompileFromBrief: (String, SectionComposerConfig, GenerateBriefResponse) -> Unit,
-    onCompileClicked: (String, List<PageBlock>, SectionComposerConfig, String) -> Unit,
+    onCompileClicked: (magazineTopic: String, pages: List<PageBlock>, config: SectionComposerConfig, coverImgUrl: String) -> Unit,
     onCancel: () -> Unit,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    initialTabIndex: Int = 0
 ) {
     var prompt by remember { mutableStateOf(initialPrompt) }
     var coverImageUrl by remember { mutableStateOf("") }
     var coverTopic by remember { mutableStateOf("") }
-    var selectedTabIndex by remember { mutableStateOf(0) }
+    var selectedTabIndex by remember { mutableIntStateOf(initialTabIndex) }
     val pages = remember { mutableStateListOf<PageBlock>() }
     var composerConfig by remember { mutableStateOf(SectionComposerConfig()) }
     var showComposer by remember { mutableStateOf(false) }
@@ -276,30 +277,19 @@ fun EditorScreen(
                         )
                         
                         // Page Count Selector
-                        Box(modifier = Modifier.fillMaxWidth().padding(vertical = 16.dp)) {
-                            OutlinedButton(
-                                onClick = { showPageDropdown = true },
-                                modifier = Modifier.fillMaxWidth(),
-                                colors = ButtonDefaults.outlinedButtonColors(contentColor = ivory),
-                                border = BorderStroke(1.dp, borderCol)
-                            ) {
-                                Text("Total Pages: $totalPages", style = LuxeTypography.titleSmall)
-                            }
-                            DropdownMenu(
-                                expanded = showPageDropdown,
-                                onDismissRequest = { showPageDropdown = false },
-                                modifier = Modifier.background(darkSurface)
-                            ) {
-                                (4..10).forEach { count ->
-                                    DropdownMenuItem(
-                                        text = { Text("$count Pages", color = ivory) },
-                                        onClick = {
-                                            totalPages = count
-                                            showPageDropdown = false
-                                        }
-                                    )
-                                }
-                            }
+                        Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
+                            Text("Total Pages: $totalPages", style = LuxeTypography.titleSmall, color = ivory)
+                            Slider(
+                                value = totalPages.toFloat(),
+                                onValueChange = { totalPages = it.toInt() },
+                                valueRange = 5f..20f,
+                                steps = 14,
+                                colors = SliderDefaults.colors(
+                                    thumbColor = gold,
+                                    activeTrackColor = gold,
+                                    inactiveTrackColor = borderCol
+                                )
+                            )
                         }
 
                         // Reference Images Disclosure

@@ -31,6 +31,8 @@ fun HomeScreen(
     viewModel: EditorViewModel,
     onMagazineSelected: (String) -> Unit,
     onContinueEditing: () -> Unit,
+    onFullAiModeClicked: () -> Unit,
+    onAssistedModeClicked: () -> Unit,
     onViewLibrary: () -> Unit
 ) {
     val tokens = LocalThemeTokens.current
@@ -81,7 +83,7 @@ fun HomeScreen(
                 icon = Icons.Default.AutoAwesome,
                 backgroundColor = tokens.primaryAccent.copy(alpha = 0.1f),
                 iconColor = tokens.primaryAccent,
-                onClick = onContinueEditing
+                onClick = onFullAiModeClicked
             )
             // Assisted Mode Tile
             EntryTile(
@@ -91,7 +93,7 @@ fun HomeScreen(
                 icon = Icons.Default.EditNote,
                 backgroundColor = tokens.secondaryAccent.copy(alpha = 0.1f),
                 iconColor = tokens.secondaryAccent,
-                onClick = onContinueEditing
+                onClick = onAssistedModeClicked
             )
         }
         

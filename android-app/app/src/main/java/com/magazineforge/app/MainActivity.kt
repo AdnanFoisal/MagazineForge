@@ -228,11 +228,11 @@ class MainActivity : ComponentActivity() {
                                         },
                                         onFullAiModeClicked = {
                                             editorInitialTab = 0
-                                            currentScreen = "editor"
+                                            currentScreen = "templates"
                                         },
                                         onAssistedModeClicked = {
                                             editorInitialTab = 1
-                                            currentScreen = "editor"
+                                            currentScreen = "templates"
                                         },
                                         onViewLibrary = {
                                             currentScreen = "library"

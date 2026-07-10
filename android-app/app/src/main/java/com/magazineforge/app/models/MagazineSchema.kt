@@ -6,13 +6,13 @@ data class MagazineSchema(
     @SerializedName("cover")
     var cover: CoverSchema,
     @SerializedName("masthead")
-    var masthead: MastheadSchema,
+    var masthead: MastheadSchema?,
     @SerializedName("toc")
     var toc: List<TocItemSchema>,
     @SerializedName("articles")
     var articles: List<ArticleSchema>,
     @SerializedName("back_cover")
-    var backCover: BackCoverSchema
+    var backCover: BackCoverSchema?
 )
 
 data class CoverSchema(
@@ -22,6 +22,10 @@ data class CoverSchema(
     var subtitle: String,
     @SerializedName("accent_hex")
     var accentHex: String,
+    @SerializedName("title_font")
+    var titleFont: String? = "serif",
+    @SerializedName("color_theme")
+    var colorTheme: String? = "white",
     @SerializedName("cover_pattern")
     var coverPattern: String, // clean_title_dominant | callout_heavy | typographic_led
     @SerializedName("callouts")

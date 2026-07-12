@@ -60,7 +60,12 @@ fun CoAuthorScreen(
                     
                     val response = com.magazineforge.app.network.ApiClient.retrofitService.uploadAsset(body)
                     if (response.isSuccessful) {
-                        val downloadUrl = response.body()?.url ?: ""
+                        // Prepend BASE_URL so the schema + Coil preview use a
+                        // consistent absolute URL (matches EditorScreen). The
+                        // backend resolves /assets/ paths from local disk at
+                        // compile time, so the uploaded image lands in the PDF.
+                        val downloadUrl = response.body()?.url
+                            ?.let { "${com.magazineforge.app.network.ApiClient.BASE_URL}$it" } ?: ""
                         if (downloadUrl.isNotEmpty()) {
                             onImageUploadedCallback?.invoke(downloadUrl)
                         }

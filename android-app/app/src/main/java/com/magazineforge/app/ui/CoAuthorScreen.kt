@@ -143,19 +143,21 @@ fun CoAuthorScreen(
                 )
             }
             
-            ExpandableSection("Masthead") {
-                OutlinedTextField(
-                    value = schema.masthead.issueTagline,
-                    onValueChange = { schema = schema.copy(masthead = schema.masthead.copy(issueTagline = it)) },
-                    label = { Text("Issue Tagline") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-                OutlinedTextField(
-                    value = schema.masthead.editorsNote,
-                    onValueChange = { schema = schema.copy(masthead = schema.masthead.copy(editorsNote = it)) },
-                    label = { Text("Editor's Note") },
-                    modifier = Modifier.fillMaxWidth()
-                )
+            schema.masthead?.let { masthead ->
+                ExpandableSection("Masthead") {
+                    OutlinedTextField(
+                        value = masthead.issueTagline,
+                        onValueChange = { schema = schema.copy(masthead = masthead.copy(issueTagline = it)) },
+                        label = { Text("Issue Tagline") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    OutlinedTextField(
+                        value = masthead.editorsNote,
+                        onValueChange = { schema = schema.copy(masthead = masthead.copy(editorsNote = it)) },
+                        label = { Text("Editor's Note") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
             }
 
             ExpandableSection("Table of Contents") {
@@ -235,19 +237,21 @@ fun CoAuthorScreen(
                 }
             }
 
-            ExpandableSection("Back Cover") {
-                OutlinedTextField(
-                    value = schema.backCover.tagline,
-                    onValueChange = { schema = schema.copy(backCover = schema.backCover.copy(tagline = it)) },
-                    label = { Text("Tagline") },
-                    modifier = Modifier.fillMaxWidth()
-                )
-                ImageUploadField(
-                    label = "Back Cover Image URL",
-                    value = schema.backCover.imageUrl ?: "",
-                    onValueChange = { schema = schema.copy(backCover = schema.backCover.copy(imageUrl = it)) },
-                    onPickImage = { pickImage { url -> schema = schema.copy(backCover = schema.backCover.copy(imageUrl = url)) } }
-                )
+            schema.backCover?.let { backCover ->
+                ExpandableSection("Back Cover") {
+                    OutlinedTextField(
+                        value = backCover.tagline,
+                        onValueChange = { schema = schema.copy(backCover = backCover.copy(tagline = it)) },
+                        label = { Text("Tagline") },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    ImageUploadField(
+                        label = "Back Cover Image URL",
+                        value = backCover.imageUrl ?: "",
+                        onValueChange = { schema = schema.copy(backCover = backCover.copy(imageUrl = it)) },
+                        onPickImage = { pickImage { url -> schema = schema.copy(backCover = backCover.copy(imageUrl = url)) } }
+                    )
+                }
             }
         }
     }

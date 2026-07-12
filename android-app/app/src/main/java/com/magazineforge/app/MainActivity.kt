@@ -515,6 +515,8 @@ class MainActivity : ComponentActivity() {
                                         "latex_notebook" -> {
                                             if (schemaState is SchemaState.Success) {
                                                 currentScreen = "co_author"
+                                            } else if (schemaState is SchemaState.Idle) {
+                                                currentScreen = "home"
                                             } else {
                                                 currentScreen = "editor"
                                             }

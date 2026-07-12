@@ -77,7 +77,7 @@ fun EditorScreen(
     val pages = remember { mutableStateListOf<PageBlock>() }
     var composerConfig by remember { mutableStateOf(SectionComposerConfig()) }
     var showComposer by remember { mutableStateOf(false) }
-    var totalPages by remember { mutableIntStateOf(5) }
+    var pageSelection by remember { mutableStateOf("Auto") }
 
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
@@ -88,7 +88,41 @@ fun EditorScreen(
     val darkSurface = tokens.surface
     val gold = tokens.primaryAccent
     val borderCol = tokens.secondaryAccent.copy(alpha = 0.3f)
-    val ivory = tokens.textPrimary
+    val ivory = tokens.editorText
+    
+    var loadingProgress by remember { mutableFloatStateOf(0f) }
+    var loadingText by remember { mutableStateOf("Analyzing prompt...") }
+    val loadingMessages = listOf(
+        "Analyzing prompt...",
+        "Structuring layout...",
+        "Researching topics...",
+        "Writing articles...",
+        "Polishing content..."
+    )
+
+    LaunchedEffect(briefState) {
+        if (briefState is BriefState.Loading) {
+            loadingProgress = 0f
+            var messageIndex = 0
+            val startTime = System.currentTimeMillis()
+            val estimatedDuration = 15000f // 15 seconds
+            
+            while (true) {
+                val elapsed = System.currentTimeMillis() - startTime
+                if (elapsed < estimatedDuration) {
+                    loadingProgress = elapsed / estimatedDuration * 0.9f
+                }
+                
+                val newIndex = ((elapsed / 3000) % loadingMessages.size).toInt()
+                if (newIndex != messageIndex) {
+                    messageIndex = newIndex
+                    loadingText = loadingMessages[messageIndex]
+                }
+                
+                kotlinx.coroutines.delay(100)
+            }
+        }
+    }
 
     if (showComposer) {
         SectionComposerBottomSheet(
@@ -168,12 +202,12 @@ fun EditorScreen(
                                 Text("Layout Density: ${brief.styleDna}", style = LuxeTypography.titleMedium.copy(color = ivory))
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Text("Potential Titles:", style = LuxeTypography.titleMedium.copy(color = gold))
-                                brief.titles.forEach { title ->
+                                brief.titles?.forEach { title ->
                                     Text("- $title", style = LuxeTypography.bodyMedium.copy(color = ivory))
                                 }
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Text("Articles:", style = LuxeTypography.titleMedium.copy(color = gold))
-                                brief.articles.forEach { article ->
+                                brief.articles?.forEach { article ->
                                     Text("- ${article.topic}", style = LuxeTypography.bodyMedium.copy(color = ivory))
                                 }
                             }
@@ -278,18 +312,29 @@ fun EditorScreen(
                         
                         // Page Count Selector
                         Column(modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp)) {
-                            Text("Total Pages: $totalPages", style = LuxeTypography.titleSmall, color = ivory)
-                            Slider(
-                                value = totalPages.toFloat(),
-                                onValueChange = { totalPages = it.toInt() },
-                                valueRange = 5f..20f,
-                                steps = 14,
-                                colors = SliderDefaults.colors(
-                                    thumbColor = gold,
-                                    activeTrackColor = gold,
-                                    inactiveTrackColor = borderCol
-                                )
-                            )
+                            Text("Length: $pageSelection", style = LuxeTypography.titleSmall, color = ivory)
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                val options = listOf("Auto", "Short", "Medium", "Long")
+                                options.forEach { option ->
+                                    val isSelected = pageSelection == option
+                                    OutlinedButton(
+                                        onClick = { pageSelection = option },
+                                        colors = ButtonDefaults.outlinedButtonColors(
+                                            containerColor = if (isSelected) gold else Color.Transparent,
+                                            contentColor = if (isSelected) obsidian else ivory
+                                        ),
+                                        border = BorderStroke(1.dp, if (isSelected) gold else borderCol),
+                                        modifier = Modifier.weight(1f).padding(horizontal = 4.dp),
+                                        contentPadding = PaddingValues(horizontal = 8.dp, vertical = 8.dp)
+                                    ) {
+                                        Text(option, style = LuxeTypography.bodyMedium, maxLines = 1)
+                                    }
+                                }
+                            }
                         }
 
                         // Reference Images Disclosure
@@ -333,7 +378,14 @@ fun EditorScreen(
 
                         Button(
                             onClick = {
-                                onGenerateBrief(prompt, referenceImages.toList(), totalPages - 2)
+                                val pagesToPass = when (pageSelection) {
+                                    "Auto" -> -1
+                                    "Short" -> 3
+                                    "Medium" -> 8
+                                    "Long" -> 13
+                                    else -> -1
+                                }
+                                onGenerateBrief(prompt, referenceImages.toList(), pagesToPass)
                             },
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -580,17 +632,35 @@ fun EditorScreen(
                             modifier = Modifier.padding(vertical = 8.dp)
                         ) {
                             if (briefState is BriefState.Loading) {
-                                CircularProgressIndicator(
-                                    modifier = Modifier.size(20.dp),
-                                    color = tokens.primaryAccent,
-                                    strokeWidth = 2.dp
-                                )
+                                Column(modifier = Modifier.fillMaxWidth().padding(end = 8.dp)) {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        CircularProgressIndicator(
+                                            modifier = Modifier.size(16.dp),
+                                            color = tokens.primaryAccent,
+                                            strokeWidth = 2.dp
+                                        )
+                                        Spacer(modifier = Modifier.width(12.dp))
+                                        Text(text = loadingText, color = tokens.editorText)
+                                    }
+                                    Spacer(modifier = Modifier.height(8.dp))
+                                    LinearProgressIndicator(
+                                        progress = loadingProgress,
+                                        modifier = Modifier.fillMaxWidth().height(4.dp),
+                                        color = tokens.primaryAccent,
+                                        trackColor = tokens.editorBorder
+                                    )
+                                }
                             } else if (briefState is BriefState.Error) {
                                 Icon(
                                     imageVector = Icons.Default.Close,
                                     contentDescription = "Failed",
                                     tint = Color.Red,
                                     modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Text(
+                                    text = "Content Curation (LLM API)",
+                                    color = Color.Red
                                 )
                             } else {
                                 Icon(
@@ -599,12 +669,12 @@ fun EditorScreen(
                                     tint = Color.Green,
                                     modifier = Modifier.size(20.dp)
                                 )
+                                Spacer(modifier = Modifier.width(12.dp))
+                                Text(
+                                    text = "Content Curation (LLM API)",
+                                    color = tokens.editorText
+                                )
                             }
-                            Spacer(modifier = Modifier.width(12.dp))
-                            Text(
-                                text = "Content Curation (Gemini API)",
-                                color = if (briefState is BriefState.Error) Color.Red else tokens.editorText
-                            )
                         }
 
                         Row(
@@ -638,7 +708,14 @@ fun EditorScreen(
                     if (briefState is BriefState.Error) {
                         TextButton(
                             onClick = {
-                                onGenerateBrief(prompt, referenceImages.toList(), totalPages - 2)
+                                val pagesToPass = when (pageSelection) {
+                                    "Auto" -> -1
+                                    "Short" -> 3
+                                    "Medium" -> 8
+                                    "Long" -> 13
+                                    else -> -1
+                                }
+                                onGenerateBrief(prompt, referenceImages.toList(), pagesToPass)
                             }
                         ) {
                             Text("Retry", color = tokens.primaryAccent)

@@ -2,6 +2,12 @@
 
 > **Read this first.** It is the canonical map of the *current* codebase.
 
+> **🤖 AI Agent Context:**
+> - **Primary objective**: MagBoy generates high-quality magazine PDFs from user prompts using LiteLLM and LuaLaTeX.
+> - **Single Source of Truth**: `backend/schemas.py`. Any schema changes here MUST be immediately mirrored in the Kotlin DTOs (`android-app/.../models/`).
+> - **Design System**: Strict dark/gold editorial theme. Read `DESIGN.md` before changing any UI.
+> - **Testing & Dev**: Set `MOCK_COMPILE=True` when running the backend locally to bypass expensive LLM/LaTeX calls and return stub data quickly.
+
 MagBoy is an AI-assisted magazine builder. A user (in the Android app) gives a
 topic + design direction; a FastAPI backend uses an LLM (via a LiteLLM proxy)
 to author a structured schema, fills `.tex` templates, compiles them with
@@ -71,7 +77,7 @@ flowchart LR
 flowchart LR
     USER([User])
 
-    subgraph APP["Android app"]
+    subgraph APP["Android app (Kotlin/Compose)"]
         UI["Compose Screens<br/>Editor / CoAuthor / LatexNotebook / PdfViewer"]
         VM["EditorViewModel<br/>(StateFlows + network calls)"]
         NET["ApiClient → ApiService<br/>(Retrofit + HF bearer interceptor)"]
@@ -94,25 +100,25 @@ flowchart LR
     FB["Firebase<br/>(Firestore showcase / Storage / Auth)"]
 
     USER -->|topic + design| UI
-    UI --> VM
-    VM --> SEC
-    VM -->|"X-LiteLLM-Url / X-LiteLLM-Key<br/>(per-call headers)"| NET
-    NET -->|"Authorization: Bearer HF_TOKEN<br/>(global interceptor)"| ROUTER
+    UI -->|UI Events| VM
+    VM -->|Fetch Keys| SEC
+    VM -->|"JSON Request<br/>X-LiteLLM-Url/Key headers"| NET
+    NET -->|"JSON Request<br/>Authorization: Bearer HF_TOKEN"| ROUTER
 
-    ROUTER -->|"generate-brief / schema / latex / raw-latex / rewrite"| GS
-    ROUTER -->|"image lookup"| IS
-    ROUTER -->|"compile-raw"| COMPILE
-    ROUTER <--> JOBS
-    ROUTER -->|"fill (((PLACEHOLDERS)))"| TEMPL
-    COMPILE --> WS
-    COMPILE -.->|"MOCK_COMPILE=True"| WS
+    ROUTER -->|Generate Prompt| GS
+    ROUTER -->|Image search terms| IS
+    ROUTER -->|compile-raw (Job ID)| COMPILE
+    ROUTER <-->|Read/Write Job Status| JOBS
+    ROUTER -->|"Inject JSON into .tex<br/>(((PLACEHOLDERS)))"| TEMPL
+    COMPILE -->|Write .tex, run lualatex| WS
+    COMPILE -.->|"MOCK_COMPILE=True<br/>(Skip LLM & LaTeX)"| WS
 
-    GS --> LLM
-    IS --> IMGAPI
-    COMPILE -->|"PDF + cover"| NET
-    NET --> VM
-    VM --> STORE
-    UI -.->|"showcase feed"| FB
+    GS -->|API Call| LLM
+    IS -->|API Call| IMGAPI
+    COMPILE -->|PDF & JPEG outputs| NET
+    NET -->|Binary Streams| VM
+    VM -->|Save .pdf| STORE
+    UI -.->|Showcase feed| FB
 ```
 
 ### Critical auth detail (do not break this)
@@ -312,6 +318,20 @@ flowchart TD
     FAIL["job_store.update(FAILED, error)"]
     OK --> DONE([client polls status → downloads])
     FAIL --> DONE
+```
+
+**JobStore SQLite Schema (jobs.db):**
+```mermaid
+erDiagram
+    JOBS {
+        string job_id PK "UUID"
+        string status "PROCESSING, COMPLETED, FAILED"
+        int progress "0-100"
+        string pdf_path "Path to generated PDF"
+        string error "Error message if FAILED"
+        string cover_url "Path to generated cover JPEG"
+        float created_at "Unix timestamp"
+    }
 ```
 
 **Persistence note:** `JobStore` (in `main.py`, ~line 96) is backed by

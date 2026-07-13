@@ -88,6 +88,8 @@ fun PdfViewerScreen(
         }
     }
 
+    androidx.activity.compose.BackHandler(onBack = onBack)
+
     Scaffold(
         topBar = {
             TopAppBar(

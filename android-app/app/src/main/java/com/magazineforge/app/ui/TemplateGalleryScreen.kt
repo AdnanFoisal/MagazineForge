@@ -64,6 +64,7 @@ fun loadTemplates(context: Context): List<TemplateModel> {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TemplateGalleryScreen(
+    runState: GenerationRunState = GenerationRunState.Idle,
     onTemplateSelected: (String, String, String) -> Unit,
     onPreviewSelected: (String) -> Unit,
     onLibraryClicked: () -> Unit,
@@ -78,6 +79,10 @@ fun TemplateGalleryScreen(
     var selectedCategory by remember { mutableStateOf("All") }
     val categories = listOf("All") + templates.map { it.category }.distinct()
     val filteredTemplates = if (selectedCategory == "All") templates else templates.filter { it.category == selectedCategory }
+    
+    val isLoading = runState is GenerationRunState.Loading || 
+        (runState is GenerationRunState.Active && 
+         (runState.status.status == "PREPARING" || runState.status.status == "GENERATING"))
 
     Scaffold(
         topBar = {
@@ -140,6 +145,7 @@ fun TemplateGalleryScreen(
                 items(filteredTemplates) { template ->
                     TemplateMasonryCard(
                         template = template, 
+                        isLoading = isLoading,
                         onClick = { onTemplateSelected(template.texTemplate, template.description, template.name) },
                         onPreview = { onPreviewSelected(template.texTemplate) }
                     )
@@ -150,7 +156,7 @@ fun TemplateGalleryScreen(
 }
 
 @Composable
-fun TemplateMasonryCard(template: TemplateModel, onClick: () -> Unit, onPreview: () -> Unit) {
+fun TemplateMasonryCard(template: TemplateModel, isLoading: Boolean = false, onClick: () -> Unit, onPreview: () -> Unit) {
     val tokens = LocalThemeTokens.current
     // Generate a somewhat random aspect ratio based on ID length to simulate masonry
     val aspectRatio = if (template.id.length % 2 == 0) 0.75f else 1.2f
@@ -207,12 +213,20 @@ fun TemplateMasonryCard(template: TemplateModel, onClick: () -> Unit, onPreview:
                     .size(32.dp)
                     .background(Color.Black.copy(alpha = 0.4f), RoundedCornerShape(16.dp))
             ) {
-                Icon(
-                    androidx.compose.material.icons.Icons.Default.PlayArrow,
-                    contentDescription = "Preview",
-                    tint = tokens.primaryAccent,
-                    modifier = Modifier.size(20.dp)
-                )
+                if (isLoading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(16.dp),
+                        color = tokens.primaryAccent,
+                        strokeWidth = 2.dp
+                    )
+                } else {
+                    Icon(
+                        androidx.compose.material.icons.Icons.Default.PlayArrow,
+                        contentDescription = "Preview",
+                        tint = tokens.primaryAccent,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
             }
         }
     }

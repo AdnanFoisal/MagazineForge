@@ -31,9 +31,10 @@ import okhttp3.MediaType.Companion.toMediaTypeOrNull
 fun CoAuthorScreen(
     initialSchema: MagazineSchema,
     isGeneratingLatex: Boolean,
+    runState: GenerationRunState,
     isFullAiMode: Boolean,
-    pendingArticles: List<com.magazineforge.app.models.BriefArticle> = emptyList(),
     onGenerateRemaining: () -> Unit = {},
+    onRetrySection: (String) -> Unit = {},
     onGenerateLatex: (MagazineSchema) -> Unit,
     onNext: () -> Unit,
     onBack: () -> Unit
@@ -111,13 +112,23 @@ fun CoAuthorScreen(
                         }
                     } else {
                         if (isSchemaValid) {
-                            if (pendingArticles.size > 0) {
+                            val activeState = runState as? GenerationRunState.Active
+                            val allSectionsCompleted = activeState?.status?.sections?.all { it.status == "COMPLETED" } ?: false
+                            val isRunCompleted = activeState == null || (activeState.status.status == "COMPLETED" && allSectionsCompleted)
+                            val isRunPaused = activeState?.status?.status == "PAUSED"
+                            val isRunGenerating = activeState?.status?.status == "GENERATING" || activeState?.status?.status == "PREPARING"
+                            
+                            if (activeState != null && !allSectionsCompleted) {
                                 Button(
                                     onClick = onGenerateRemaining,
                                     colors = ButtonDefaults.buttonColors(containerColor = tokens.primaryAccent),
-                                    enabled = !isGeneratingLatex
+                                    enabled = !isRunGenerating
                                 ) {
-                                    Text("Generate All Remaining (${pendingArticles.size})", color = tokens.ctaText)
+                                    if (isRunGenerating) {
+                                        CircularProgressIndicator(modifier = Modifier.size(16.dp), color = tokens.ctaText)
+                                    } else {
+                                        Text(if (isRunPaused) "Resume Generation" else "Generate Remaining (${activeState.status.totalSections - activeState.status.completedSections})", color = tokens.ctaText)
+                                    }
                                 }
                             } else {
                                 Button(
@@ -135,8 +146,8 @@ fun CoAuthorScreen(
                         }
                     }
                 }
-            )
-        },
+                )
+            },
         containerColor = obsidian
     ) { paddingValues ->
         Column(
@@ -389,23 +400,49 @@ fun CoAuthorScreen(
                 }
             }
             
-            if (pendingArticles.isNotEmpty()) {
-                Spacer(modifier = Modifier.height(16.dp))
-                Text("QUEUED FOR GENERATION", color = gold, style = com.magazineforge.app.ui.theme.LuxeTypography.labelMedium)
-                pendingArticles.forEach { article ->
-                    Card(
-                        modifier = Modifier.padding(vertical = 4.dp).fillMaxWidth(),
-                        colors = CardDefaults.cardColors(containerColor = surfaceColor.copy(alpha = 0.5f)),
-                        border = BorderStroke(1.dp, tokens.secondaryAccent.copy(alpha = 0.2f))
-                    ) {
-                        Column(modifier = Modifier.padding(16.dp)) {
-                            Text("⏳ ${article.topic}", color = tokens.textPrimary, style = MaterialTheme.typography.titleMedium)
-                            Text("This section is pending generation.", color = tokens.textSecondary, style = MaterialTheme.typography.bodySmall)
+
+            val activeState = runState as? GenerationRunState.Active
+            if (activeState != null) {
+                val incompleteSections = activeState.status.sections.filter { it.status != "COMPLETED" }
+                if (incompleteSections.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text("SECTIONS STATUS", color = gold, style = com.magazineforge.app.ui.theme.LuxeTypography.labelMedium)
+                    incompleteSections.forEach { sec ->
+                        Card(
+                            modifier = Modifier.padding(vertical = 4.dp).fillMaxWidth(),
+                            colors = CardDefaults.cardColors(containerColor = surfaceColor.copy(alpha = 0.5f)),
+                            border = BorderStroke(1.dp, tokens.secondaryAccent.copy(alpha = 0.2f))
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(16.dp).fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(sec.topic, color = tokens.textPrimary, style = MaterialTheme.typography.titleMedium)
+                                    val statusMsg = when (sec.status) {
+                                        "PENDING" -> "Queued"
+                                        "PROCESSING" -> "Generating..."
+                                        "FAILED" -> "Failed: ${sec.error ?: "Unknown error"}"
+                                        else -> sec.status
+                                    }
+                                    Text("Status: $statusMsg", color = if (sec.status == "FAILED") androidx.compose.ui.graphics.Color.Red else tokens.textSecondary, style = MaterialTheme.typography.bodySmall)
+                                }
+                                if (sec.status == "FAILED") {
+                                    Button(
+                                        onClick = { onRetrySection(sec.sectionId) },
+                                        colors = ButtonDefaults.buttonColors(containerColor = tokens.primaryAccent)
+                                    ) {
+                                        Text("Retry", color = tokens.ctaText, fontSize = 12.sp)
+                                    }
+                                }
+                            }
                         }
                     }
+                    Spacer(modifier = Modifier.height(16.dp))
                 }
-                Spacer(modifier = Modifier.height(16.dp))
             }
+
 
             schema.backCover?.let { backCover ->
                 ExpandableSection("Back Cover") {

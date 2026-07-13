@@ -23,6 +23,17 @@ import com.magazineforge.app.models.GenerateLatexRequest
 import com.magazineforge.app.models.CompileRawRequest
 import com.magazineforge.app.models.GenerateBriefRequest
 import com.magazineforge.app.models.GenerateBriefResponse
+import com.magazineforge.app.models.GenerationRunRequest
+import com.magazineforge.app.models.GenerationRunStatus
+import com.google.gson.Gson
+
+
+sealed class GenerationRunState {
+    object Idle : GenerationRunState()
+    data class Loading(val message: String = "Preparing run...") : GenerationRunState()
+    data class Active(val status: GenerationRunStatus) : GenerationRunState()
+    data class Error(val message: String) : GenerationRunState()
+}
 
 sealed class BriefState {
     object Idle : BriefState()
@@ -53,6 +64,13 @@ sealed class CompileState {
 }
 
 class EditorViewModel : ViewModel() {
+    
+    private val _generationRunState = MutableStateFlow<GenerationRunState>(GenerationRunState.Idle)
+    val generationRunState = _generationRunState.asStateFlow()
+    
+    private var currentRunId: String? = null
+    private var pollingJob: kotlinx.coroutines.Job? = null
+
     private val _briefState = MutableStateFlow<BriefState>(BriefState.Idle)
     val briefState = _briefState.asStateFlow()
 
@@ -124,8 +142,10 @@ class EditorViewModel : ViewModel() {
     }
     
     fun resetState() {
+        _generationRunState.value = GenerationRunState.Idle
         _briefState.value = BriefState.Idle
         _schemaState.value = SchemaState.Idle
+        pollingJob?.cancel()
         _latexState.value = LatexState.Idle
         _compileState.value = CompileState.Idle
     }
@@ -184,14 +204,12 @@ class EditorViewModel : ViewModel() {
         }
     }
 
-    fun generateChunkedPreview(litellmUrl: String, litellmKey: String, templateVariant: String) {
+        fun generateChunkedPreview(litellmUrl: String, litellmKey: String, templateVariant: String) {
         currentLiteLLMUrl = litellmUrl
         currentLiteLLMKey = litellmKey
         currentVariant = normalizeTemplateVariant(templateVariant)
         
-        // We hijack the BriefState to show loading during the initial brief generation
-        _briefState.value = BriefState.Loading
-        _schemaState.value = SchemaState.Loading
+        _generationRunState.value = GenerationRunState.Loading("Generating brief...")
         
         viewModelScope.launch {
             try {
@@ -201,58 +219,78 @@ class EditorViewModel : ViewModel() {
                 
                 if (response.isSuccessful && response.body() != null) {
                     val brief = response.body()!!
-                    
-                    // Split into chunks of 3
-                    val firstChunk = brief.articles.take(3)
-                    val remainingChunks = brief.articles.drop(3)
-                    
-                    pendingArticles = remainingChunks
-                    pendingTopic = prompt
-                    pendingTone = brief.tone
-                    pendingStyleDna = brief.styleDna
                     pendingConfig = SectionComposerConfig(enableMasthead = true, enableTocTeasers = true, enableByline = true, enablePullQuote = true)
                     
-                    val pagesStr = firstChunk.map { 
-                        "Page Type: ARTICLE\nTopic: ${it.topic}\n[CUSTOMIZATION CONFIGURATION]:\n- Writing Tone: ${brief.tone}\n- Layout Density: ${brief.styleDna}"
-                    }.joinToString("\n\n")
-
-                    val finalTopic = "Theme: $prompt\n\nRequired Structure:\n$pagesStr\n\n(CRITICAL INSTRUCTION: Generate EXACTLY ${firstChunk.size} articles corresponding to the topics above.)\n(GLOBAL STYLE RULE: Dynamically adapt your writing tone, voice, and pacing to perfectly match the specific magazine topic and target audience. Do not rely on a single default persona; if the topic is serious, be authoritative and measured; if it's pop-culture, be punchy and witty. Regardless of the dynamically chosen tone, you MUST strictly avoid generic AI transitions like 'In conclusion', 'Let's dive into', or 'A testament to'. Emphasize 'show, don't tell'. Focus heavily on rich formatting, using bullet points, bold text, blockquotes, and visual breaks frequently to make the reading experience dynamic.)"
-                    
-                    // Now generate the schema for the first chunk
-                    val schemaRequest = GenerateSchemaRequest(
-                        topic = finalTopic, 
+                    val safeConfig = pendingConfig!!
+                    val runRequest = GenerationRunRequest(
+                        prompt = prompt,
                         templateVariant = currentVariant,
+                        articles = brief.articles,
                         tone = brief.tone,
                         layoutDensity = brief.styleDna,
-                        enableMasthead = pendingConfig!!.enableMasthead,
-                        mastheadAngle = pendingConfig!!.mastheadAngle,
-                        enableSidebar = pendingConfig!!.enableSidebar,
-                        sidebarTopic = pendingConfig!!.sidebarTopic,
-                        enablePullQuote = pendingConfig!!.enablePullQuote,
-                        enableBackCover = pendingConfig!!.enableBackCover,
-                        enableTocTeasers = pendingConfig!!.enableTocTeasers,
-                        enableByline = pendingConfig!!.enableByline,
+                        enableMasthead = safeConfig.enableMasthead,
+                        mastheadAngle = safeConfig.mastheadAngle,
+                        enableSidebar = safeConfig.enableSidebar,
+                        sidebarTopic = safeConfig.sidebarTopic,
+                        enablePullQuote = safeConfig.enablePullQuote,
+                        enableBackCover = safeConfig.enableBackCover,
+                        enableTocTeasers = safeConfig.enableTocTeasers,
+                        enableByline = safeConfig.enableByline,
                         coverImageUrl = ""
                     )
                     
-                    val schemaResponse = ApiClient.retrofitService.generateSchema(litellmUrl, litellmKey, schemaRequest)
+                    _generationRunState.value = GenerationRunState.Loading("Starting run...")
+                    val runResponse = ApiClient.retrofitService.createGenerationRun(litellmUrl, litellmKey, runRequest)
                     
-                    if (schemaResponse.isSuccessful && schemaResponse.body() != null) {
-                        // Reset brief state so it doesn't stay stuck
-                        _briefState.value = BriefState.Idle
-                        _schemaState.value = SchemaState.Success(schemaResponse.body()!!)
+                    if (runResponse.isSuccessful && runResponse.body() != null) {
+                        val runId = runResponse.body()!!.runId
+                        currentRunId = runId
+                        startPollingRun(runId)
                     } else {
-                        val code = schemaResponse.code()
-                        val errorStr = schemaResponse.errorBody()?.string() ?: "Unknown schema error"
-                        _schemaState.value = SchemaState.Error("Schema Error $code: $errorStr")
+                        _generationRunState.value = GenerationRunState.Error("Failed to create generation run: ${runResponse.code()}")
                     }
                 } else {
-                    val code = response.code()
-                    val errorStr = response.errorBody()?.string() ?: "Unknown brief error"
-                    _schemaState.value = SchemaState.Error("Brief Error $code: $errorStr")
+                    _generationRunState.value = GenerationRunState.Error("Failed to generate brief: ${response.code()}")
                 }
             } catch (e: Exception) {
-                _schemaState.value = SchemaState.Error(e.message ?: "Chunked preview failed unexpectedly")
+                _generationRunState.value = GenerationRunState.Error(e.message ?: "Run creation failed")
+            }
+        }
+    }
+    
+    private fun startPollingRun(runId: String) {
+        pollingJob?.cancel()
+        pollingJob = viewModelScope.launch {
+            while (true) {
+                try {
+                    val response = ApiClient.retrofitService.getGenerationRun(runId)
+                    if (response.isSuccessful && response.body() != null) {
+                        val status = response.body()!!
+                        
+                        try {
+                            val file = File(appContext?.filesDir, "run_snapshot.json")
+                            val json = Gson().toJson(status)
+                            FileOutputStream(file).use { it.write(json.toByteArray()) }
+                        } catch (e: Exception) { }
+                        
+                        _generationRunState.value = GenerationRunState.Active(status)
+                        
+                        if (status.status == "READY_FOR_CONTENT" || status.status == "COMPLETED" || status.status == "PAUSED") {
+                            _schemaState.value = SchemaState.Success(status.schema)
+                        }
+                        
+                        if (status.status == "COMPLETED" || status.status == "CANCELLED" || status.status == "PAUSED") {
+                            break
+                        }
+                    } else {
+                        _generationRunState.value = GenerationRunState.Error("Failed to poll run: ${response.code()}")
+                        break
+                    }
+                } catch (e: Exception) {
+                    _generationRunState.value = GenerationRunState.Error("Polling error: ${e.message}")
+                    break
+                }
+                delay(2000)
             }
         }
     }
@@ -329,84 +367,31 @@ class EditorViewModel : ViewModel() {
         }
     }
 
-    fun generateRemainingSchema() {
-        if (pendingArticles.isEmpty()) return
-        
-        val initialSuccess = _schemaState.value as? SchemaState.Success ?: return
-        var currentSchema = initialSuccess.schema
-        
+        fun continueGenerationRun() {
+        val runId = currentRunId ?: return
         viewModelScope.launch {
-            _schemaState.value = SchemaState.Loading
-            
-            while (pendingArticles.isNotEmpty()) {
-                // Take 2 articles at a time to prevent any backend timeouts
-                val articlesToProcess = pendingArticles.take(2)
-                pendingArticles = pendingArticles.drop(2)
-                
-                try {
-                    val pagesStr = articlesToProcess.map {
-                        """
-                        Page Type: ARTICLE
-                        Topic: ${it.topic}
-                        [CUSTOMIZATION CONFIGURATION]:
-                        - Writing Tone: $pendingTone
-                        - Layout Density: $pendingStyleDna
-                        """.trimIndent()
-                    }.joinToString("\n\n")
-
-                    val finalTopic = "Theme: $pendingTopic\n\nRequired Structure:\n$pagesStr\n\n(CRITICAL INSTRUCTION: Generate EXACTLY ${articlesToProcess.size} articles corresponding to the topics above.)"
-                    
-                    val safeConfig = pendingConfig ?: SectionComposerConfig()
-                    val request = GenerateSchemaRequest(
-                        topic = finalTopic, 
-                        templateVariant = currentVariant,
-                        tone = pendingTone,
-                        layoutDensity = pendingStyleDna,
-                        enableMasthead = false,
-                        mastheadAngle = "",
-                        enableSidebar = safeConfig.enableSidebar,
-                        sidebarTopic = safeConfig.sidebarTopic,
-                        enablePullQuote = safeConfig.enablePullQuote,
-                        enableBackCover = false,
-                        enableTocTeasers = safeConfig.enableTocTeasers,
-                        enableByline = safeConfig.enableByline,
-                        coverImageUrl = ""
-                    )
-                    
-                    val response = ApiClient.retrofitService.generateSchema(
-                        litellmUrl = currentLiteLLMUrl,
-                        litellmKey = currentLiteLLMKey,
-                        request = request
-                    )
-                    
-                    if (response.isSuccessful) {
-                        val newSchema = response.body()
-                        if (newSchema != null) {
-                            val mergedSchema = currentSchema.copy(
-                                pages = currentSchema.pages + newSchema.pages,
-                                backCover = newSchema.backCover ?: currentSchema.backCover
-                            )
-                            currentSchema = mergedSchema // Update local variable for next iteration
-                            _schemaState.value = SchemaState.Success(mergedSchema) // Update UI instantly
-                        } else {
-                            _schemaState.value = SchemaState.Error("Empty response body during chunk generation")
-                            break
-                        }
-                    } else {
-                        val code = response.code()
-                        if (code == 401 || code == 429) {
-                            _schemaState.value = SchemaState.Error("Your API keys may be invalid or rate-limited — check them in Settings")
-                        } else {
-                            val errorStr = response.errorBody()?.string() ?: "Unknown error"
-                            _schemaState.value = SchemaState.Error("Error $code: $errorStr")
-                        }
-                        break
-                    }
-                } catch (e: Exception) {
-                    _schemaState.value = SchemaState.Error(e.message ?: "Generation failed unexpectedly")
-                    break
+            try {
+                val response = ApiClient.retrofitService.continueGenerationRun(runId, currentLiteLLMUrl, currentLiteLLMKey)
+                if (response.isSuccessful) {
+                    startPollingRun(runId)
+                } else {
+                    _generationRunState.value = GenerationRunState.Error("Failed to continue run: ${response.code()}")
                 }
+            } catch(e: Exception) {
+                _generationRunState.value = GenerationRunState.Error("Continue error: ${e.message}")
             }
+        }
+    }
+    
+    fun retryGenerationSection(sectionId: String) {
+        val runId = currentRunId ?: return
+        viewModelScope.launch {
+            try {
+                val response = ApiClient.retrofitService.retryGenerationSection(runId, sectionId, currentLiteLLMUrl, currentLiteLLMKey)
+                if (response.isSuccessful) {
+                    startPollingRun(runId)
+                }
+            } catch(e: Exception) {}
         }
     }
 

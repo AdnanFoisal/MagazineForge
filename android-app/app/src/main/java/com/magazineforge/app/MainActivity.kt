@@ -318,6 +318,7 @@ class MainActivity : ComponentActivity() {
                                                     }
                                                 )
                                                 3 -> TemplateGalleryScreen(
+                                                    runState = viewModel.generationRunState.collectAsState().value,
                                                     onTemplateSelected = { template, description, name ->
                                                         selectedTemplate = template
                                                         initialEditorPrompt = description
@@ -327,6 +328,7 @@ class MainActivity : ComponentActivity() {
                                                     onPreviewSelected = { templateVariant ->
                                                         viewModel.isFullAiMode = false
                                                         viewModel.generateChunkedPreview(litellmUrl, litellmKey, templateVariant)
+                                                        currentScreen = "co_author"
                                                     },
                                                     onLibraryClicked = { currentScreen = "library" },
                                                     onPublishClicked = { currentScreen = "showcase" },
@@ -461,13 +463,26 @@ class MainActivity : ComponentActivity() {
                                                         CoAuthorScreen(
                                                             initialSchema = schemaToRender,
                                                             isGeneratingLatex = latexState is LatexState.Loading,
+                                                            runState = viewModel.generationRunState.collectAsState().value,
                                                             isFullAiMode = viewModel.isFullAiMode,
-                                                            pendingArticles = viewModel.pendingArticles,
-                                                            onGenerateRemaining = { viewModel.generateRemainingSchema() },
+                                                            onGenerateRemaining = { viewModel.continueGenerationRun() },
+                                                            onRetrySection = { sectionId -> viewModel.retryGenerationSection(sectionId) },
                                                             onGenerateLatex = { schema -> viewModel.generateLatex(schema) },
                                                             onNext = { currentScreen = "latex_notebook" },
                                                             onBack = { viewModel.resetState(); currentScreen = "editor" }
                                                         )
+                                                    } else {
+                                                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                                                androidx.compose.material3.CircularProgressIndicator(color = tokens.primaryAccent)
+                                                                Spacer(modifier = Modifier.height(16.dp))
+                                                                val stateMsg = when (val state = viewModel.generationRunState.collectAsState().value) {
+                                                                    is GenerationRunState.Loading -> state.message
+                                                                    else -> "Preparing Magazine Preview..."
+                                                                }
+                                                                Text(stateMsg, color = tokens.textPrimary)
+                                                            }
+                                                        }
                                                     }
                                                 }
                                             }

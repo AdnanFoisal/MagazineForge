@@ -55,6 +55,33 @@ interface ApiService {
         @Body request: com.magazineforge.app.models.GenerateSchemaRequest
     ): Response<com.magazineforge.app.models.MagazineSchema>
 
+    @POST("generation-runs")
+    suspend fun createGenerationRun(
+        @Header("X-LiteLLM-Url") litellmUrl: String,
+        @Header("X-LiteLLM-Key") litellmKey: String,
+        @Body request: com.magazineforge.app.models.GenerationRunRequest
+    ): Response<com.magazineforge.app.models.GenerationRunCreateResponse>
+
+    @GET("generation-runs/{run_id}")
+    suspend fun getGenerationRun(
+        @Path("run_id") runId: String
+    ): Response<com.magazineforge.app.models.GenerationRunStatus>
+
+    @POST("generation-runs/{run_id}/continue")
+    suspend fun continueGenerationRun(
+        @Path("run_id") runId: String,
+        @Header("X-LiteLLM-Url") litellmUrl: String,
+        @Header("X-LiteLLM-Key") litellmKey: String
+    ): Response<com.magazineforge.app.models.GenerationRunCreateResponse>
+
+    @POST("generation-runs/{run_id}/retry/{section_id}")
+    suspend fun retryGenerationSection(
+        @Path("run_id") runId: String,
+        @Path("section_id") sectionId: String,
+        @Header("X-LiteLLM-Url") litellmUrl: String,
+        @Header("X-LiteLLM-Key") litellmKey: String
+    ): Response<com.magazineforge.app.models.GenerationRunCreateResponse>
+
     @POST("generate-latex")
     suspend fun generateLatex(
         @Header("X-LiteLLM-Url") litellmUrl: String,

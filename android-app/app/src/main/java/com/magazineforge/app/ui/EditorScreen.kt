@@ -197,18 +197,18 @@ fun EditorScreen(
                             modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
                         ) {
                             Column(modifier = Modifier.padding(16.dp)) {
-                                Text("Category: ${brief.category}", style = LuxeTypography.titleMedium.copy(color = ivory))
-                                Text("Tone: ${brief.tone}", style = LuxeTypography.titleMedium.copy(color = ivory))
-                                Text("Layout Density: ${brief.styleDna}", style = LuxeTypography.titleMedium.copy(color = ivory))
+                                Text("Category: ${brief.category}", style = LuxeTypography.titleMedium.copy(color = tokens.textPrimary))
+                                Text("Tone: ${brief.tone}", style = LuxeTypography.titleMedium.copy(color = tokens.textPrimary))
+                                Text("Layout Density: ${brief.styleDna}", style = LuxeTypography.titleMedium.copy(color = tokens.textPrimary))
                                 Spacer(modifier = Modifier.height(8.dp))
-                                Text("Potential Titles:", style = LuxeTypography.titleMedium.copy(color = gold))
+                                Text("Potential Titles:", style = LuxeTypography.titleMedium.copy(color = tokens.primaryAccent))
                                 brief.titles?.forEach { title ->
-                                    Text("- $title", style = LuxeTypography.bodyMedium.copy(color = ivory))
+                                    Text("- $title", style = LuxeTypography.bodyMedium.copy(color = tokens.textPrimary))
                                 }
                                 Spacer(modifier = Modifier.height(8.dp))
-                                Text("Articles:", style = LuxeTypography.titleMedium.copy(color = gold))
+                                Text("Articles:", style = LuxeTypography.titleMedium.copy(color = tokens.primaryAccent))
                                 brief.articles?.forEach { article ->
-                                    Text("- ${article.topic}", style = LuxeTypography.bodyMedium.copy(color = ivory))
+                                    Text("- ${article.topic}", style = LuxeTypography.bodyMedium.copy(color = tokens.textPrimary))
                                 }
                             }
                         }

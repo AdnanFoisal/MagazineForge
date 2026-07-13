@@ -282,7 +282,16 @@ class MainActivity : ComponentActivity() {
                                         onCompileFromBrief = { prompt, config, brief ->
                                             viewModel.isFullAiMode = true
                                             
-                                            val pagesStr = brief.articles.map { 
+                                            val firstHalf = if (brief.articles.size > 7) brief.articles.take(7) else brief.articles
+                                            val secondHalf = if (brief.articles.size > 7) brief.articles.drop(7) else emptyList()
+                                            
+                                            viewModel.pendingArticles = secondHalf
+                                            viewModel.pendingTopic = prompt
+                                            viewModel.pendingTone = brief.tone
+                                            viewModel.pendingStyleDna = brief.styleDna
+                                            viewModel.pendingConfig = config
+                                            
+                                            val pagesStr = firstHalf.map { 
                                                 """
                                                 Page Type: ARTICLE
                                                 Topic: ${it.topic}
@@ -292,7 +301,7 @@ class MainActivity : ComponentActivity() {
                                                 """.trimIndent()
                                             }.joinToString("\n\n")
 
-                                            val finalTopic = "Theme: $prompt\n\nRequired Structure:\n$pagesStr\n\n(CRITICAL INSTRUCTION: Generate EXACTLY ${brief.articles.size} articles corresponding to the topics above.)"
+                                            val finalTopic = "Theme: $prompt\n\nRequired Structure:\n$pagesStr\n\n(CRITICAL INSTRUCTION: Generate EXACTLY ${firstHalf.size} articles corresponding to the topics above.)"
                                             
                                             viewModel.generateSchema(
                                                 litellmUrl = litellmUrl, 
@@ -343,6 +352,10 @@ class MainActivity : ComponentActivity() {
                                                 initialSchema = (schemaState as SchemaState.Success).schema,
                                                 isGeneratingLatex = latexState is LatexState.Loading,
                                                 isFullAiMode = viewModel.isFullAiMode,
+                                                pendingArticlesCount = viewModel.pendingArticles.size,
+                                                onGenerateRemaining = {
+                                                    viewModel.generateRemainingSchema()
+                                                },
                                                 onGenerateLatex = { schema ->
                                                     viewModel.generateLatex(schema)
                                                 },

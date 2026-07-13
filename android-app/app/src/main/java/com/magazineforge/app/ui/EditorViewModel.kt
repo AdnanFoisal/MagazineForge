@@ -79,6 +79,12 @@ class EditorViewModel : ViewModel() {
 
     var isFullAiMode: Boolean = false
     private var appContext: Context? = null
+    
+    var pendingArticles: List<com.magazineforge.app.models.BriefArticle> = emptyList()
+    var pendingTopic: String = ""
+    var pendingTone: String = ""
+    var pendingStyleDna: String = ""
+    var pendingConfig: SectionComposerConfig? = null
 
     fun initContext(context: Context) {
         if (appContext == null) {
@@ -223,6 +229,75 @@ class EditorViewModel : ViewModel() {
                     } else {
                         _schemaState.value = SchemaState.Error("Error: $code")
                     }
+                }
+            } catch (e: Exception) {
+                _schemaState.value = SchemaState.Error(e.message ?: "Generation failed unexpectedly")
+            }
+        }
+    }
+
+    fun generateRemainingSchema() {
+        if (pendingArticles.isEmpty()) return
+        val currentSuccess = _schemaState.value as? SchemaState.Success ?: return
+        val existingSchema = currentSuccess.schema
+
+        val articlesToProcess = pendingArticles
+        pendingArticles = emptyList() // clear it
+        _schemaState.value = SchemaState.Loading
+
+        viewModelScope.launch {
+            try {
+                val pagesStr = articlesToProcess.map {
+                    """
+                    Page Type: ARTICLE
+                    Topic: ${it.topic}
+                    [CUSTOMIZATION CONFIGURATION]:
+                    - Writing Tone: $pendingTone
+                    - Layout Density: $pendingStyleDna
+                    """.trimIndent()
+                }.joinToString("\n\n")
+
+                val finalTopic = "Theme: $pendingTopic\n\nRequired Structure:\n$pagesStr\n\n(CRITICAL INSTRUCTION: Generate EXACTLY ${articlesToProcess.size} articles corresponding to the topics above.)"
+                
+                val safeConfig = pendingConfig ?: SectionComposerConfig()
+                val request = GenerateSchemaRequest(
+                    topic = finalTopic, 
+                    templateVariant = currentVariant,
+                    tone = pendingTone,
+                    layoutDensity = pendingStyleDna,
+                    enableMasthead = false,
+                    mastheadAngle = "",
+                    enableSidebar = safeConfig.enableSidebar,
+                    sidebarTopic = safeConfig.sidebarTopic,
+                    enablePullQuote = safeConfig.enablePullQuote,
+                    enableBackCover = false,
+                    enableTocTeasers = safeConfig.enableTocTeasers,
+                    enableByline = safeConfig.enableByline,
+                    coverImageUrl = ""
+                )
+                val response = ApiClient.retrofitService.generateSchema(
+                    litellmUrl = currentLiteLLMUrl,
+                    litellmKey = currentLiteLLMKey,
+                    request = request
+                )
+                
+                if (response.isSuccessful) {
+                    val newSchema = response.body()
+                    if (newSchema != null) {
+                        val mergedSchema = existingSchema.copy(
+                            articles = existingSchema.articles + newSchema.articles,
+                            toc = existingSchema.toc + newSchema.toc
+                        )
+                        _schemaState.value = SchemaState.Success(mergedSchema)
+                        if (isFullAiMode) {
+                            // If in full AI mode, generating latex will happen when user clicks on CoAuthorScreen
+                            // Since we split the flow, we don't auto-generate latex yet.
+                        }
+                    } else {
+                        _schemaState.value = SchemaState.Error("Empty response body for remaining articles")
+                    }
+                } else {
+                    _schemaState.value = SchemaState.Error("Error: ${response.code()}")
                 }
             } catch (e: Exception) {
                 _schemaState.value = SchemaState.Error(e.message ?: "Generation failed unexpectedly")

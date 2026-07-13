@@ -33,6 +33,8 @@ fun CoAuthorScreen(
     initialSchema: MagazineSchema,
     isGeneratingLatex: Boolean,
     isFullAiMode: Boolean,
+    pendingArticlesCount: Int = 0,
+    onGenerateRemaining: () -> Unit = {},
     onGenerateLatex: (MagazineSchema) -> Unit,
     onNext: () -> Unit,
     onBack: () -> Unit
@@ -106,12 +108,28 @@ fun CoAuthorScreen(
                             Text("Open Editor", color = obsidian)
                         }
                     } else {
-                        Button(
-                            onClick = { onGenerateLatex(schema) },
-                            enabled = !isGeneratingLatex && isSchemaValid,
-                            colors = ButtonDefaults.buttonColors(containerColor = gold)
-                        ) {
-                            Text(if (isGeneratingLatex) "Generating..." else "Next", color = obsidian)
+                        if (isSchemaValid) {
+                            if (pendingArticlesCount > 0) {
+                                Button(
+                                    onClick = onGenerateRemaining,
+                                    colors = ButtonDefaults.buttonColors(containerColor = tokens.primaryAccent),
+                                    enabled = !isGeneratingLatex
+                                ) {
+                                    Text("Generate Remaining ($pendingArticlesCount)", color = tokens.ctaText)
+                                }
+                            } else {
+                                Button(
+                                    onClick = { onGenerateLatex(schema) },
+                                    colors = ButtonDefaults.buttonColors(containerColor = tokens.primaryAccent),
+                                    enabled = !isGeneratingLatex
+                                ) {
+                                    if (isGeneratingLatex) {
+                                        CircularProgressIndicator(modifier = Modifier.size(16.dp), color = tokens.ctaText)
+                                    } else {
+                                        Text("Generate LaTeX", color = tokens.ctaText)
+                                    }
+                                }
+                            }
                         }
                     }
                 }

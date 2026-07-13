@@ -38,6 +38,7 @@ import com.magazineforge.app.ui.ShowcaseScreen
 import androidx.compose.runtime.saveable.rememberSaveable
 import com.magazineforge.app.ui.SettingsScreen
 import com.magazineforge.app.ui.ProgressTrackerDialog
+import com.magazineforge.app.ui.GenerationRunState
 import com.magazineforge.app.ui.FloatingProgressTracker
 
 import com.magazineforge.app.utils.SecureStorage

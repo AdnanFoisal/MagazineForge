@@ -252,7 +252,17 @@ class MainActivity : ComponentActivity() {
                                             }
                                         }
                                         
-                                        HorizontalPager(state = pagerState, modifier = Modifier.fillMaxSize()) { page ->
+                                        BackHandler(enabled = pagerState.currentPage != 0) {
+                                            coroutineScope.launch {
+                                                pagerState.animateScrollToPage(0)
+                                            }
+                                        }
+                                        
+                                        HorizontalPager(
+                                            state = pagerState, 
+                                            modifier = Modifier.fillMaxSize(),
+                                            beyondBoundsPageCount = 4 // Keeps all tabs in memory to completely eliminate lag!
+                                        ) { page ->
                                             when (page) {
                                                 0 -> HomeScreen(
                                                     viewModel = viewModel,

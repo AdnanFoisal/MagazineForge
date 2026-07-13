@@ -21,9 +21,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.magazineforge.app.models.MagazineSchema
-import com.magazineforge.app.models.ArticleSchema
-import com.magazineforge.app.models.TocItemSchema
+import androidx.compose.ui.text.font.FontWeight
+import com.magazineforge.app.models.*
 import kotlinx.coroutines.launch
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
 
@@ -33,7 +32,7 @@ fun CoAuthorScreen(
     initialSchema: MagazineSchema,
     isGeneratingLatex: Boolean,
     isFullAiMode: Boolean,
-    pendingArticlesCount: Int = 0,
+    pendingArticles: List<com.magazineforge.app.models.BriefArticle> = emptyList(),
     onGenerateRemaining: () -> Unit = {},
     onGenerateLatex: (MagazineSchema) -> Unit,
     onNext: () -> Unit,
@@ -42,6 +41,9 @@ fun CoAuthorScreen(
     val tokens = com.magazineforge.app.ui.theme.LocalThemeTokens.current
     val surfaceColor = tokens.surface
     var schema by remember { mutableStateOf(initialSchema) }
+    LaunchedEffect(initialSchema) {
+        schema = initialSchema
+    }
     val context = androidx.compose.ui.platform.LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     var onImageUploadedCallback by remember { mutableStateOf<((String) -> Unit)?>(null) }
@@ -109,13 +111,13 @@ fun CoAuthorScreen(
                         }
                     } else {
                         if (isSchemaValid) {
-                            if (pendingArticlesCount > 0) {
+                            if (pendingArticles.size > 0) {
                                 Button(
                                     onClick = onGenerateRemaining,
                                     colors = ButtonDefaults.buttonColors(containerColor = tokens.primaryAccent),
                                     enabled = !isGeneratingLatex
                                 ) {
-                                    Text("Generate Remaining ($pendingArticlesCount)", color = tokens.ctaText)
+                                    Text("Generate All Remaining (${pendingArticles.size})", color = tokens.ctaText)
                                 }
                             } else {
                                 Button(
@@ -212,52 +214,197 @@ fun CoAuthorScreen(
                 }
             }
 
-            schema.articles.forEachIndexed { index, article ->
-                ExpandableSection("Article: ${article.headline}") {
-                    OutlinedTextField(
-                        value = article.headline,
-                        onValueChange = {
-                            val newArticles = schema.articles.toMutableList()
-                            newArticles[index] = article.copy(headline = it)
-                            schema = schema.copy(articles = newArticles)
-                        },
-                        label = { Text("Headline") },
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                    OutlinedTextField(
-                        value = article.bodyCopy,
-                        onValueChange = {
-                            val newArticles = schema.articles.toMutableList()
-                            newArticles[index] = article.copy(bodyCopy = it)
-                            schema = schema.copy(articles = newArticles)
-                        },
-                        label = { Text("Body Copy") },
-                        modifier = Modifier.fillMaxWidth(),
-                        minLines = 5
-                    )
-                    article.images.forEachIndexed { imgIndex, img ->
-                        ImageUploadField(
-                            label = "Article Image ${imgIndex + 1} URL",
-                            value = img.imageUrl,
-                            onValueChange = { newUrl ->
-                                val newImages = article.images.toMutableList()
-                                newImages[imgIndex] = img.copy(imageUrl = newUrl)
-                                val newArticles = schema.articles.toMutableList()
-                                newArticles[index] = article.copy(images = newImages)
-                                schema = schema.copy(articles = newArticles)
-                            },
-                            onPickImage = {
-                                pickImage { url ->
-                                    val newImages = article.images.toMutableList()
-                                    newImages[imgIndex] = img.copy(imageUrl = url)
-                                    val newArticles = schema.articles.toMutableList()
-                                    newArticles[index] = article.copy(images = newImages)
-                                    schema = schema.copy(articles = newArticles)
-                                }
+
+            schema.pages.forEachIndexed { index, page ->
+                when (page) {
+                    is ArticleSchema -> {
+                        ExpandableSection("Article: ${page.headline}") {
+                            OutlinedTextField(
+                                value = page.headline,
+                                onValueChange = {
+                                    val newPages = schema.pages.toMutableList()
+                                    newPages[index] = page.copy(headline = it)
+                                    schema = schema.copy(pages = newPages)
+                                },
+                                label = { Text("Headline") },
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            OutlinedTextField(
+                                value = page.bodyCopy,
+                                onValueChange = {
+                                    val newPages = schema.pages.toMutableList()
+                                    newPages[index] = page.copy(bodyCopy = it)
+                                    schema = schema.copy(pages = newPages)
+                                },
+                                label = { Text("Body Copy") },
+                                modifier = Modifier.fillMaxWidth(),
+                                minLines = 5
+                            )
+                        }
+                    }
+                    is AdSchema -> {
+                        ExpandableSection("Ad: ${page.fakeCompanyName}") {
+                            OutlinedTextField(
+                                value = page.headline,
+                                onValueChange = {
+                                    val newPages = schema.pages.toMutableList()
+                                    newPages[index] = page.copy(headline = it)
+                                    schema = schema.copy(pages = newPages)
+                                },
+                                label = { Text("Ad Headline") },
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+                    }
+                    is QnASchema -> {
+                        ExpandableSection("Q&A: ${page.headline}") {
+                            OutlinedTextField(
+                                value = page.headline,
+                                onValueChange = {
+                                    val newPages = schema.pages.toMutableList()
+                                    newPages[index] = page.copy(headline = it)
+                                    schema = schema.copy(pages = newPages)
+                                },
+                                label = { Text("Q&A Headline") },
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                OutlinedTextField(
+                                    value = page.interviewer,
+                                    onValueChange = {
+                                        val newPages = schema.pages.toMutableList()
+                                        newPages[index] = page.copy(interviewer = it)
+                                        schema = schema.copy(pages = newPages)
+                                    },
+                                    label = { Text("Interviewer") },
+                                    modifier = Modifier.weight(1f)
+                                )
+                                OutlinedTextField(
+                                    value = page.interviewee,
+                                    onValueChange = {
+                                        val newPages = schema.pages.toMutableList()
+                                        newPages[index] = page.copy(interviewee = it)
+                                        schema = schema.copy(pages = newPages)
+                                    },
+                                    label = { Text("Interviewee") },
+                                    modifier = Modifier.weight(1f)
+                                )
                             }
-                        )
+                            
+                            page.qnaItems.forEachIndexed { qnaIndex, qnaItem ->
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Text("Q&A Item ${qnaIndex + 1}", fontWeight = FontWeight.Bold)
+                                OutlinedTextField(
+                                    value = qnaItem.question,
+                                    onValueChange = {
+                                        val newItems = page.qnaItems.toMutableList()
+                                        newItems[qnaIndex] = qnaItem.copy(question = it)
+                                        val newPages = schema.pages.toMutableList()
+                                        newPages[index] = page.copy(qnaItems = newItems)
+                                        schema = schema.copy(pages = newPages)
+                                    },
+                                    label = { Text("Question") },
+                                    modifier = Modifier.fillMaxWidth()
+                                )
+                                OutlinedTextField(
+                                    value = qnaItem.answer,
+                                    onValueChange = {
+                                        val newItems = page.qnaItems.toMutableList()
+                                        newItems[qnaIndex] = qnaItem.copy(answer = it)
+                                        val newPages = schema.pages.toMutableList()
+                                        newPages[index] = page.copy(qnaItems = newItems)
+                                        schema = schema.copy(pages = newPages)
+                                    },
+                                    label = { Text("Answer") },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    minLines = 3
+                                )
+                            }
+                        }
+                    }
+                    is ChartSchema -> {
+                        ExpandableSection("Chart: ${page.headline}") {
+                            OutlinedTextField(
+                                value = page.headline,
+                                onValueChange = {
+                                    val newPages = schema.pages.toMutableList()
+                                    newPages[index] = page.copy(headline = it)
+                                    schema = schema.copy(pages = newPages)
+                                },
+                                label = { Text("Chart Headline") },
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                OutlinedTextField(
+                                    value = page.xLabel,
+                                    onValueChange = {
+                                        val newPages = schema.pages.toMutableList()
+                                        newPages[index] = page.copy(xLabel = it)
+                                        schema = schema.copy(pages = newPages)
+                                    },
+                                    label = { Text("X-Axis Label") },
+                                    modifier = Modifier.weight(1f)
+                                )
+                                OutlinedTextField(
+                                    value = page.yLabel,
+                                    onValueChange = {
+                                        val newPages = schema.pages.toMutableList()
+                                        newPages[index] = page.copy(yLabel = it)
+                                        schema = schema.copy(pages = newPages)
+                                    },
+                                    label = { Text("Y-Axis Label") },
+                                    modifier = Modifier.weight(1f)
+                                )
+                            }
+                            Text("Data Points Editing Coming Soon...", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 12.sp, modifier = Modifier.padding(top = 8.dp))
+                        }
+                    }
+                    is PhotoEssaySchema -> {
+                        ExpandableSection("Photo Essay: ${page.headline}") {
+                            OutlinedTextField(
+                                value = page.headline,
+                                onValueChange = {
+                                    val newPages = schema.pages.toMutableList()
+                                    newPages[index] = page.copy(headline = it)
+                                    schema = schema.copy(pages = newPages)
+                                },
+                                label = { Text("Essay Headline") },
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            OutlinedTextField(
+                                value = page.closingText,
+                                onValueChange = {
+                                    val newPages = schema.pages.toMutableList()
+                                    newPages[index] = page.copy(closingText = it)
+                                    schema = schema.copy(pages = newPages)
+                                },
+                                label = { Text("Closing Text") },
+                                modifier = Modifier.fillMaxWidth(),
+                                minLines = 3
+                            )
+                        }
+                    }
+                    else -> {
                     }
                 }
+            }
+            
+            if (pendingArticles.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(16.dp))
+                Text("QUEUED FOR GENERATION", color = gold, style = com.magazineforge.app.ui.theme.LuxeTypography.labelMedium)
+                pendingArticles.forEach { article ->
+                    Card(
+                        modifier = Modifier.padding(vertical = 4.dp).fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = surfaceColor.copy(alpha = 0.5f)),
+                        border = BorderStroke(1.dp, tokens.secondaryAccent.copy(alpha = 0.2f))
+                    ) {
+                        Column(modifier = Modifier.padding(16.dp)) {
+                            Text("⏳ ${article.topic}", color = tokens.textPrimary, style = MaterialTheme.typography.titleMedium)
+                            Text("This section is pending generation.", color = tokens.textSecondary, style = MaterialTheme.typography.bodySmall)
+                        }
+                    }
+                }
+                Spacer(modifier = Modifier.height(16.dp))
             }
 
             schema.backCover?.let { backCover ->

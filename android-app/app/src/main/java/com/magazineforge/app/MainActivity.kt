@@ -19,6 +19,7 @@ import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.Modifier
+import androidx.compose.foundation.clickable
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModelProvider
 import com.magazineforge.app.ui.CompileState
@@ -30,9 +31,11 @@ import com.magazineforge.app.ui.EditorScreen
 import com.magazineforge.app.ui.EditorViewModel
 import com.magazineforge.app.ui.OnboardingScreen
 import com.magazineforge.app.ui.PdfViewerScreen
+import com.magazineforge.app.ui.SplashScreen
 import com.magazineforge.app.ui.TemplateGalleryScreen
 import com.magazineforge.app.ui.MyMagazinesScreen
 import com.magazineforge.app.ui.ShowcaseScreen
+import androidx.compose.runtime.saveable.rememberSaveable
 import com.magazineforge.app.ui.SettingsScreen
 import com.magazineforge.app.ui.ProgressTrackerDialog
 import com.magazineforge.app.ui.FloatingProgressTracker
@@ -101,7 +104,7 @@ class MainActivity : ComponentActivity() {
                     val tokens = LocalThemeTokens.current
                     val context = androidx.compose.ui.platform.LocalContext.current
                     
-                    var currentScreen by remember { mutableStateOf("splash") }
+                    var currentScreen by rememberSaveable { mutableStateOf("splash") }
                     var selectedTemplate by remember { mutableStateOf("") }
                     var selectedTemplateName by remember { mutableStateOf("") }
                     var initialEditorPrompt by remember { mutableStateOf("") }
@@ -129,13 +132,19 @@ class MainActivity : ComponentActivity() {
                     val compileState by viewModel.compileState.collectAsState()
                     var showExitDialog by remember { mutableStateOf(false) }
                     var showProgressCard by remember { mutableStateOf(false) }
+                    var errorMessage by remember { mutableStateOf<String?>(null) }
                     var editorInitialTab by remember { mutableIntStateOf(0) }
+                    var cachedSchema by remember { mutableStateOf<com.magazineforge.app.models.MagazineSchema?>(null) }
                     
                     LaunchedEffect(schemaState) {
                         if (schemaState is SchemaState.Success) {
+                            cachedSchema = (schemaState as SchemaState.Success).schema
                             currentScreen = "co_author"
                         } else if (schemaState is SchemaState.Loading) {
                             showProgressCard = true
+                        } else if (schemaState is SchemaState.Error) {
+                            showProgressCard = false
+                            errorMessage = (schemaState as SchemaState.Error).message
                         }
                     }
 
@@ -145,6 +154,16 @@ class MainActivity : ComponentActivity() {
                             currentScreen = "latex_notebook"
                         } else if (latexState is LatexState.Loading) {
                             showProgressCard = true
+                        } else if (latexState is LatexState.Error) {
+                            showProgressCard = false
+                            errorMessage = (latexState as LatexState.Error).message
+                        }
+                    }
+                    
+                    LaunchedEffect(compileState) {
+                        if (compileState is CompileState.Error) {
+                            showProgressCard = false
+                            errorMessage = (compileState as CompileState.Error).message
                         }
                     }
 
@@ -202,6 +221,9 @@ class MainActivity : ComponentActivity() {
 
 
                             if (selectedPdfForViewer != null) {
+                                BackHandler {
+                                    selectedPdfForViewer = null
+                                }
                                 PdfViewerScreen(
                                     pdfUrlOrPath = selectedPdfForViewer!!,
                                     onBack = {
@@ -209,6 +231,9 @@ class MainActivity : ComponentActivity() {
                                     }
                                 )
                             } else if (compileState is CompileState.Success) {
+                                BackHandler {
+                                    viewModel.resetState()
+                                }
                                 PdfViewerScreen(
                                     pdfUrlOrPath = (compileState as CompileState.Success).pdfFile.absolutePath,
                                     onBack = {
@@ -300,7 +325,8 @@ class MainActivity : ComponentActivity() {
                                                         currentScreen = "editor"
                                                     },
                                                     onPreviewSelected = { templateVariant ->
-                                                        viewModel.generateSchema(litellmUrl, litellmKey, "Magazine Preview", templateVariant)
+                                                        viewModel.isFullAiMode = false
+                                                        viewModel.generateChunkedPreview(litellmUrl, litellmKey, templateVariant)
                                                     },
                                                     onLibraryClicked = { currentScreen = "library" },
                                                     onPublishClicked = { currentScreen = "showcase" },
@@ -350,8 +376,9 @@ class MainActivity : ComponentActivity() {
                                     } else {
                                         AnimatedContent(
                                             targetState = currentScreen,
-                                            transitionSpec = { fadeIn(tween(300)) togetherWith fadeOut(tween(300)) }
-                                        ) { screen ->
+                                            transitionSpec = { fadeIn(tween(300)) togetherWith fadeOut(tween(300)) },
+                                            label = "ScreenTransition"
+                                        ) { screen: String ->
                                             when (screen) {
                                                 "splash" -> SplashScreen(
                                                     onAnimationFinished = {
@@ -429,12 +456,13 @@ class MainActivity : ComponentActivity() {
                                                     onBack = { currentScreen = "home" }
                                                 )
                                                 "co_author" -> {
-                                                    if (schemaState is SchemaState.Success) {
+                                                    val schemaToRender = cachedSchema ?: (schemaState as? SchemaState.Success)?.schema
+                                                    if (schemaToRender != null) {
                                                         CoAuthorScreen(
-                                                            initialSchema = (schemaState as SchemaState.Success).schema,
+                                                            initialSchema = schemaToRender,
                                                             isGeneratingLatex = latexState is LatexState.Loading,
                                                             isFullAiMode = viewModel.isFullAiMode,
-                                                            pendingArticlesCount = viewModel.pendingArticles.size,
+                                                            pendingArticles = viewModel.pendingArticles,
                                                             onGenerateRemaining = { viewModel.generateRemainingSchema() },
                                                             onGenerateLatex = { schema -> viewModel.generateLatex(schema) },
                                                             onNext = { currentScreen = "latex_notebook" },
@@ -569,6 +597,48 @@ class MainActivity : ComponentActivity() {
                                     textContentColor = tokens.textSecondary
                                 )
                             }
+                            
+                            if (errorMessage != null) {
+                                AlertDialog(
+                                    onDismissRequest = {
+                                        errorMessage = null
+                                        viewModel.resetLatexState()
+                                        viewModel.resetCompileState()
+                                        viewModel.resetSchemaState()
+                                    },
+                                    title = { Text("Error", style = LuxeTypography.headlineSmall) },
+                                    text = { Text(errorMessage ?: "", style = LuxeTypography.bodyMedium) },
+                                    confirmButton = {
+                                        TextButton(onClick = {
+                                            errorMessage = null
+                                            viewModel.resetLatexState()
+                                            viewModel.resetCompileState()
+                                            viewModel.resetSchemaState()
+                                        }) {
+                                            Text("OK", style = LuxeTypography.labelMedium.copy(color = tokens.primaryAccent))
+                                        }
+                                    },
+                                    containerColor = tokens.surface,
+                                    titleContentColor = tokens.textPrimary,
+                                    textContentColor = tokens.textSecondary
+                                )
+                            }
+                        }
+                    }
+
+                    // Global Loading Overlay for Brief and Schema Generation
+                    if (currentScreen != "co_author" && (briefState is com.magazineforge.app.ui.BriefState.Loading || schemaState is com.magazineforge.app.ui.SchemaState.Loading)) {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxSize()
+                                .background(androidx.compose.ui.graphics.Color.Black.copy(alpha = 0.5f))
+                                .clickable(enabled = false) {}, // Block underlying clicks
+                            contentAlignment = Alignment.Center
+                        ) {
+                            androidx.compose.material3.CircularProgressIndicator(
+                                color = tokens.primaryAccent,
+                                modifier = Modifier.size(64.dp)
+                            )
                         }
                     }
                 }

@@ -177,8 +177,7 @@ fun TemplateMasonryCard(template: TemplateModel, onClick: () -> Unit, onPreview:
                 .fillMaxSize()
                 .background(
                     androidx.compose.ui.graphics.Brush.verticalGradient(
-                        colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.8f)),
-                        startY = 100f
+                        colors = listOf(Color.Transparent, Color.Transparent, Color.Black.copy(alpha = 0.9f))
                     )
                 )
         )

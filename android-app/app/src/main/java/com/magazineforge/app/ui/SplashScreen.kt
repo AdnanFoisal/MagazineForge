@@ -46,7 +46,14 @@ fun SplashScreen(onAnimationFinished: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(tokens.screenBackground),
+            .background(
+                androidx.compose.ui.graphics.Brush.verticalGradient(
+                    colors = listOf(
+                        androidx.compose.ui.graphics.Color(0xFFFF9A9E), // Light pink/red
+                        androidx.compose.ui.graphics.Color(0xFFFECFEF)  // Light peach
+                    )
+                )
+            ),
         contentAlignment = Alignment.Center
     ) {
         Column(horizontalAlignment = Alignment.CenterHorizontally) {

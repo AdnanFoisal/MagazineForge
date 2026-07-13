@@ -130,6 +130,24 @@ class EditorViewModel : ViewModel() {
         _compileState.value = CompileState.Idle
     }
 
+    fun resetLatexState() {
+        if (_latexState.value is LatexState.Error) {
+            _latexState.value = LatexState.Idle
+        }
+    }
+
+    fun resetCompileState() {
+        if (_compileState.value is CompileState.Error) {
+            _compileState.value = CompileState.Idle
+        }
+    }
+
+    fun resetSchemaState() {
+        if (_schemaState.value is SchemaState.Error) {
+            _schemaState.value = SchemaState.Idle
+        }
+    }
+
     fun generateBrief(litellmUrl: String, litellmKey: String, prompt: String, referenceImages: List<String> = emptyList(), articleCount: Int? = null) {
         if (prompt.isBlank()) {
             _briefState.value = BriefState.Error("Prompt can't be empty")
@@ -156,11 +174,85 @@ class EditorViewModel : ViewModel() {
                     if (code == 401 || code == 429) {
                         _briefState.value = BriefState.Error("Your API keys may be invalid or rate-limited — check them in Settings")
                     } else {
-                        _briefState.value = BriefState.Error("Error: $code")
+                        val errorStr = response.errorBody()?.string() ?: "Unknown error"
+                        _briefState.value = BriefState.Error("Error $code: $errorStr")
                     }
                 }
             } catch (e: Exception) {
                 _briefState.value = BriefState.Error(e.message ?: "Brief generation failed unexpectedly")
+            }
+        }
+    }
+
+    fun generateChunkedPreview(litellmUrl: String, litellmKey: String, templateVariant: String) {
+        currentLiteLLMUrl = litellmUrl
+        currentLiteLLMKey = litellmKey
+        currentVariant = normalizeTemplateVariant(templateVariant)
+        
+        // We hijack the BriefState to show loading during the initial brief generation
+        _briefState.value = BriefState.Loading
+        _schemaState.value = SchemaState.Loading
+        
+        viewModelScope.launch {
+            try {
+                val prompt = "A beautiful lifestyle and design magazine showcasing the template's features"
+                val request = GenerateBriefRequest(prompt = prompt, referenceImages = emptyList(), articleCount = 9)
+                val response = ApiClient.retrofitService.generateBrief(litellmUrl, litellmKey, request)
+                
+                if (response.isSuccessful && response.body() != null) {
+                    val brief = response.body()!!
+                    
+                    // Split into chunks of 3
+                    val firstChunk = brief.articles.take(3)
+                    val remainingChunks = brief.articles.drop(3)
+                    
+                    pendingArticles = remainingChunks
+                    pendingTopic = prompt
+                    pendingTone = brief.tone
+                    pendingStyleDna = brief.styleDna
+                    pendingConfig = SectionComposerConfig(enableMasthead = true, enableTocTeasers = true, enableByline = true, enablePullQuote = true)
+                    
+                    val pagesStr = firstChunk.map { 
+                        "Page Type: ARTICLE\nTopic: ${it.topic}\n[CUSTOMIZATION CONFIGURATION]:\n- Writing Tone: ${brief.tone}\n- Layout Density: ${brief.styleDna}"
+                    }.joinToString("\n\n")
+
+                    val finalTopic = "Theme: $prompt\n\nRequired Structure:\n$pagesStr\n\n(CRITICAL INSTRUCTION: Generate EXACTLY ${firstChunk.size} articles corresponding to the topics above.)\n(GLOBAL STYLE RULE: Dynamically adapt your writing tone, voice, and pacing to perfectly match the specific magazine topic and target audience. Do not rely on a single default persona; if the topic is serious, be authoritative and measured; if it's pop-culture, be punchy and witty. Regardless of the dynamically chosen tone, you MUST strictly avoid generic AI transitions like 'In conclusion', 'Let's dive into', or 'A testament to'. Emphasize 'show, don't tell'. Focus heavily on rich formatting, using bullet points, bold text, blockquotes, and visual breaks frequently to make the reading experience dynamic.)"
+                    
+                    // Now generate the schema for the first chunk
+                    val schemaRequest = GenerateSchemaRequest(
+                        topic = finalTopic, 
+                        templateVariant = currentVariant,
+                        tone = brief.tone,
+                        layoutDensity = brief.styleDna,
+                        enableMasthead = pendingConfig!!.enableMasthead,
+                        mastheadAngle = pendingConfig!!.mastheadAngle,
+                        enableSidebar = pendingConfig!!.enableSidebar,
+                        sidebarTopic = pendingConfig!!.sidebarTopic,
+                        enablePullQuote = pendingConfig!!.enablePullQuote,
+                        enableBackCover = pendingConfig!!.enableBackCover,
+                        enableTocTeasers = pendingConfig!!.enableTocTeasers,
+                        enableByline = pendingConfig!!.enableByline,
+                        coverImageUrl = ""
+                    )
+                    
+                    val schemaResponse = ApiClient.retrofitService.generateSchema(litellmUrl, litellmKey, schemaRequest)
+                    
+                    if (schemaResponse.isSuccessful && schemaResponse.body() != null) {
+                        // Reset brief state so it doesn't stay stuck
+                        _briefState.value = BriefState.Idle
+                        _schemaState.value = SchemaState.Success(schemaResponse.body()!!)
+                    } else {
+                        val code = schemaResponse.code()
+                        val errorStr = schemaResponse.errorBody()?.string() ?: "Unknown schema error"
+                        _schemaState.value = SchemaState.Error("Schema Error $code: $errorStr")
+                    }
+                } else {
+                    val code = response.code()
+                    val errorStr = response.errorBody()?.string() ?: "Unknown brief error"
+                    _schemaState.value = SchemaState.Error("Brief Error $code: $errorStr")
+                }
+            } catch (e: Exception) {
+                _schemaState.value = SchemaState.Error(e.message ?: "Chunked preview failed unexpectedly")
             }
         }
     }
@@ -227,7 +319,8 @@ class EditorViewModel : ViewModel() {
                     if (code == 401 || code == 429) {
                         _schemaState.value = SchemaState.Error("Your API keys may be invalid or rate-limited — check them in Settings")
                     } else {
-                        _schemaState.value = SchemaState.Error("Error: $code")
+                        val errorStr = response.errorBody()?.string() ?: "Unknown error"
+                        _schemaState.value = SchemaState.Error("Error $code: $errorStr")
                     }
                 }
             } catch (e: Exception) {
@@ -238,69 +331,81 @@ class EditorViewModel : ViewModel() {
 
     fun generateRemainingSchema() {
         if (pendingArticles.isEmpty()) return
-        val currentSuccess = _schemaState.value as? SchemaState.Success ?: return
-        val existingSchema = currentSuccess.schema
-
-        val articlesToProcess = pendingArticles
-        pendingArticles = emptyList() // clear it
-        _schemaState.value = SchemaState.Loading
-
+        
+        val initialSuccess = _schemaState.value as? SchemaState.Success ?: return
+        var currentSchema = initialSuccess.schema
+        
         viewModelScope.launch {
-            try {
-                val pagesStr = articlesToProcess.map {
-                    """
-                    Page Type: ARTICLE
-                    Topic: ${it.topic}
-                    [CUSTOMIZATION CONFIGURATION]:
-                    - Writing Tone: $pendingTone
-                    - Layout Density: $pendingStyleDna
-                    """.trimIndent()
-                }.joinToString("\n\n")
+            _schemaState.value = SchemaState.Loading
+            
+            while (pendingArticles.isNotEmpty()) {
+                // Take 2 articles at a time to prevent any backend timeouts
+                val articlesToProcess = pendingArticles.take(2)
+                pendingArticles = pendingArticles.drop(2)
+                
+                try {
+                    val pagesStr = articlesToProcess.map {
+                        """
+                        Page Type: ARTICLE
+                        Topic: ${it.topic}
+                        [CUSTOMIZATION CONFIGURATION]:
+                        - Writing Tone: $pendingTone
+                        - Layout Density: $pendingStyleDna
+                        """.trimIndent()
+                    }.joinToString("\n\n")
 
-                val finalTopic = "Theme: $pendingTopic\n\nRequired Structure:\n$pagesStr\n\n(CRITICAL INSTRUCTION: Generate EXACTLY ${articlesToProcess.size} articles corresponding to the topics above.)"
-                
-                val safeConfig = pendingConfig ?: SectionComposerConfig()
-                val request = GenerateSchemaRequest(
-                    topic = finalTopic, 
-                    templateVariant = currentVariant,
-                    tone = pendingTone,
-                    layoutDensity = pendingStyleDna,
-                    enableMasthead = false,
-                    mastheadAngle = "",
-                    enableSidebar = safeConfig.enableSidebar,
-                    sidebarTopic = safeConfig.sidebarTopic,
-                    enablePullQuote = safeConfig.enablePullQuote,
-                    enableBackCover = false,
-                    enableTocTeasers = safeConfig.enableTocTeasers,
-                    enableByline = safeConfig.enableByline,
-                    coverImageUrl = ""
-                )
-                val response = ApiClient.retrofitService.generateSchema(
-                    litellmUrl = currentLiteLLMUrl,
-                    litellmKey = currentLiteLLMKey,
-                    request = request
-                )
-                
-                if (response.isSuccessful) {
-                    val newSchema = response.body()
-                    if (newSchema != null) {
-                        val mergedSchema = existingSchema.copy(
-                            articles = existingSchema.articles + newSchema.articles,
-                            toc = existingSchema.toc + newSchema.toc
-                        )
-                        _schemaState.value = SchemaState.Success(mergedSchema)
-                        if (isFullAiMode) {
-                            // If in full AI mode, generating latex will happen when user clicks on CoAuthorScreen
-                            // Since we split the flow, we don't auto-generate latex yet.
+                    val finalTopic = "Theme: $pendingTopic\n\nRequired Structure:\n$pagesStr\n\n(CRITICAL INSTRUCTION: Generate EXACTLY ${articlesToProcess.size} articles corresponding to the topics above.)"
+                    
+                    val safeConfig = pendingConfig ?: SectionComposerConfig()
+                    val request = GenerateSchemaRequest(
+                        topic = finalTopic, 
+                        templateVariant = currentVariant,
+                        tone = pendingTone,
+                        layoutDensity = pendingStyleDna,
+                        enableMasthead = false,
+                        mastheadAngle = "",
+                        enableSidebar = safeConfig.enableSidebar,
+                        sidebarTopic = safeConfig.sidebarTopic,
+                        enablePullQuote = safeConfig.enablePullQuote,
+                        enableBackCover = false,
+                        enableTocTeasers = safeConfig.enableTocTeasers,
+                        enableByline = safeConfig.enableByline,
+                        coverImageUrl = ""
+                    )
+                    
+                    val response = ApiClient.retrofitService.generateSchema(
+                        litellmUrl = currentLiteLLMUrl,
+                        litellmKey = currentLiteLLMKey,
+                        request = request
+                    )
+                    
+                    if (response.isSuccessful) {
+                        val newSchema = response.body()
+                        if (newSchema != null) {
+                            val mergedSchema = currentSchema.copy(
+                                pages = currentSchema.pages + newSchema.pages,
+                                backCover = newSchema.backCover ?: currentSchema.backCover
+                            )
+                            currentSchema = mergedSchema // Update local variable for next iteration
+                            _schemaState.value = SchemaState.Success(mergedSchema) // Update UI instantly
+                        } else {
+                            _schemaState.value = SchemaState.Error("Empty response body during chunk generation")
+                            break
                         }
                     } else {
-                        _schemaState.value = SchemaState.Error("Empty response body for remaining articles")
+                        val code = response.code()
+                        if (code == 401 || code == 429) {
+                            _schemaState.value = SchemaState.Error("Your API keys may be invalid or rate-limited — check them in Settings")
+                        } else {
+                            val errorStr = response.errorBody()?.string() ?: "Unknown error"
+                            _schemaState.value = SchemaState.Error("Error $code: $errorStr")
+                        }
+                        break
                     }
-                } else {
-                    _schemaState.value = SchemaState.Error("Error: ${response.code()}")
+                } catch (e: Exception) {
+                    _schemaState.value = SchemaState.Error(e.message ?: "Generation failed unexpectedly")
+                    break
                 }
-            } catch (e: Exception) {
-                _schemaState.value = SchemaState.Error(e.message ?: "Generation failed unexpectedly")
             }
         }
     }
@@ -329,10 +434,11 @@ class EditorViewModel : ViewModel() {
                     }
                 } else {
                     val code = response.code()
+                    val errorBody = response.errorBody()?.string() ?: ""
                     if (code == 401 || code == 429) {
                         _latexState.value = LatexState.Error("Your API keys may be invalid or rate-limited — check them in Settings")
                     } else {
-                        _latexState.value = LatexState.Error("Error: $code")
+                        _latexState.value = LatexState.Error("Error: $code - $errorBody")
                     }
                 }
             } catch (e: Exception) {

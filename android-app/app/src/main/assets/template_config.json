@@ -4,7 +4,7 @@
     "name": "Classic Dining",
     "category": "Food",
     "description": "Elegant serif typography with a minimalist clean slate.",
-    "thumbnailUrl": "https://adnanfoisal-magazineforge.hf.space/static/samples/food_classic_cover.jpg",
+    "thumbnailUrl": "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?q=80&w=600&auto=format&fit=crop",
     "texTemplate": "cover_template_a",
     "samplePdfUrl": "https://adnanfoisal-magazineforge.hf.space/static/samples/food_classic.pdf"
   },
@@ -13,7 +13,7 @@
     "name": "Modern Gastronomy",
     "category": "Food",
     "description": "Bold, punchy sans-serif with vibrant color blocking.",
-    "thumbnailUrl": "https://adnanfoisal-magazineforge.hf.space/static/samples/food_modern_cover.jpg",
+    "thumbnailUrl": "https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=600&auto=format&fit=crop",
     "texTemplate": "cover_template_b",
     "samplePdfUrl": "https://adnanfoisal-magazineforge.hf.space/static/samples/food_modern.pdf"
   },
@@ -22,7 +22,7 @@
     "name": "Rustic Kitchen",
     "category": "Food",
     "description": "Warm, earthy tones with organic layout structures.",
-    "thumbnailUrl": "https://adnanfoisal-magazineforge.hf.space/static/samples/food_rustic_cover.jpg",
+    "thumbnailUrl": "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?q=80&w=600&auto=format&fit=crop",
     "texTemplate": "cover_template_c",
     "samplePdfUrl": "https://adnanfoisal-magazineforge.hf.space/static/samples/food_rustic.pdf"
   },
@@ -31,7 +31,7 @@
     "name": "Expansive Horizon",
     "category": "Travel",
     "description": "Full-bleed landscape imagery with minimal condensed text.",
-    "thumbnailUrl": "https://adnanfoisal-magazineforge.hf.space/static/samples/travel_landscape_cover.jpg",
+    "thumbnailUrl": "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?q=80&w=600&auto=format&fit=crop",
     "texTemplate": "cover_template_a",
     "samplePdfUrl": "https://adnanfoisal-magazineforge.hf.space/static/samples/travel_landscape.pdf"
   },
@@ -40,7 +40,7 @@
     "name": "The Voyager",
     "category": "Travel",
     "description": "Diary-style callouts with overlapping photo frames.",
-    "thumbnailUrl": "https://adnanfoisal-magazineforge.hf.space/static/samples/travel_journal_cover.jpg",
+    "thumbnailUrl": "https://images.unsplash.com/photo-1501504905252-473c47e087f8?q=80&w=600&auto=format&fit=crop",
     "texTemplate": "cover_template_b",
     "samplePdfUrl": "https://adnanfoisal-magazineforge.hf.space/static/samples/travel_journal.pdf"
   },
@@ -49,7 +49,7 @@
     "name": "City Guide",
     "category": "Travel",
     "description": "Structured, information-dense grid with bold accents.",
-    "thumbnailUrl": "https://adnanfoisal-magazineforge.hf.space/static/samples/travel_guide_cover.jpg",
+    "thumbnailUrl": "https://images.unsplash.com/photo-1499856871958-5b9627545d1a?q=80&w=600&auto=format&fit=crop",
     "texTemplate": "cover_template_c",
     "samplePdfUrl": "https://adnanfoisal-magazineforge.hf.space/static/samples/travel_guide.pdf"
   },
@@ -58,7 +58,7 @@
     "name": "Cyber Edge",
     "category": "Tech",
     "description": "High-contrast dark mode with electric monospace accents.",
-    "thumbnailUrl": "https://adnanfoisal-magazineforge.hf.space/static/samples/tech_cyber_cover.jpg",
+    "thumbnailUrl": "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?q=80&w=600&auto=format&fit=crop",
     "texTemplate": "cover_template_a",
     "samplePdfUrl": "https://adnanfoisal-magazineforge.hf.space/static/samples/tech_cyber.pdf"
   },
@@ -67,7 +67,7 @@
     "name": "Clean Tech",
     "category": "Tech",
     "description": "Stark white background with precise geometric sans-serifs.",
-    "thumbnailUrl": "https://adnanfoisal-magazineforge.hf.space/static/samples/tech_minimal_cover.jpg",
+    "thumbnailUrl": "https://images.unsplash.com/photo-1498050108023-c5249f4df085?q=80&w=600&auto=format&fit=crop",
     "texTemplate": "cover_template_b",
     "samplePdfUrl": "https://adnanfoisal-magazineforge.hf.space/static/samples/tech_minimal.pdf"
   },
@@ -76,7 +76,7 @@
     "name": "The Spec Sheet",
     "category": "Tech",
     "description": "Grid-locked data layout with glowing highlight lines.",
-    "thumbnailUrl": "https://adnanfoisal-magazineforge.hf.space/static/samples/tech_spec_cover.jpg",
+    "thumbnailUrl": "https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=600&auto=format&fit=crop",
     "texTemplate": "cover_template_c",
     "samplePdfUrl": "https://adnanfoisal-magazineforge.hf.space/static/samples/tech_spec.pdf"
   },
@@ -85,7 +85,7 @@
     "name": "Editorial Chic",
     "category": "Lifestyle",
     "description": "Ultra-thin typography with immense negative space.",
-    "thumbnailUrl": "https://adnanfoisal-magazineforge.hf.space/static/samples/lifestyle_vogue_cover.jpg",
+    "thumbnailUrl": "https://images.unsplash.com/photo-1445205170230-053b83016050?q=80&w=600&auto=format&fit=crop",
     "texTemplate": "cover_template_a",
     "samplePdfUrl": "https://adnanfoisal-magazineforge.hf.space/static/samples/lifestyle_vogue.pdf"
   },
@@ -94,7 +94,7 @@
     "name": "Indie Culture",
     "category": "Lifestyle",
     "description": "Pastel tones with playful, unconventional text placement.",
-    "thumbnailUrl": "https://adnanfoisal-magazineforge.hf.space/static/samples/lifestyle_indie_cover.jpg",
+    "thumbnailUrl": "https://images.unsplash.com/photo-1512418490979-92798cec1380?q=80&w=600&auto=format&fit=crop",
     "texTemplate": "cover_template_b",
     "samplePdfUrl": "https://adnanfoisal-magazineforge.hf.space/static/samples/lifestyle_indie.pdf"
   },
@@ -103,7 +103,7 @@
     "name": "Mind & Body",
     "category": "Lifestyle",
     "description": "Earthy nudes and beige with soft serif typography.",
-    "thumbnailUrl": "https://adnanfoisal-magazineforge.hf.space/static/samples/lifestyle_wellness_cover.jpg",
+    "thumbnailUrl": "https://images.unsplash.com/photo-1506126613408-eca07ce68773?q=80&w=600&auto=format&fit=crop",
     "texTemplate": "cover_template_c",
     "samplePdfUrl": "https://adnanfoisal-magazineforge.hf.space/static/samples/lifestyle_wellness.pdf"
   },
@@ -112,7 +112,7 @@
     "name": "Deep Space",
     "category": "Science",
     "description": "Navy backgrounds with vibrant data callouts.",
-    "thumbnailUrl": "https://adnanfoisal-magazineforge.hf.space/static/samples/science_cosmos_cover.jpg",
+    "thumbnailUrl": "https://images.unsplash.com/photo-1462331940025-496dfbfc7564?q=80&w=600&auto=format&fit=crop",
     "texTemplate": "cover_template_a",
     "samplePdfUrl": "https://adnanfoisal-magazineforge.hf.space/static/samples/science_cosmos.pdf"
   },
@@ -121,7 +121,7 @@
     "name": "Macro World",
     "category": "Science",
     "description": "Forest green accents overlaid on highly detailed imagery.",
-    "thumbnailUrl": "https://adnanfoisal-magazineforge.hf.space/static/samples/science_nature_cover.jpg",
+    "thumbnailUrl": "https://images.unsplash.com/photo-1423666639041-f56000c27a9a?q=80&w=600&auto=format&fit=crop",
     "texTemplate": "cover_template_b",
     "samplePdfUrl": "https://adnanfoisal-magazineforge.hf.space/static/samples/science_nature.pdf"
   },
@@ -130,7 +130,7 @@
     "name": "The Academic",
     "category": "Science",
     "description": "Structured, multi-column classic journal style.",
-    "thumbnailUrl": "https://adnanfoisal-magazineforge.hf.space/static/samples/science_journal_cover.jpg",
+    "thumbnailUrl": "https://images.unsplash.com/photo-1532094349884-543bc11b234d?q=80&w=600&auto=format&fit=crop",
     "texTemplate": "cover_template_c",
     "samplePdfUrl": "https://adnanfoisal-magazineforge.hf.space/static/samples/science_journal.pdf"
   },
@@ -139,7 +139,7 @@
     "name": "Boardroom",
     "category": "Custom",
     "description": "Clean, predictable, balanced business style.",
-    "thumbnailUrl": "https://adnanfoisal-magazineforge.hf.space/static/samples/custom_corporate_cover.jpg",
+    "thumbnailUrl": "https://images.unsplash.com/photo-1497215728101-856f4ea42174?q=80&w=600&auto=format&fit=crop",
     "texTemplate": "cover_template_a",
     "samplePdfUrl": "https://adnanfoisal-magazineforge.hf.space/static/samples/custom_corporate.pdf"
   },
@@ -148,7 +148,7 @@
     "name": "The Statement",
     "category": "Custom",
     "description": "Massive typography with primary brand colors.",
-    "thumbnailUrl": "https://adnanfoisal-magazineforge.hf.space/static/samples/custom_bold_cover.jpg",
+    "thumbnailUrl": "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=600&auto=format&fit=crop",
     "texTemplate": "cover_template_b",
     "samplePdfUrl": "https://adnanfoisal-magazineforge.hf.space/static/samples/custom_bold.pdf"
   },
@@ -157,7 +157,7 @@
     "name": "Blank Canvas",
     "category": "Custom",
     "description": "Minimalist framework ready for any content.",
-    "thumbnailUrl": "https://adnanfoisal-magazineforge.hf.space/static/samples/custom_blank_cover.jpg",
+    "thumbnailUrl": "https://images.unsplash.com/photo-1513542789411-b6a5d4f31634?q=80&w=600&auto=format&fit=crop",
     "texTemplate": "cover_template_c",
     "samplePdfUrl": "https://adnanfoisal-magazineforge.hf.space/static/samples/custom_blank.pdf"
   }

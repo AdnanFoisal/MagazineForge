@@ -9,11 +9,71 @@ data class MagazineSchema(
     var masthead: MastheadSchema?,
     @SerializedName("toc")
     var toc: List<TocItemSchema>,
-    @SerializedName("articles")
-    var articles: List<ArticleSchema>,
+    @SerializedName("pages")
+    var pages: List<PageSchema>,
     @SerializedName("back_cover")
     var backCover: BackCoverSchema?
 )
+
+sealed class PageSchema {
+    abstract val type: String
+}
+
+data class ArticleSchema(
+    @SerializedName("type") override val type: String = "article",
+    @SerializedName("headline") var headline: String,
+    @SerializedName("subheadline") var subheadline: String?,
+    @SerializedName("byline") var byline: String,
+    @SerializedName("body_copy") var bodyCopy: String,
+    @SerializedName("first_letter") var firstLetter: String = "T",
+    @SerializedName("first_word_rest") var firstWordRest: String = "he",
+    @SerializedName("pull_quotes") var pullQuotes: List<PullQuoteSchema>,
+    @SerializedName("images") var images: List<ArticleImageSchema>,
+    @SerializedName("sidebar") var sidebar: SidebarSchema?,
+    @SerializedName("layout") var layout: String
+) : PageSchema()
+
+data class AdSchema(
+    @SerializedName("type") override val type: String = "ad",
+    @SerializedName("headline") var headline: String,
+    @SerializedName("subtext") var subtext: String,
+    @SerializedName("fake_company_name") var fakeCompanyName: String,
+    @SerializedName("image_url") var imageUrl: String
+) : PageSchema()
+
+data class DataPointSchema(
+    @SerializedName("label") var label: String,
+    @SerializedName("value") var value: Float
+)
+
+data class ChartSchema(
+    @SerializedName("type") override val type: String = "chart",
+    @SerializedName("headline") var headline: String,
+    @SerializedName("chart_type") var chartType: String,
+    @SerializedName("x_label") var xLabel: String,
+    @SerializedName("y_label") var yLabel: String,
+    @SerializedName("data_points") var dataPoints: List<DataPointSchema>
+) : PageSchema()
+
+data class PhotoEssaySchema(
+    @SerializedName("type") override val type: String = "photo_essay",
+    @SerializedName("headline") var headline: String,
+    @SerializedName("images") var images: List<ArticleImageSchema>,
+    @SerializedName("closing_text") var closingText: String
+) : PageSchema()
+
+data class QnaItemSchema(
+    @SerializedName("question") var question: String,
+    @SerializedName("answer") var answer: String
+)
+
+data class QnASchema(
+    @SerializedName("type") override val type: String = "qna",
+    @SerializedName("headline") var headline: String,
+    @SerializedName("interviewer") var interviewer: String,
+    @SerializedName("interviewee") var interviewee: String,
+    @SerializedName("qna_items") var qnaItems: List<QnaItemSchema>
+) : PageSchema()
 
 data class CoverSchema(
     @SerializedName("main_title")
@@ -27,7 +87,7 @@ data class CoverSchema(
     @SerializedName("color_theme")
     var colorTheme: String? = "white",
     @SerializedName("cover_pattern")
-    var coverPattern: String, // clean_title_dominant | callout_heavy | typographic_led
+    var coverPattern: String,
     @SerializedName("callouts")
     var callouts: List<String>,
     @SerializedName("image_url")
@@ -52,29 +112,6 @@ data class TocItemSchema(
     var teaser: String
 )
 
-data class ArticleSchema(
-    @SerializedName("headline")
-    var headline: String,
-    @SerializedName("subheadline")
-    var subheadline: String?,
-    @SerializedName("byline")
-    var byline: String,
-    @SerializedName("body_copy")
-    var bodyCopy: String,
-    @SerializedName("first_letter")
-    var firstLetter: String = "T",
-    @SerializedName("first_word_rest")
-    var firstWordRest: String = "he",
-    @SerializedName("pull_quotes")
-    var pullQuotes: List<PullQuoteSchema>,
-    @SerializedName("images")
-    var images: List<ArticleImageSchema>,
-    @SerializedName("sidebar")
-    var sidebar: SidebarSchema?,
-    @SerializedName("layout")
-    var layout: String // two_column | three_column | photo_essay
-)
-
 data class PullQuoteSchema(
     @SerializedName("quote_text")
     var quoteText: String,
@@ -88,7 +125,7 @@ data class ArticleImageSchema(
     @SerializedName("caption")
     var caption: String,
     @SerializedName("placement")
-    var placement: String // full_bleed | half_page | inset
+    var placement: String
 )
 
 data class SidebarSchema(
@@ -100,7 +137,7 @@ data class SidebarSchema(
 
 data class BackCoverSchema(
     @SerializedName("style")
-    var style: String, // closing_image | next_issue_teaser
+    var style: String,
     @SerializedName("tagline")
     var tagline: String,
     @SerializedName("image_url")

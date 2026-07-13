@@ -3,6 +3,8 @@ package com.magazineforge.app.ui
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -34,6 +36,7 @@ data class MagazinePdfItem(
     val coverFile: File?
 )
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun MyMagazinesScreen(
     onBack: () -> Unit,

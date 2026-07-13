@@ -160,7 +160,8 @@ class MainActivity : ComponentActivity() {
 
                     Scaffold(
                         bottomBar = {
-                            if (currentScreen != "onboarding" && selectedPdfForViewer == null && compileState !is CompileState.Success && compileState !is CompileState.Error) {
+                            val bottomTabRoutes = listOf("home", "library", "latex_notebook", "templates", "settings")
+                            if (currentScreen in bottomTabRoutes && selectedPdfForViewer == null && compileState !is CompileState.Success && compileState !is CompileState.Error) {
                                 NavigationBar(
                                     containerColor = LocalThemeTokens.current.surface,
                                     contentColor = LocalThemeTokens.current.textSecondary

@@ -163,7 +163,10 @@ fun MyMagazinesScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .aspectRatio(0.85f)
-                            .clickable { onMagazineSelected(item.file) },
+                            .combinedClickable(
+                                onClick = { onMagazineSelected(item.file) },
+                                onLongClick = { itemToDelete = item }
+                            ),
                         shape = RoundedCornerShape(12.dp),
                         border = BorderStroke(1.dp, borderCol),
                         colors = CardDefaults.cardColors(containerColor = darkSurface)

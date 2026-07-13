@@ -7,9 +7,8 @@
     </style>
     
     <style name="Theme.App.Starting" parent="Theme.SplashScreen">
-        <!-- Set the splash screen background, animate the icon, and set the post-splash theme. -->
-        <item name="windowSplashScreenBackground">#000000</item>
-        <item name="windowSplashScreenAnimatedIcon">@mipmap/ic_launcher</item>
+        <item name="windowSplashScreenBackground">#0F0F10</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/transparent</item>
         <item name="postSplashScreenTheme">@style/Theme.MagazineForge</item>
     </style>
 </resources>

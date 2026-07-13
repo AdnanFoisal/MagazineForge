@@ -74,6 +74,7 @@ class MainActivity : ComponentActivity() {
     private lateinit var viewModel: EditorViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        installSplashScreen()
         super.onCreate(savedInstanceState)
         
         // Configure Coil globally to use our custom OkHttpClient (which injects HF_TOKEN)

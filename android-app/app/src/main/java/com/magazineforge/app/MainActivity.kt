@@ -74,7 +74,6 @@ class MainActivity : ComponentActivity() {
     private lateinit var viewModel: EditorViewModel
 
     override fun onCreate(savedInstanceState: Bundle?) {
-        installSplashScreen()
         super.onCreate(savedInstanceState)
         
         // Configure Coil globally to use our custom OkHttpClient (which injects HF_TOKEN)
@@ -248,7 +247,7 @@ class MainActivity : ComponentActivity() {
                                         
                                         LaunchedEffect(currentScreen) {
                                             val idx = bottomTabRoutes.indexOf(currentScreen)
-                                            if (idx != -1 && pagerState.currentPage != idx) {
+                                            if (idx != -1 && pagerState.currentPage != idx && !pagerState.isScrollInProgress) {
                                                 pagerState.animateScrollToPage(idx)
                                             }
                                         }

@@ -195,11 +195,11 @@ fun TemplateMasonryCard(template: TemplateModel, onClick: () -> Unit, onPreview:
             Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = template.name,
-                style = LuxeTypography.titleMedium.copy(color = tokens.textPrimary, fontWeight = FontWeight.Bold)
+                style = LuxeTypography.titleMedium.copy(color = Color.White, fontWeight = FontWeight.Bold)
             )
             Text(
                 text = "@${template.id.replace("_", "")}",
-                style = LuxeTypography.labelSmall.copy(color = tokens.textPrimary.copy(alpha = 0.7f), letterSpacing = 1.sp)
+                style = LuxeTypography.labelSmall.copy(color = Color.White.copy(alpha = 0.8f), letterSpacing = 1.sp)
             )
             }
             IconButton(

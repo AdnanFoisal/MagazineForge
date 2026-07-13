@@ -10,6 +10,7 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -39,9 +40,11 @@ fun MyMagazinesScreen(
     onMagazineSelected: (File) -> Unit
 ) {
     val context = LocalContext.current
+    var refreshTrigger by remember { mutableStateOf(0) }
+    var itemToDelete by remember { mutableStateOf<MagazinePdfItem?>(null) }
     
     // Retrieve magazines from context.filesDir/magazines
-    val magazines = remember {
+    val magazines = remember(refreshTrigger) {
         val dir = File(context.filesDir, "magazines")
         val list = mutableListOf<MagazinePdfItem>()
         if (dir.exists() && dir.isDirectory) {
@@ -172,10 +175,10 @@ fun MyMagazinesScreen(
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .weight(1f)
-                                    .background(obsidian, RoundedCornerShape(8.dp))
-                                    .padding(8.dp),
+                                    .background(obsidian, RoundedCornerShape(8.dp)),
                                 contentAlignment = Alignment.Center
                             ) {
+                                Box(modifier = Modifier.fillMaxSize().padding(8.dp), contentAlignment = Alignment.Center) {
                                 if (item.coverFile != null) {
                                     coil.compose.AsyncImage(
                                         model = coil.request.ImageRequest.Builder(LocalContext.current)
@@ -226,5 +229,33 @@ fun MyMagazinesScreen(
                 }
             }
         }
+
+        if (itemToDelete != null) {
+            AlertDialog(
+                onDismissRequest = { itemToDelete = null },
+                title = { Text("Delete Magazine") },
+                text = { Text("Are you sure you want to delete '${itemToDelete?.name}'? This cannot be undone.") },
+                confirmButton = {
+                    TextButton(onClick = {
+                        itemToDelete?.file?.delete()
+                        itemToDelete?.coverFile?.delete()
+                        itemToDelete = null
+                        refreshTrigger++
+                    }) {
+                        Text("Delete", color = MaterialTheme.colorScheme.error)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { itemToDelete = null }) {
+                        Text("Cancel")
+                    }
+                },
+                containerColor = darkSurface,
+                titleContentColor = ivory,
+                textContentColor = mutedGray
+            )
+        }
+
     }
+}
 }

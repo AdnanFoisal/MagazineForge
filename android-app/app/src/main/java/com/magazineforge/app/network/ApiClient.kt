@@ -48,7 +48,7 @@ object ApiClient {
 
     val okHttpClient = OkHttpClient.Builder()
         .connectTimeout(60, java.util.concurrent.TimeUnit.SECONDS)
-        .readTimeout(300, java.util.concurrent.TimeUnit.SECONDS)
+        .readTimeout(600, java.util.concurrent.TimeUnit.SECONDS)
         .writeTimeout(60, java.util.concurrent.TimeUnit.SECONDS)
         .addInterceptor { chain: Interceptor.Chain ->
             val request = chain.request().newBuilder()
@@ -70,5 +70,18 @@ object ApiClient {
             .addConverterFactory(GsonConverterFactory.create(gson))
             .build()
             .create(ApiService::class.java)
+    }
+
+    suspend fun ensureSpaceAwake() {
+        // Ping health endpoint up to 3 times to wake up the space
+        for (i in 1..3) {
+            try {
+                val response = retrofitService.checkHealth()
+                if (response.isSuccessful) return
+            } catch (e: Exception) {
+                // Ignore and retry
+            }
+            kotlinx.coroutines.delay(2000)
+        }
     }
 }

@@ -179,6 +179,7 @@ class EditorViewModel : ViewModel() {
         
         viewModelScope.launch {
             try {
+                ApiClient.ensureSpaceAwake()
                 val request = GenerateBriefRequest(prompt = prompt, referenceImages = referenceImages, articleCount = articleCount)
                 val response = ApiClient.retrofitService.generateBrief(litellmUrl, litellmKey, request)
                 
@@ -198,6 +199,8 @@ class EditorViewModel : ViewModel() {
                         _briefState.value = BriefState.Error("Error $code: $errorStr")
                     }
                 }
+            } catch (e: java.net.SocketTimeoutException) {
+                _briefState.value = BriefState.Error("Request timed out. The server might be warming up or busy.")
             } catch (e: Exception) {
                 _briefState.value = BriefState.Error(e.message ?: "Brief generation failed unexpectedly")
             }
@@ -213,6 +216,7 @@ class EditorViewModel : ViewModel() {
         
         viewModelScope.launch {
             try {
+                ApiClient.ensureSpaceAwake()
                 val prompt = "A beautiful lifestyle and design magazine showcasing the template's features"
                 val request = GenerateBriefRequest(prompt = prompt, referenceImages = emptyList(), articleCount = 9)
                 val response = ApiClient.retrofitService.generateBrief(litellmUrl, litellmKey, request)
@@ -252,6 +256,8 @@ class EditorViewModel : ViewModel() {
                 } else {
                     _generationRunState.value = GenerationRunState.Error("Failed to generate brief: ${response.code()}")
                 }
+            } catch (e: java.net.SocketTimeoutException) {
+                _generationRunState.value = GenerationRunState.Error("Request timed out. The server might be warming up.")
             } catch (e: Exception) {
                 _generationRunState.value = GenerationRunState.Error(e.message ?: "Run creation failed")
             }
@@ -320,6 +326,7 @@ class EditorViewModel : ViewModel() {
         
         viewModelScope.launch {
             try {
+                ApiClient.ensureSpaceAwake()
                 val safeConfig = config ?: SectionComposerConfig()
                 val request = GenerateSchemaRequest(
                     topic = magazineTopic, 
@@ -361,6 +368,8 @@ class EditorViewModel : ViewModel() {
                         _schemaState.value = SchemaState.Error("Error $code: $errorStr")
                     }
                 }
+            } catch (e: java.net.SocketTimeoutException) {
+                _schemaState.value = SchemaState.Error("Request timed out. The backend is busy generating the schema.")
             } catch (e: Exception) {
                 _schemaState.value = SchemaState.Error(e.message ?: "Generation failed unexpectedly")
             }
@@ -402,6 +411,7 @@ class EditorViewModel : ViewModel() {
         
         viewModelScope.launch {
             try {
+                ApiClient.ensureSpaceAwake()
                 val request = GenerateLatexRequest(schema = schema, templateVariant = currentVariant)
                 val response = ApiClient.retrofitService.generateLatex(currentLiteLLMUrl, currentLiteLLMKey, request)
                 
@@ -426,6 +436,8 @@ class EditorViewModel : ViewModel() {
                         _latexState.value = LatexState.Error("Error: $code - $errorBody")
                     }
                 }
+            } catch (e: java.net.SocketTimeoutException) {
+                _latexState.value = LatexState.Error("Request timed out during LaTeX generation.")
             } catch (e: Exception) {
                 _latexState.value = LatexState.Error(e.message ?: "Generation failed unexpectedly")
             }
@@ -461,6 +473,7 @@ class EditorViewModel : ViewModel() {
         
         viewModelScope.launch {
             try {
+                ApiClient.ensureSpaceAwake()
                 val request = CompileRawRequest(latexCode = latexCode)
                 val response = ApiClient.retrofitService.compileRaw(request)
                 if (response.isSuccessful) {
@@ -473,6 +486,8 @@ class EditorViewModel : ViewModel() {
                 } else {
                     _compileState.value = CompileState.Error("Compile Error: ${response.code()}")
                 }
+            } catch (e: java.net.SocketTimeoutException) {
+                _compileState.value = CompileState.Error("Compilation request timed out.")
             } catch (e: Exception) {
                 _compileState.value = CompileState.Error(e.message ?: "Unknown network error")
             }

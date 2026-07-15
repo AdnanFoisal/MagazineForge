@@ -131,6 +131,7 @@ class MainActivity : ComponentActivity() {
                     val schemaState by viewModel.schemaState.collectAsState()
                     val latexState by viewModel.latexState.collectAsState()
                     val compileState by viewModel.compileState.collectAsState()
+                    val runState by viewModel.generationRunState.collectAsState()
                     var showExitDialog by remember { mutableStateOf(false) }
                     var showProgressCard by remember { mutableStateOf(false) }
                     var errorMessage by remember { mutableStateOf<String?>(null) }
@@ -150,7 +151,7 @@ class MainActivity : ComponentActivity() {
                     }
 
                     LaunchedEffect(latexState) {
-                        if (latexState is LatexState.Success && !viewModel.isFullAiMode) {
+                        if (latexState is LatexState.Success) {
                             showProgressCard = false
                             currentScreen = "latex_notebook"
                         } else if (latexState is LatexState.Loading) {
@@ -401,6 +402,7 @@ class MainActivity : ComponentActivity() {
                                                     templateName = selectedTemplateName,
                                                     initialPrompt = initialEditorPrompt,
                                                     isCompileLoading = schemaState is SchemaState.Loading || latexState is LatexState.Loading || compileState is CompileState.Loading,
+                                                    runState = runState,
                                                     briefState = briefState,
                                                     schemaState = schemaState,
                                                     latexState = latexState,
@@ -409,31 +411,22 @@ class MainActivity : ComponentActivity() {
                                                     onGenerateBrief = { prompt, referenceImages, articleCount ->
                                                         viewModel.generateBrief(litellmUrl, litellmKey, prompt, referenceImages, articleCount)
                                                     },
-                                                    onCompileFromBrief = { prompt, config, brief ->
+                                                    onCompileFromBrief = { prompt, config, brief, coverImgUrl, refImages ->
                                                         viewModel.isFullAiMode = true
-                                                        val firstHalf = if (brief.articles.size > 7) brief.articles.take(7) else brief.articles
-                                                        val secondHalf = if (brief.articles.size > 7) brief.articles.drop(7) else emptyList()
-                                                        
-                                                        viewModel.pendingArticles = secondHalf
                                                         viewModel.pendingTopic = prompt
                                                         viewModel.pendingTone = brief.tone
                                                         viewModel.pendingStyleDna = brief.styleDna
                                                         viewModel.pendingConfig = config
                                                         
-                                                        val pagesStr = firstHalf.map { 
-                                                            "Page Type: ARTICLE\nTopic: ${it.topic}\n[CUSTOMIZATION CONFIGURATION]:\n- Writing Tone: ${brief.tone}\n- Layout Density: ${brief.styleDna}"
-                                                        }.joinToString("\n\n")
-
-                                                        val finalTopic = "Theme: $prompt\n\nRequired Structure:\n$pagesStr\n\n(CRITICAL INSTRUCTION: Generate EXACTLY ${firstHalf.size} articles corresponding to the topics above.)\n(GLOBAL STYLE RULE: Dynamically adapt your writing tone, voice, and pacing to perfectly match the specific magazine topic and target audience. Do not rely on a single default persona; if the topic is serious, be authoritative and measured; if it's pop-culture, be punchy and witty. Regardless of the dynamically chosen tone, you MUST strictly avoid generic AI transitions like 'In conclusion', 'Let's dive into', or 'A testament to'. Emphasize 'show, don't tell'. Focus heavily on rich formatting, using bullet points, bold text, blockquotes, and visual breaks frequently to make the reading experience dynamic.)"
-                                                        
-                                                        viewModel.generateSchema(
-                                                            litellmUrl = litellmUrl, 
+                                                        viewModel.startFullAiGeneration(
+                                                            litellmUrl = litellmUrl,
                                                             litellmKey = litellmKey,
-                                                            magazineTopic = finalTopic, 
-                                                            templateName = selectedTemplate,
+                                                            prompt = prompt,
+                                                            templateVariant = selectedTemplate,
                                                             config = config,
-                                                            tone = brief.tone,
-                                                            layoutDensity = brief.styleDna
+                                                            brief = brief,
+                                                            coverImageUrl = coverImgUrl,
+                                                            referenceImageUrls = refImages
                                                         )
                                                     },
                                                     onCompileClicked = { magazineTopic, pages, config, coverImgUrl ->

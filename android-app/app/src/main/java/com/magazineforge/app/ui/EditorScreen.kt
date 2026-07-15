@@ -59,12 +59,13 @@ fun EditorScreen(
     templateName: String = "",
     initialPrompt: String = "",
     isCompileLoading: Boolean,
+    runState: com.magazineforge.app.ui.GenerationRunState? = null,
     briefState: BriefState,
     schemaState: SchemaState,
     latexState: LatexState,
     compileState: CompileState,
     onGenerateBrief: (String, List<String>, Int) -> Unit,
-    onCompileFromBrief: (String, SectionComposerConfig, GenerateBriefResponse) -> Unit,
+    onCompileFromBrief: (String, SectionComposerConfig, GenerateBriefResponse, String, List<String>) -> Unit,
     onCompileClicked: (magazineTopic: String, pages: List<PageBlock>, config: SectionComposerConfig, coverImgUrl: String) -> Unit,
     onCancel: () -> Unit,
     onBack: () -> Unit,
@@ -224,7 +225,7 @@ fun EditorScreen(
 
                         Button(
                             onClick = {
-                                onCompileFromBrief(prompt, composerConfig, brief)
+                                onCompileFromBrief(prompt, composerConfig, brief, coverImageUrl, referenceImages.toList())
                             },
                             modifier = Modifier.fillMaxWidth().padding(bottom = 32.dp).height(56.dp),
                             shape = RoundedCornerShape(8.dp),
@@ -640,7 +641,7 @@ fun EditorScreen(
                                             strokeWidth = 2.dp
                                         )
                                         Spacer(modifier = Modifier.width(12.dp))
-                                        Text(text = loadingText, color = tokens.editorText)
+                                        Text(text = loadingText, color = tokens.textPrimary)
                                     }
                                     Spacer(modifier = Modifier.height(8.dp))
                                     LinearProgressIndicator(
@@ -672,7 +673,7 @@ fun EditorScreen(
                                 Spacer(modifier = Modifier.width(12.dp))
                                 Text(
                                     text = "Content Curation (LLM API)",
-                                    color = tokens.editorText
+                                    color = tokens.textPrimary
                                 )
                             }
                         }
@@ -761,9 +762,14 @@ fun EditorScreen(
                                 else -> Icon(Icons.Default.Check, contentDescription = "Pending", tint = tokens.editorTextSecondary.copy(alpha = 0.5f), modifier = Modifier.size(20.dp))
                             }
                             Spacer(modifier = Modifier.width(12.dp))
+                            val curationText = if (runState is com.magazineforge.app.ui.GenerationRunState.Active && runState.status.totalSections > 0) {
+                                "Content Curation (${runState.status.completedSections}/${runState.status.totalSections})"
+                            } else {
+                                "Content Curation (LLM API)"
+                            }
                             Text(
-                                text = "Content Curation (SchemaState)",
-                                color = if (step1Status == "error") Color.Red else if (step1Status == "loading") tokens.editorText else tokens.editorTextSecondary
+                                text = curationText,
+                                color = if (step1Status == "error") Color.Red else if (step1Status == "loading") tokens.textPrimary else tokens.textPrimary
                             )
                         }
 
@@ -785,8 +791,8 @@ fun EditorScreen(
                             }
                             Spacer(modifier = Modifier.width(12.dp))
                             Text(
-                                text = "LaTeX Code Synthesis (LatexState)",
-                                color = if (step2Status == "error") Color.Red else if (step2Status == "loading") tokens.editorText else tokens.editorTextSecondary
+                                text = "LaTeX Code Synthesis",
+                                color = if (step2Status == "error") Color.Red else if (step2Status == "loading") tokens.textPrimary else tokens.textPrimary
                             )
                         }
 
@@ -808,8 +814,8 @@ fun EditorScreen(
                             }
                             Spacer(modifier = Modifier.width(12.dp))
                             Text(
-                                text = "Cloud Compile & Download (CompileState)",
-                                color = if (step3Status == "error") Color.Red else if (step3Status == "loading") tokens.editorText else tokens.editorTextSecondary
+                                text = "Cloud Compile & Download",
+                                color = if (step3Status == "error") Color.Red else if (step3Status == "loading") tokens.textPrimary else tokens.textPrimary
                             )
                         }
 
@@ -846,7 +852,7 @@ fun EditorScreen(
                                 if (selectedTabIndex == 0) {
                                     val brief = (briefState as? BriefState.Success)?.brief
                                     if (brief != null) {
-                                        onCompileFromBrief(prompt, composerConfig, brief)
+                                        onCompileFromBrief(prompt, composerConfig, brief, coverImageUrl, referenceImages.toList())
                                     }
                                 } else {
                                     onCompileClicked(prompt, pages, composerConfig, coverImageUrl)

@@ -18,7 +18,8 @@ data class GenerationRunRequest(
     @SerializedName("enableBackCover") val enableBackCover: Boolean = true,
     @SerializedName("enableTocTeasers") val enableTocTeasers: Boolean = true,
     @SerializedName("enableByline") val enableByline: Boolean = true,
-    @SerializedName("coverImageUrl") val coverImageUrl: String = ""
+    @SerializedName("coverImageUrl") val coverImageUrl: String = "",
+    @SerializedName("articleImageUrls") val articleImageUrls: List<String> = emptyList()
 )
 
 data class GenerationRunCreateResponse(

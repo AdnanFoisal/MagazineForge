@@ -263,6 +263,105 @@ class EditorViewModel : ViewModel() {
             }
         }
     }
+
+    /**
+     * Full AI Mode entry point: brief → generation run → poll → latex → compile.
+     * Uses the Generation Runs pipeline so no single HTTP request can timeout.
+     * User-uploaded images are passed via articleImageUrls for positional injection.
+     */
+    fun startFullAiGeneration(
+        litellmUrl: String,
+        litellmKey: String,
+        prompt: String,
+        templateVariant: String,
+        config: SectionComposerConfig,
+        brief: com.magazineforge.app.models.GenerateBriefResponse,
+        coverImageUrl: String = "",
+        referenceImageUrls: List<String> = emptyList()
+    ) {
+        isFullAiMode = true
+        currentLiteLLMUrl = litellmUrl
+        currentLiteLLMKey = litellmKey
+        currentVariant = normalizeTemplateVariant(templateVariant)
+        pendingConfig = config
+        currentRawLatex = ""
+        currentEditedLatex = null
+
+        _generationRunState.value = GenerationRunState.Loading("Starting generation run...")
+        _schemaState.value = SchemaState.Loading
+
+        viewModelScope.launch {
+            try {
+                ApiClient.ensureSpaceAwake()
+
+                // Build article image URLs: skip the first image (it's for cover),
+                // assign remaining positionally to articles
+                val articleImgUrls = if (coverImageUrl.isNotEmpty() && referenceImageUrls.isNotEmpty()) {
+                    // All reference images go to articles (cover already has its own)
+                    referenceImageUrls
+                } else if (referenceImageUrls.size > 1) {
+                    // First reference image becomes cover (handled below),
+                    // rest go to articles
+                    referenceImageUrls.drop(1)
+                } else {
+                    emptyList()
+                }
+
+                val effectiveCoverUrl = coverImageUrl.ifEmpty {
+                    referenceImageUrls.firstOrNull() ?: ""
+                }
+
+                val runRequest = GenerationRunRequest(
+                    prompt = prompt,
+                    templateVariant = currentVariant,
+                    articles = brief.articles,
+                    coverTitle = brief.titles.firstOrNull() ?: "",
+                    category = brief.category,
+                    tone = brief.tone,
+                    layoutDensity = brief.styleDna,
+                    enableMasthead = config.enableMasthead,
+                    mastheadAngle = config.mastheadAngle,
+                    enableSidebar = config.enableSidebar,
+                    sidebarTopic = config.sidebarTopic,
+                    enablePullQuote = config.enablePullQuote,
+                    enableBackCover = config.enableBackCover,
+                    enableTocTeasers = config.enableTocTeasers,
+                    enableByline = config.enableByline,
+                    coverImageUrl = effectiveCoverUrl,
+                    articleImageUrls = articleImgUrls
+                )
+
+                val runResponse = ApiClient.retrofitService.createGenerationRun(
+                    litellmUrl, litellmKey, runRequest, generateAll = true
+                )
+
+                if (runResponse.isSuccessful && runResponse.body() != null) {
+                    val runId = runResponse.body()!!.runId
+                    currentRunId = runId
+                    // Use continueGenerationRun to generate ALL articles
+                    val continueResp = ApiClient.retrofitService.continueGenerationRun(
+                        runId, litellmUrl, litellmKey
+                    )
+                    startPollingRun(runId)
+                } else {
+                    _generationRunState.value = GenerationRunState.Error(
+                        "Failed to create run: ${runResponse.code()}"
+                    )
+                    _schemaState.value = SchemaState.Error("Failed to create run: ${runResponse.code()}")
+                }
+            } catch (e: java.net.SocketTimeoutException) {
+                _generationRunState.value = GenerationRunState.Error(
+                    "Request timed out. The server might be warming up."
+                )
+                _schemaState.value = SchemaState.Error("Request timed out. The server might be warming up.")
+            } catch (e: Exception) {
+                _generationRunState.value = GenerationRunState.Error(
+                    e.message ?: "Generation run creation failed"
+                )
+                _schemaState.value = SchemaState.Error(e.message ?: "Generation run creation failed")
+            }
+        }
+    }
     
     private fun startPollingRun(runId: String) {
         pollingJob?.cancel()
@@ -285,15 +384,30 @@ class EditorViewModel : ViewModel() {
                             _schemaState.value = SchemaState.Success(status.schema)
                         }
                         
-                        if (status.status == "COMPLETED" || status.status == "CANCELLED" || status.status == "PAUSED") {
+                        if (status.status == "COMPLETED") {
+                            // In Full AI mode, auto-chain to latex + compile
+                            if (isFullAiMode) {
+                                generateLatex(status.schema)
+                            }
+                            break
+                        }
+                        if (status.status == "CANCELLED" || status.status == "PAUSED") {
                             break
                         }
                     } else {
-                        _generationRunState.value = GenerationRunState.Error("Failed to poll run: ${response.code()}")
+                        val err = "Failed to poll run: ${response.code()}"
+                        _generationRunState.value = GenerationRunState.Error(err)
+                        if (_schemaState.value is SchemaState.Loading) {
+                            _schemaState.value = SchemaState.Error(err)
+                        }
                         break
                     }
                 } catch (e: Exception) {
-                    _generationRunState.value = GenerationRunState.Error("Polling error: ${e.message}")
+                    val err = "Polling error: ${e.message}"
+                    _generationRunState.value = GenerationRunState.Error(err)
+                    if (_schemaState.value is SchemaState.Loading) {
+                        _schemaState.value = SchemaState.Error(err)
+                    }
                     break
                 }
                 delay(2000)

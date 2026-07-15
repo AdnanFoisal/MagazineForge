@@ -8,6 +8,7 @@ import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.http.POST
 import retrofit2.http.Path
+import retrofit2.http.Query
 import retrofit2.http.Multipart
 import retrofit2.http.Part
 import okhttp3.MultipartBody
@@ -59,7 +60,8 @@ interface ApiService {
     suspend fun createGenerationRun(
         @Header("X-LiteLLM-Url") litellmUrl: String,
         @Header("X-LiteLLM-Key") litellmKey: String,
-        @Body request: com.magazineforge.app.models.GenerationRunRequest
+        @Body request: com.magazineforge.app.models.GenerationRunRequest,
+        @Query("generate_all") generateAll: Boolean = false
     ): Response<com.magazineforge.app.models.GenerationRunCreateResponse>
 
     @GET("generation-runs/{run_id}")

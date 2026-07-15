@@ -283,6 +283,7 @@ class EditorViewModel : ViewModel() {
         currentLiteLLMUrl = litellmUrl
         currentLiteLLMKey = litellmKey
         currentVariant = normalizeTemplateVariant(templateVariant)
+        currentTopic = prompt
         pendingConfig = config
         currentRawLatex = ""
         currentEditedLatex = null
@@ -338,10 +339,11 @@ class EditorViewModel : ViewModel() {
                 if (runResponse.isSuccessful && runResponse.body() != null) {
                     val runId = runResponse.body()!!.runId
                     currentRunId = runId
-                    // Use continueGenerationRun to generate ALL articles
-                    val continueResp = ApiClient.retrofitService.continueGenerationRun(
-                        runId, litellmUrl, litellmKey
-                    )
+                    // The first call (createGenerationRun with generateAll=true)
+                    // already starts the backend worker with generate_all=True.
+                    // Calling /continue here is redundant — it either no-ops
+                    // (worker still running) or races with a fast-completing
+                    // worker and returns 409. Just start polling.
                     startPollingRun(runId)
                 } else {
                     _generationRunState.value = GenerationRunState.Error(
@@ -366,7 +368,20 @@ class EditorViewModel : ViewModel() {
     private fun startPollingRun(runId: String) {
         pollingJob?.cancel()
         pollingJob = viewModelScope.launch {
+            // Cap polling at 12 minutes. If the worker hasn't finished by then
+            // (e.g. backend silently died, HF Space restarted and killed the
+            // asyncio task), surface an error instead of polling 0/N forever.
+            val startedAt = System.currentTimeMillis()
+            val pollingTimeoutMs = 12L * 60 * 1000
             while (true) {
+                if (System.currentTimeMillis() - startedAt > pollingTimeoutMs) {
+                    val err = "Generation timed out — the backend did not finish the run within 12 minutes. The Hugging Face Space may have restarted; please try again."
+                    _generationRunState.value = GenerationRunState.Error(err)
+                    if (_schemaState.value is SchemaState.Loading) {
+                        _schemaState.value = SchemaState.Error(err)
+                    }
+                    break
+                }
                 try {
                     val response = ApiClient.retrofitService.getGenerationRun(runId)
                     if (response.isSuccessful && response.body() != null) {
@@ -380,18 +395,38 @@ class EditorViewModel : ViewModel() {
                         
                         _generationRunState.value = GenerationRunState.Active(status)
                         
-                        if (status.status == "READY_FOR_CONTENT" || status.status == "COMPLETED" || status.status == "PAUSED") {
+                        // Only COMPLETED advances to SchemaState.Success and auto-chains.
+                        // PAUSED means a section permanently failed — surface as Error
+                        // so the user sees what went wrong instead of the dialog silently
+                        // disappearing (which previously left the user with no PDF and
+                        // no clue why).
+                        if (status.status == "READY_FOR_CONTENT" || status.status == "COMPLETED") {
                             _schemaState.value = SchemaState.Success(status.schema)
                         }
                         
                         if (status.status == "COMPLETED") {
-                            // In Full AI mode, auto-chain to latex + compile
+                            // In Full AI mode, auto-chain latex → compile so the user
+                            // actually gets a PDF without manually tapping Compile.
                             if (isFullAiMode) {
                                 generateLatex(status.schema)
                             }
                             break
                         }
-                        if (status.status == "CANCELLED" || status.status == "PAUSED") {
+                        if (status.status == "PAUSED" || status.status == "INTERRUPTED") {
+                            val reason = status.error?.takeIf { it.isNotBlank() }
+                                ?: "One or more articles failed to generate (run ${status.status.lowercase()})."
+                            _generationRunState.value = GenerationRunState.Error(reason)
+                            if (_schemaState.value is SchemaState.Loading) {
+                                _schemaState.value = SchemaState.Error(reason)
+                            }
+                            break
+                        }
+                        if (status.status == "CANCELLED") {
+                            val reason = "Generation was cancelled."
+                            _generationRunState.value = GenerationRunState.Error(reason)
+                            if (_schemaState.value is SchemaState.Loading) {
+                                _schemaState.value = SchemaState.Error(reason)
+                            }
                             break
                         }
                     } else {
@@ -538,6 +573,16 @@ class EditorViewModel : ViewModel() {
                             ?.putString("saved_latex", latex)
                             ?.apply()
                         _latexState.value = LatexState.Success(latex)
+                        // In Full AI mode, the user tapped "Generate Full Issue"
+                        // expecting a finished PDF — not just LaTeX code. Auto-chain
+                        // into compileRaw so the pipeline actually produces a PDF
+                        // without requiring a manual tap on the Compile button.
+                        if (isFullAiMode) {
+                            val ctx = appContext
+                            if (ctx != null) {
+                                compileRaw(ctx, latex, topic = currentTopic, variant = currentVariant)
+                            }
+                        }
                     } else {
                         _latexState.value = LatexState.Error("Received empty latex")
                     }

@@ -65,7 +65,7 @@ fun EditorScreen(
     latexState: LatexState,
     compileState: CompileState,
     onGenerateBrief: (String, List<String>, Int) -> Unit,
-    onCompileFromBrief: (String, SectionComposerConfig, GenerateBriefResponse, String, List<String>) -> Unit,
+    onCompileFromBrief: (String, SectionComposerConfig, GenerateBriefResponse, String, String, List<String>) -> Unit,
     onCompileClicked: (magazineTopic: String, pages: List<PageBlock>, config: SectionComposerConfig, coverImgUrl: String) -> Unit,
     onCancel: () -> Unit,
     onBack: () -> Unit,
@@ -73,6 +73,7 @@ fun EditorScreen(
 ) {
     var prompt by remember { mutableStateOf(initialPrompt) }
     var coverImageUrl by remember { mutableStateOf("") }
+    var backCoverImageUrl by remember { mutableStateOf("") }
     var coverTopic by remember { mutableStateOf("") }
     var selectedTabIndex by remember { mutableIntStateOf(initialTabIndex) }
     val pages = remember { mutableStateListOf<PageBlock>() }
@@ -223,9 +224,164 @@ fun EditorScreen(
                             Text("Customize Sections ▾", style = LuxeTypography.titleSmall)
                         }
 
+                        // ── Cover Image upload slot ──────────────────────────────
+                        // In Full AI mode the user can upload a custom cover image
+                        // and a custom back cover image. Each slot accepts at most
+                        // one image. If left empty, the backend fetches a random
+                        // relevant image from Pixabay/Pexels based on the topic.
+                        val phase2Context = androidx.compose.ui.platform.LocalContext.current
+                        var isUploadingCover by remember { mutableStateOf(false) }
+                        var isUploadingBackCover by remember { mutableStateOf(false) }
+
+                        val coverLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+                            androidx.activity.result.contract.ActivityResultContracts.GetContent()
+                        ) { uri ->
+                            if (uri != null) {
+                                isUploadingCover = true
+                                coroutineScope.launch {
+                                    try {
+                                        val inputStream = phase2Context.contentResolver.openInputStream(uri)
+                                        val tempFile = java.io.File(phase2Context.cacheDir, "cover_${System.currentTimeMillis()}.jpg")
+                                        val outputStream = java.io.FileOutputStream(tempFile)
+                                        inputStream?.copyTo(outputStream)
+                                        inputStream?.close()
+                                        outputStream.close()
+                                        val requestFile = okhttp3.RequestBody.create("image/*".toMediaTypeOrNull(), tempFile)
+                                        val body = okhttp3.MultipartBody.Part.createFormData("file", tempFile.name, requestFile)
+                                        val response = com.magazineforge.app.network.ApiClient.retrofitService.uploadAsset(body)
+                                        if (response.isSuccessful) {
+                                            val path = response.body()?.url ?: ""
+                                            if (path.isNotEmpty()) {
+                                                coverImageUrl = "${com.magazineforge.app.network.ApiClient.BASE_URL}$path"
+                                                snackbarHostState.showSnackbar("Cover image uploaded")
+                                            }
+                                        } else {
+                                            snackbarHostState.showSnackbar("Cover upload failed (${response.code()})")
+                                        }
+                                    } catch (e: Exception) {
+                                        snackbarHostState.showSnackbar("Cover upload failed: ${e.message}")
+                                    } finally {
+                                        isUploadingCover = false
+                                    }
+                                }
+                            }
+                        }
+
+                        val backCoverLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
+                            androidx.activity.result.contract.ActivityResultContracts.GetContent()
+                        ) { uri ->
+                            if (uri != null) {
+                                isUploadingBackCover = true
+                                coroutineScope.launch {
+                                    try {
+                                        val inputStream = phase2Context.contentResolver.openInputStream(uri)
+                                        val tempFile = java.io.File(phase2Context.cacheDir, "backcover_${System.currentTimeMillis()}.jpg")
+                                        val outputStream = java.io.FileOutputStream(tempFile)
+                                        inputStream?.copyTo(outputStream)
+                                        inputStream?.close()
+                                        outputStream.close()
+                                        val requestFile = okhttp3.RequestBody.create("image/*".toMediaTypeOrNull(), tempFile)
+                                        val body = okhttp3.MultipartBody.Part.createFormData("file", tempFile.name, requestFile)
+                                        val response = com.magazineforge.app.network.ApiClient.retrofitService.uploadAsset(body)
+                                        if (response.isSuccessful) {
+                                            val path = response.body()?.url ?: ""
+                                            if (path.isNotEmpty()) {
+                                                backCoverImageUrl = "${com.magazineforge.app.network.ApiClient.BASE_URL}$path"
+                                                snackbarHostState.showSnackbar("Back cover image uploaded")
+                                            }
+                                        } else {
+                                            snackbarHostState.showSnackbar("Back cover upload failed (${response.code()})")
+                                        }
+                                    } catch (e: Exception) {
+                                        snackbarHostState.showSnackbar("Back cover upload failed: ${e.message}")
+                                    } finally {
+                                        isUploadingBackCover = false
+                                    }
+                                }
+                            }
+                        }
+
+                        // Cover Image slot
+                        Card(
+                            colors = CardDefaults.cardColors(containerColor = darkSurface),
+                            border = BorderStroke(1.dp, borderCol),
+                            modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text("Cover Image", style = LuxeTypography.titleSmall.copy(color = gold))
+                                    Text(
+                                        if (coverImageUrl.isNotEmpty()) "Custom image selected" else "Auto — random relevant image",
+                                        style = LuxeTypography.bodySmall,
+                                        color = if (coverImageUrl.isNotEmpty()) ivory else tokens.editorTextSecondary
+                                    )
+                                }
+                                if (coverImageUrl.isNotEmpty()) {
+                                    IconButton(onClick = { coverImageUrl = "" }, modifier = Modifier.size(24.dp)) {
+                                        Icon(Icons.Default.Delete, contentDescription = "Remove cover", tint = Color.Red.copy(alpha = 0.7f))
+                                    }
+                                }
+                                OutlinedButton(
+                                    onClick = { coverLauncher.launch("image/*") },
+                                    enabled = !isUploadingCover,
+                                    colors = ButtonDefaults.outlinedButtonColors(contentColor = gold),
+                                    border = BorderStroke(1.dp, gold)
+                                ) {
+                                    if (isUploadingCover) {
+                                        CircularProgressIndicator(modifier = Modifier.size(14.dp), color = gold)
+                                    } else {
+                                        Text(if (coverImageUrl.isNotEmpty()) "Change" else "Upload", style = LuxeTypography.labelMedium)
+                                    }
+                                }
+                            }
+                        }
+
+                        // Back Cover Image slot
+                        Card(
+                            colors = CardDefaults.cardColors(containerColor = darkSurface),
+                            border = BorderStroke(1.dp, borderCol),
+                            modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth().padding(16.dp),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text("Back Cover Image", style = LuxeTypography.titleSmall.copy(color = gold))
+                                    Text(
+                                        if (backCoverImageUrl.isNotEmpty()) "Custom image selected" else "Auto — random relevant image",
+                                        style = LuxeTypography.bodySmall,
+                                        color = if (backCoverImageUrl.isNotEmpty()) ivory else tokens.editorTextSecondary
+                                    )
+                                }
+                                if (backCoverImageUrl.isNotEmpty()) {
+                                    IconButton(onClick = { backCoverImageUrl = "" }, modifier = Modifier.size(24.dp)) {
+                                        Icon(Icons.Default.Delete, contentDescription = "Remove back cover", tint = Color.Red.copy(alpha = 0.7f))
+                                    }
+                                }
+                                OutlinedButton(
+                                    onClick = { backCoverLauncher.launch("image/*") },
+                                    enabled = !isUploadingBackCover,
+                                    colors = ButtonDefaults.outlinedButtonColors(contentColor = gold),
+                                    border = BorderStroke(1.dp, gold)
+                                ) {
+                                    if (isUploadingBackCover) {
+                                        CircularProgressIndicator(modifier = Modifier.size(14.dp), color = gold)
+                                    } else {
+                                        Text(if (backCoverImageUrl.isNotEmpty()) "Change" else "Upload", style = LuxeTypography.labelMedium)
+                                    }
+                                }
+                            }
+                        }
+
                         Button(
                             onClick = {
-                                onCompileFromBrief(prompt, composerConfig, brief, coverImageUrl, referenceImages.toList())
+                                onCompileFromBrief(prompt, composerConfig, brief, coverImageUrl, backCoverImageUrl, referenceImages.toList())
                             },
                             modifier = Modifier.fillMaxWidth().padding(bottom = 32.dp).height(56.dp),
                             shape = RoundedCornerShape(8.dp),
@@ -852,7 +1008,7 @@ fun EditorScreen(
                                 if (selectedTabIndex == 0) {
                                     val brief = (briefState as? BriefState.Success)?.brief
                                     if (brief != null) {
-                                        onCompileFromBrief(prompt, composerConfig, brief, coverImageUrl, referenceImages.toList())
+                                        onCompileFromBrief(prompt, composerConfig, brief, coverImageUrl, backCoverImageUrl, referenceImages.toList())
                                     }
                                 } else {
                                     onCompileClicked(prompt, pages, composerConfig, coverImageUrl)

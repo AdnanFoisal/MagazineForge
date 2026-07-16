@@ -277,6 +277,7 @@ class EditorViewModel : ViewModel() {
         config: SectionComposerConfig,
         brief: com.magazineforge.app.models.GenerateBriefResponse,
         coverImageUrl: String = "",
+        backCoverImageUrl: String = "",
         referenceImageUrls: List<String> = emptyList()
     ) {
         isFullAiMode = true
@@ -295,22 +296,10 @@ class EditorViewModel : ViewModel() {
             try {
                 ApiClient.ensureSpaceAwake()
 
-                // Build article image URLs: skip the first image (it's for cover),
-                // assign remaining positionally to articles
-                val articleImgUrls = if (coverImageUrl.isNotEmpty() && referenceImageUrls.isNotEmpty()) {
-                    // All reference images go to articles (cover already has its own)
-                    referenceImageUrls
-                } else if (referenceImageUrls.size > 1) {
-                    // First reference image becomes cover (handled below),
-                    // rest go to articles
-                    referenceImageUrls.drop(1)
-                } else {
-                    emptyList()
-                }
-
-                val effectiveCoverUrl = coverImageUrl.ifEmpty {
-                    referenceImageUrls.firstOrNull() ?: ""
-                }
+                // In Full AI mode, the user uploads at most two images:
+                // a cover image and a back cover image. Any reference images
+                // uploaded in Phase 1 are assigned positionally to articles.
+                val articleImgUrls = referenceImageUrls
 
                 val runRequest = GenerationRunRequest(
                     prompt = prompt,
@@ -328,7 +317,8 @@ class EditorViewModel : ViewModel() {
                     enableBackCover = config.enableBackCover,
                     enableTocTeasers = config.enableTocTeasers,
                     enableByline = config.enableByline,
-                    coverImageUrl = effectiveCoverUrl,
+                    coverImageUrl = coverImageUrl,
+                    backCoverImageUrl = backCoverImageUrl,
                     articleImageUrls = articleImgUrls
                 )
 

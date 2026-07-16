@@ -411,7 +411,7 @@ class MainActivity : ComponentActivity() {
                                                     onGenerateBrief = { prompt, referenceImages, articleCount ->
                                                         viewModel.generateBrief(litellmUrl, litellmKey, prompt, referenceImages, articleCount)
                                                     },
-                                                    onCompileFromBrief = { prompt, config, brief, coverImgUrl, refImages ->
+                                                    onCompileFromBrief = { prompt, config, brief, coverImgUrl, backCoverImgUrl, refImages ->
                                                         viewModel.isFullAiMode = true
                                                         viewModel.pendingTopic = prompt
                                                         viewModel.pendingTone = brief.tone
@@ -426,6 +426,7 @@ class MainActivity : ComponentActivity() {
                                                             config = config,
                                                             brief = brief,
                                                             coverImageUrl = coverImgUrl,
+                                                            backCoverImageUrl = backCoverImgUrl,
                                                             referenceImageUrls = refImages
                                                         )
                                                     },

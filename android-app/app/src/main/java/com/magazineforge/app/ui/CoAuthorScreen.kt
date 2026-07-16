@@ -53,27 +53,9 @@ fun CoAuthorScreen(
         if (uri != null) {
             coroutineScope.launch {
                 try {
-                    val inputStream = context.contentResolver.openInputStream(uri)
-                    val tempFile = java.io.File(context.cacheDir, "upload_${System.currentTimeMillis()}.jpg")
-                    val outputStream = java.io.FileOutputStream(tempFile)
-                    inputStream?.copyTo(outputStream)
-                    inputStream?.close()
-                    outputStream.close()
-                    
-                    val requestFile = tempFile.asRequestBody("image/*".toMediaTypeOrNull())
-                    val body = okhttp3.MultipartBody.Part.createFormData("file", tempFile.name, requestFile)
-                    
-                    val response = com.magazineforge.app.network.ApiClient.retrofitService.uploadAsset(body)
-                    if (response.isSuccessful) {
-                        // Prepend BASE_URL so the schema + Coil preview use a
-                        // consistent absolute URL (matches EditorScreen). The
-                        // backend resolves /assets/ paths from local disk at
-                        // compile time, so the uploaded image lands in the PDF.
-                        val downloadUrl = response.body()?.url
-                            ?.let { "${com.magazineforge.app.network.ApiClient.BASE_URL}$it" } ?: ""
-                        if (downloadUrl.isNotEmpty()) {
-                            onImageUploadedCallback?.invoke(downloadUrl)
-                        }
+                    val downloadUrl = com.magazineforge.app.network.ApiClient.uploadImageWithRetry(context, uri)
+                    if (downloadUrl.isNotEmpty()) {
+                        onImageUploadedCallback?.invoke(downloadUrl)
                     }
                 } catch (e: Exception) {
                     e.printStackTrace()

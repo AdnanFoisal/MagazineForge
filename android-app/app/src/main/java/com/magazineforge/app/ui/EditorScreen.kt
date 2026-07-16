@@ -264,31 +264,13 @@ fun EditorScreen(
                         androidx.activity.result.contract.ActivityResultContracts.GetContent()
                     ) { uri ->
                         if (uri != null) {
-                            // Show local preview INSTANTLY
                             coverPreviewUri = uri
                             isCoverUploading = true
                             coroutineScope.launch {
                                 try {
-                                    // Compress: 10-20MB phone photo → ~200KB JPEG
-                                    val compressed = com.magazineforge.app.network.ApiClient.compressImage(context, uri)
-                                    val requestFile = compressed.asRequestBody("image/jpeg".toMediaTypeOrNull())
-                                    val body = okhttp3.MultipartBody.Part.createFormData("file", compressed.name, requestFile)
-                                    // Use fast upload client (15s connect, 30s read)
-                                    val response = com.magazineforge.app.network.ApiClient.uploadService.uploadAsset(body)
-                                    if (response.isSuccessful) {
-                                        val path = response.body()?.url ?: ""
-                                        if (path.isNotEmpty()) {
-                                            coverImageUrl = "${com.magazineforge.app.network.ApiClient.BASE_URL}$path"
-                                            snackbarHostState.showSnackbar("Cover image uploaded")
-                                        } else {
-                                            coverPreviewUri = null
-                                            snackbarHostState.showSnackbar("Upload failed: empty path returned")
-                                        }
-                                    } else {
-                                        coverPreviewUri = null
-                                        snackbarHostState.showSnackbar("Upload failed (${response.code()})")
-                                    }
-                                    compressed.delete()
+                                    val url = com.magazineforge.app.network.ApiClient.uploadImageWithRetry(context, uri)
+                                    coverImageUrl = url
+                                    snackbarHostState.showSnackbar("Cover image uploaded")
                                 } catch (e: Exception) {
                                     coverPreviewUri = null
                                     snackbarHostState.showSnackbar("Upload failed: ${e.localizedMessage ?: e.message}")
@@ -303,31 +285,13 @@ fun EditorScreen(
                         androidx.activity.result.contract.ActivityResultContracts.GetContent()
                     ) { uri ->
                         if (uri != null) {
-                            // Show local preview INSTANTLY
                             backCoverPreviewUri = uri
                             isBackCoverUploading = true
                             coroutineScope.launch {
                                 try {
-                                    // Compress: 10-20MB phone photo → ~200KB JPEG
-                                    val compressed = com.magazineforge.app.network.ApiClient.compressImage(context, uri)
-                                    val requestFile = compressed.asRequestBody("image/jpeg".toMediaTypeOrNull())
-                                    val body = okhttp3.MultipartBody.Part.createFormData("file", compressed.name, requestFile)
-                                    // Use fast upload client (15s connect, 30s read)
-                                    val response = com.magazineforge.app.network.ApiClient.uploadService.uploadAsset(body)
-                                    if (response.isSuccessful) {
-                                        val path = response.body()?.url ?: ""
-                                        if (path.isNotEmpty()) {
-                                            backCoverImageUrl = "${com.magazineforge.app.network.ApiClient.BASE_URL}$path"
-                                            snackbarHostState.showSnackbar("Back cover image uploaded")
-                                        } else {
-                                            backCoverPreviewUri = null
-                                            snackbarHostState.showSnackbar("Upload failed: empty path returned")
-                                        }
-                                    } else {
-                                        backCoverPreviewUri = null
-                                        snackbarHostState.showSnackbar("Upload failed (${response.code()})")
-                                    }
-                                    compressed.delete()
+                                    val url = com.magazineforge.app.network.ApiClient.uploadImageWithRetry(context, uri)
+                                    backCoverImageUrl = url
+                                    snackbarHostState.showSnackbar("Back cover image uploaded")
                                 } catch (e: Exception) {
                                     backCoverPreviewUri = null
                                     snackbarHostState.showSnackbar("Upload failed: ${e.localizedMessage ?: e.message}")
@@ -553,26 +517,9 @@ fun EditorScreen(
                             isUploadingCover = true
                             coroutineScope.launch {
                                 try {
-                                    // Compress: 10-20MB phone photo → ~200KB JPEG
-                                    val compressed = com.magazineforge.app.network.ApiClient.compressImage(context, uri)
-                                    val requestFile = compressed.asRequestBody("image/jpeg".toMediaTypeOrNull())
-                                    val body = okhttp3.MultipartBody.Part.createFormData("file", compressed.name, requestFile)
-                                    
-                                    // Use fast upload client (15s connect, 30s read)
-                                    val response = com.magazineforge.app.network.ApiClient.uploadService.uploadAsset(body)
-                                    if (response.isSuccessful) {
-                                        val path = response.body()?.url ?: ""
-                                        if (path.isNotEmpty()) {
-                                            coverImageUrl = "${com.magazineforge.app.network.ApiClient.BASE_URL}$path"
-                                            snackbarHostState.showSnackbar("Cover image uploaded successfully")
-                                        } else {
-                                            snackbarHostState.showSnackbar("Upload failed: empty path returned")
-                                        }
-                                    } else {
-                                        val errBody = response.errorBody()?.string()
-                                        snackbarHostState.showSnackbar("Upload failed (${response.code()}): ${errBody ?: "no body"}")
-                                    }
-                                    compressed.delete()
+                                    val url = com.magazineforge.app.network.ApiClient.uploadImageWithRetry(context, uri)
+                                    coverImageUrl = url
+                                    snackbarHostState.showSnackbar("Cover image uploaded successfully")
                                 } catch (e: Exception) {
                                     e.printStackTrace()
                                     snackbarHostState.showSnackbar("Upload failed: ${e.localizedMessage ?: e.message}")
@@ -1053,27 +1000,9 @@ fun PageBlockCard(
                     isUploading = true
                     scope.launch {
                         try {
-                            // Compress: 10-20MB phone photo → ~200KB JPEG
-                            val compressed = com.magazineforge.app.network.ApiClient.compressImage(context, uri)
-                            val requestFile = compressed.asRequestBody("image/jpeg".toMediaTypeOrNull())
-                            val body = okhttp3.MultipartBody.Part.createFormData("file", compressed.name, requestFile)
-                            
-                            // Use fast upload client (15s connect, 30s read)
-                            val response = com.magazineforge.app.network.ApiClient.uploadService.uploadAsset(body)
-                            if (response.isSuccessful) {
-                                val path = response.body()?.url ?: ""
-                                if (path.isNotEmpty()) {
-                                    val fullUrl = "${com.magazineforge.app.network.ApiClient.BASE_URL}$path"
-                                    onUpdate(page.copy(imageUrl = fullUrl))
-                                    onShowSnackbar("Image uploaded successfully!")
-                                } else {
-                                    onShowSnackbar("Upload failed: Empty path returned.")
-                                }
-                            } else {
-                                val errBody = response.errorBody()?.string()
-                                onShowSnackbar("Upload failed (${response.code()}): ${errBody ?: "no body"}")
-                            }
-                            compressed.delete()
+                            val fullUrl = com.magazineforge.app.network.ApiClient.uploadImageWithRetry(context, uri)
+                            onUpdate(page.copy(imageUrl = fullUrl))
+                            onShowSnackbar("Image uploaded successfully!")
                         } catch (e: Exception) {
                             e.printStackTrace()
                             onShowSnackbar("Upload failed: ${e.localizedMessage ?: e.message}")

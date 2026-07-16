@@ -8,7 +8,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.EditNote
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -241,12 +241,7 @@ fun EntryTile(
                 lineHeight = 16.sp
             )
             Spacer(modifier = Modifier.height(8.dp))
-            Icon(
-                imageVector = Icons.Default.ArrowForward,
-                contentDescription = null,
-                tint = tokens.textPrimary,
-                modifier = Modifier.size(16.dp).align(Alignment.End)
-            )
+            Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "Start", tint = tokens.textPrimary, modifier = Modifier.size(16.dp).align(Alignment.End))
         }
     }
 }
@@ -292,7 +287,7 @@ fun RecentIssueCard(file: File, onClick: (String) -> Unit) {
         }
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = title.capitalize(),
+            text = title.replaceFirstChar { if (it.isLowerCase()) it.titlecase(java.util.Locale.getDefault()) else it.toString() },
             fontWeight = FontWeight.SemiBold,
             fontSize = 14.sp,
             color = tokens.textPrimary,

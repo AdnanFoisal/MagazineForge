@@ -12,7 +12,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Image
 import androidx.compose.material.icons.filled.Settings
@@ -31,6 +31,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.magazineforge.app.ui.theme.LuxeTypography
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
+import coil.compose.AsyncImage
+import coil.request.ImageRequest
 
 data class PageBlock(
     val id: String = java.util.UUID.randomUUID().toString(),
@@ -56,8 +60,6 @@ data class SectionComposerConfig(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun EditorScreen(
-    templateVariant: String,
-    templateName: String = "",
     initialPrompt: String = "",
     isCompileLoading: Boolean,
     runState: com.magazineforge.app.ui.GenerationRunState? = null,
@@ -143,7 +145,7 @@ fun EditorScreen(
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = "Back", tint = gold)
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = gold)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = obsidian)
@@ -243,10 +245,10 @@ fun EditorScreen(
                     }
                 } else {
                     // Phase 1: Initial Prompt
-                    var showPageDropdown by remember { mutableStateOf(false) }
                     
                     val context = androidx.compose.ui.platform.LocalContext.current
-                    var isUploading by remember { mutableStateOf(false) }
+                    var isCoverUploading by remember { mutableStateOf(false) }
+                    var isBackCoverUploading by remember { mutableStateOf(false) }
 
                     // ── Cover image uploader ─────────────────────────────────
                     // Each launcher uploads one image to /upload-asset and stores
@@ -254,42 +256,44 @@ fun EditorScreen(
                     // Uses asRequestBody() (the modern OkHttp extension) instead
                     // of the deprecated RequestBody.create(mediatype, file)
                     // which could hang on certain file types.
+                    // Local preview URIs — shown instantly before upload finishes
+                    var coverPreviewUri by remember { mutableStateOf<android.net.Uri?>(null) }
+                    var backCoverPreviewUri by remember { mutableStateOf<android.net.Uri?>(null) }
+
                     val coverLauncher = androidx.activity.compose.rememberLauncherForActivityResult(
                         androidx.activity.result.contract.ActivityResultContracts.GetContent()
                     ) { uri ->
                         if (uri != null) {
-                            isUploading = true
+                            // Show local preview INSTANTLY
+                            coverPreviewUri = uri
+                            isCoverUploading = true
                             coroutineScope.launch {
                                 try {
-                                    // Wake the HF Space first — if it's asleep the
-                                    // upload would hang until the 600s read timeout.
-                                    com.magazineforge.app.network.ApiClient.ensureSpaceAwake()
-                                    val inputStream = context.contentResolver.openInputStream(uri)
-                                        ?: throw Exception("Could not open image")
-                                    val tempFile = java.io.File(context.cacheDir, "cover_${System.currentTimeMillis()}.jpg")
-                                    tempFile.outputStream().use { out -> inputStream.copyTo(out) }
-                                    inputStream.close()
-                                    if (!tempFile.exists() || tempFile.length() == 0L) {
-                                        throw Exception("Image file is empty")
-                                    }
-                                    val requestFile = tempFile.asRequestBody("image/*".toMediaTypeOrNull())
-                                    val body = okhttp3.MultipartBody.Part.createFormData("file", tempFile.name, requestFile)
-                                    val response = com.magazineforge.app.network.ApiClient.retrofitService.uploadAsset(body)
+                                    // Compress: 10-20MB phone photo → ~200KB JPEG
+                                    val compressed = com.magazineforge.app.network.ApiClient.compressImage(context, uri)
+                                    val requestFile = compressed.asRequestBody("image/jpeg".toMediaTypeOrNull())
+                                    val body = okhttp3.MultipartBody.Part.createFormData("file", compressed.name, requestFile)
+                                    // Use fast upload client (15s connect, 30s read)
+                                    val response = com.magazineforge.app.network.ApiClient.uploadService.uploadAsset(body)
                                     if (response.isSuccessful) {
                                         val path = response.body()?.url ?: ""
                                         if (path.isNotEmpty()) {
                                             coverImageUrl = "${com.magazineforge.app.network.ApiClient.BASE_URL}$path"
                                             snackbarHostState.showSnackbar("Cover image uploaded")
                                         } else {
+                                            coverPreviewUri = null
                                             snackbarHostState.showSnackbar("Upload failed: empty path returned")
                                         }
                                     } else {
+                                        coverPreviewUri = null
                                         snackbarHostState.showSnackbar("Upload failed (${response.code()})")
                                     }
+                                    compressed.delete()
                                 } catch (e: Exception) {
+                                    coverPreviewUri = null
                                     snackbarHostState.showSnackbar("Upload failed: ${e.localizedMessage ?: e.message}")
                                 } finally {
-                                    isUploading = false
+                                    isCoverUploading = false
                                 }
                             }
                         }
@@ -299,36 +303,36 @@ fun EditorScreen(
                         androidx.activity.result.contract.ActivityResultContracts.GetContent()
                     ) { uri ->
                         if (uri != null) {
-                            isUploading = true
+                            // Show local preview INSTANTLY
+                            backCoverPreviewUri = uri
+                            isBackCoverUploading = true
                             coroutineScope.launch {
                                 try {
-                                    com.magazineforge.app.network.ApiClient.ensureSpaceAwake()
-                                    val inputStream = context.contentResolver.openInputStream(uri)
-                                        ?: throw Exception("Could not open image")
-                                    val tempFile = java.io.File(context.cacheDir, "backcover_${System.currentTimeMillis()}.jpg")
-                                    tempFile.outputStream().use { out -> inputStream.copyTo(out) }
-                                    inputStream.close()
-                                    if (!tempFile.exists() || tempFile.length() == 0L) {
-                                        throw Exception("Image file is empty")
-                                    }
-                                    val requestFile = tempFile.asRequestBody("image/*".toMediaTypeOrNull())
-                                    val body = okhttp3.MultipartBody.Part.createFormData("file", tempFile.name, requestFile)
-                                    val response = com.magazineforge.app.network.ApiClient.retrofitService.uploadAsset(body)
+                                    // Compress: 10-20MB phone photo → ~200KB JPEG
+                                    val compressed = com.magazineforge.app.network.ApiClient.compressImage(context, uri)
+                                    val requestFile = compressed.asRequestBody("image/jpeg".toMediaTypeOrNull())
+                                    val body = okhttp3.MultipartBody.Part.createFormData("file", compressed.name, requestFile)
+                                    // Use fast upload client (15s connect, 30s read)
+                                    val response = com.magazineforge.app.network.ApiClient.uploadService.uploadAsset(body)
                                     if (response.isSuccessful) {
                                         val path = response.body()?.url ?: ""
                                         if (path.isNotEmpty()) {
                                             backCoverImageUrl = "${com.magazineforge.app.network.ApiClient.BASE_URL}$path"
                                             snackbarHostState.showSnackbar("Back cover image uploaded")
                                         } else {
+                                            backCoverPreviewUri = null
                                             snackbarHostState.showSnackbar("Upload failed: empty path returned")
                                         }
                                     } else {
+                                        backCoverPreviewUri = null
                                         snackbarHostState.showSnackbar("Upload failed (${response.code()})")
                                     }
+                                    compressed.delete()
                                 } catch (e: Exception) {
+                                    backCoverPreviewUri = null
                                     snackbarHostState.showSnackbar("Upload failed: ${e.localizedMessage ?: e.message}")
                                 } finally {
-                                    isUploading = false
+                                    isBackCoverUploading = false
                                 }
                             }
                         }
@@ -404,27 +408,40 @@ fun EditorScreen(
                             ) {
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text("Cover Image", style = LuxeTypography.titleSmall.copy(color = gold))
-                                    Text(
-                                        if (coverImageUrl.isNotEmpty()) "Custom image selected" else "Auto — random relevant image",
-                                        style = LuxeTypography.bodySmall,
-                                        color = if (coverImageUrl.isNotEmpty()) ivory else tokens.editorTextSecondary
-                                    )
+                                    val coverThumb: Any? = if (coverImageUrl.isNotEmpty()) coverImageUrl else coverPreviewUri
+                                    if (coverThumb != null) {
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        AsyncImage(
+                                            model = coverThumb,
+                                            contentDescription = "Cover Image",
+                                            modifier = Modifier.size(48.dp).clip(RoundedCornerShape(4.dp)),
+                                            contentScale = ContentScale.Crop
+                                        )
+                                    } else {
+                                        Text(
+                                            "Auto — random relevant image",
+                                            style = LuxeTypography.bodySmall,
+                                            color = tokens.editorTextSecondary
+                                        )
+                                    }
                                 }
-                                if (coverImageUrl.isNotEmpty()) {
-                                    IconButton(onClick = { coverImageUrl = "" }, modifier = Modifier.size(24.dp)) {
+                                if (coverImageUrl.isNotEmpty() || coverPreviewUri != null) {
+                                    IconButton(onClick = { coverImageUrl = ""; coverPreviewUri = null }, modifier = Modifier.size(24.dp)) {
                                         Icon(Icons.Default.Delete, contentDescription = "Remove cover", tint = Color.Red.copy(alpha = 0.7f))
                                     }
                                 }
                                 OutlinedButton(
                                     onClick = { coverLauncher.launch("image/*") },
-                                    enabled = !isUploading,
+                                    enabled = !isCoverUploading,
                                     colors = ButtonDefaults.outlinedButtonColors(contentColor = gold),
                                     border = BorderStroke(1.dp, gold)
                                 ) {
-                                    if (isUploading) {
+                                    if (isCoverUploading) {
                                         CircularProgressIndicator(modifier = Modifier.size(14.dp), color = gold)
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text("Uploading…", style = LuxeTypography.labelMedium)
                                     } else {
-                                        Text(if (coverImageUrl.isNotEmpty()) "Change" else "Upload", style = LuxeTypography.labelMedium)
+                                        Text(if (coverImageUrl.isNotEmpty() || coverPreviewUri != null) "Change" else "Upload", style = LuxeTypography.labelMedium)
                                     }
                                 }
                             }
@@ -443,27 +460,40 @@ fun EditorScreen(
                             ) {
                                 Column(modifier = Modifier.weight(1f)) {
                                     Text("Back Cover Image", style = LuxeTypography.titleSmall.copy(color = gold))
-                                    Text(
-                                        if (backCoverImageUrl.isNotEmpty()) "Custom image selected" else "Auto — random relevant image",
-                                        style = LuxeTypography.bodySmall,
-                                        color = if (backCoverImageUrl.isNotEmpty()) ivory else tokens.editorTextSecondary
-                                    )
+                                    val backThumb: Any? = if (backCoverImageUrl.isNotEmpty()) backCoverImageUrl else backCoverPreviewUri
+                                    if (backThumb != null) {
+                                        Spacer(modifier = Modifier.height(8.dp))
+                                        AsyncImage(
+                                            model = backThumb,
+                                            contentDescription = "Back Cover Image",
+                                            modifier = Modifier.size(48.dp).clip(RoundedCornerShape(4.dp)),
+                                            contentScale = ContentScale.Crop
+                                        )
+                                    } else {
+                                        Text(
+                                            "Auto — random relevant image",
+                                            style = LuxeTypography.bodySmall,
+                                            color = tokens.editorTextSecondary
+                                        )
+                                    }
                                 }
-                                if (backCoverImageUrl.isNotEmpty()) {
-                                    IconButton(onClick = { backCoverImageUrl = "" }, modifier = Modifier.size(24.dp)) {
+                                if (backCoverImageUrl.isNotEmpty() || backCoverPreviewUri != null) {
+                                    IconButton(onClick = { backCoverImageUrl = ""; backCoverPreviewUri = null }, modifier = Modifier.size(24.dp)) {
                                         Icon(Icons.Default.Delete, contentDescription = "Remove back cover", tint = Color.Red.copy(alpha = 0.7f))
                                     }
                                 }
                                 OutlinedButton(
                                     onClick = { backCoverLauncher.launch("image/*") },
-                                    enabled = !isUploading,
+                                    enabled = !isBackCoverUploading,
                                     colors = ButtonDefaults.outlinedButtonColors(contentColor = gold),
                                     border = BorderStroke(1.dp, gold)
                                 ) {
-                                    if (isUploading) {
+                                    if (isBackCoverUploading) {
                                         CircularProgressIndicator(modifier = Modifier.size(14.dp), color = gold)
+                                        Spacer(modifier = Modifier.width(4.dp))
+                                        Text("Uploading…", style = LuxeTypography.labelMedium)
                                     } else {
-                                        Text(if (backCoverImageUrl.isNotEmpty()) "Change" else "Upload", style = LuxeTypography.labelMedium)
+                                        Text(if (backCoverImageUrl.isNotEmpty() || backCoverPreviewUri != null) "Change" else "Upload", style = LuxeTypography.labelMedium)
                                     }
                                 }
                             }
@@ -523,17 +553,13 @@ fun EditorScreen(
                             isUploadingCover = true
                             coroutineScope.launch {
                                 try {
-                                    val inputStream = context.contentResolver.openInputStream(uri)
-                                    val tempFile = java.io.File(context.cacheDir, "cover_upload_${System.currentTimeMillis()}.jpg")
-                                    val outputStream = java.io.FileOutputStream(tempFile)
-                                    inputStream?.copyTo(outputStream)
-                                    inputStream?.close()
-                                    outputStream.close()
+                                    // Compress: 10-20MB phone photo → ~200KB JPEG
+                                    val compressed = com.magazineforge.app.network.ApiClient.compressImage(context, uri)
+                                    val requestFile = compressed.asRequestBody("image/jpeg".toMediaTypeOrNull())
+                                    val body = okhttp3.MultipartBody.Part.createFormData("file", compressed.name, requestFile)
                                     
-                                    val requestFile = okhttp3.RequestBody.create("image/*".toMediaTypeOrNull(), tempFile)
-                                    val body = okhttp3.MultipartBody.Part.createFormData("file", tempFile.name, requestFile)
-                                    
-                                    val response = com.magazineforge.app.network.ApiClient.retrofitService.uploadAsset(body)
+                                    // Use fast upload client (15s connect, 30s read)
+                                    val response = com.magazineforge.app.network.ApiClient.uploadService.uploadAsset(body)
                                     if (response.isSuccessful) {
                                         val path = response.body()?.url ?: ""
                                         if (path.isNotEmpty()) {
@@ -546,6 +572,7 @@ fun EditorScreen(
                                         val errBody = response.errorBody()?.string()
                                         snackbarHostState.showSnackbar("Upload failed (${response.code()}): ${errBody ?: "no body"}")
                                     }
+                                    compressed.delete()
                                 } catch (e: Exception) {
                                     e.printStackTrace()
                                     snackbarHostState.showSnackbar("Upload failed: ${e.localizedMessage ?: e.message}")
@@ -1026,17 +1053,13 @@ fun PageBlockCard(
                     isUploading = true
                     scope.launch {
                         try {
-                            val inputStream = context.contentResolver.openInputStream(uri)
-                            val tempFile = java.io.File(context.cacheDir, "upload_${System.currentTimeMillis()}.jpg")
-                            val outputStream = java.io.FileOutputStream(tempFile)
-                            inputStream?.copyTo(outputStream)
-                            inputStream?.close()
-                            outputStream.close()
+                            // Compress: 10-20MB phone photo → ~200KB JPEG
+                            val compressed = com.magazineforge.app.network.ApiClient.compressImage(context, uri)
+                            val requestFile = compressed.asRequestBody("image/jpeg".toMediaTypeOrNull())
+                            val body = okhttp3.MultipartBody.Part.createFormData("file", compressed.name, requestFile)
                             
-                            val requestFile = okhttp3.RequestBody.create("image/*".toMediaTypeOrNull(), tempFile)
-                            val body = okhttp3.MultipartBody.Part.createFormData("file", tempFile.name, requestFile)
-                            
-                            val response = com.magazineforge.app.network.ApiClient.retrofitService.uploadAsset(body)
+                            // Use fast upload client (15s connect, 30s read)
+                            val response = com.magazineforge.app.network.ApiClient.uploadService.uploadAsset(body)
                             if (response.isSuccessful) {
                                 val path = response.body()?.url ?: ""
                                 if (path.isNotEmpty()) {
@@ -1050,6 +1073,7 @@ fun PageBlockCard(
                                 val errBody = response.errorBody()?.string()
                                 onShowSnackbar("Upload failed (${response.code()}): ${errBody ?: "no body"}")
                             }
+                            compressed.delete()
                         } catch (e: Exception) {
                             e.printStackTrace()
                             onShowSnackbar("Upload failed: ${e.localizedMessage ?: e.message}")

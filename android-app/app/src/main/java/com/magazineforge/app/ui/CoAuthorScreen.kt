@@ -25,6 +25,7 @@ import androidx.compose.ui.text.font.FontWeight
 import com.magazineforge.app.models.*
 import kotlinx.coroutines.launch
 import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.RequestBody.Companion.asRequestBody
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -36,7 +37,6 @@ fun CoAuthorScreen(
     onGenerateRemaining: () -> Unit = {},
     onRetrySection: (String) -> Unit = {},
     onGenerateLatex: (MagazineSchema) -> Unit,
-    onNext: () -> Unit,
     onBack: () -> Unit
 ) {
     val tokens = com.magazineforge.app.ui.theme.LocalThemeTokens.current
@@ -60,7 +60,7 @@ fun CoAuthorScreen(
                     inputStream?.close()
                     outputStream.close()
                     
-                    val requestFile = okhttp3.RequestBody.create("image/*".toMediaTypeOrNull(), tempFile)
+                    val requestFile = tempFile.asRequestBody("image/*".toMediaTypeOrNull())
                     val body = okhttp3.MultipartBody.Part.createFormData("file", tempFile.name, requestFile)
                     
                     val response = com.magazineforge.app.network.ApiClient.retrofitService.uploadAsset(body)
@@ -124,7 +124,6 @@ fun CoAuthorScreen(
                         if (isSchemaValid) {
                             val activeState = runState as? GenerationRunState.Active
                             val allSectionsCompleted = activeState?.status?.sections?.all { it.status == "COMPLETED" } ?: false
-                            val isRunCompleted = activeState == null || (activeState.status.status == "COMPLETED" && allSectionsCompleted)
                             val isRunPaused = activeState?.status?.status == "PAUSED"
                             val isRunGenerating = activeState?.status?.status == "GENERATING" || activeState?.status?.status == "PREPARING"
                             

@@ -398,8 +398,6 @@ class MainActivity : ComponentActivity() {
                                                     onMagazineSelected = { url -> selectedPdfForViewer = url }
                                                 )
                                                 "editor" -> EditorScreen(
-                                                    templateVariant = selectedTemplate,
-                                                    templateName = selectedTemplateName,
                                                     initialPrompt = initialEditorPrompt,
                                                     isCompileLoading = schemaState is SchemaState.Loading || latexState is LatexState.Loading || compileState is CompileState.Loading,
                                                     runState = runState,
@@ -463,7 +461,6 @@ class MainActivity : ComponentActivity() {
                                                             onGenerateRemaining = { viewModel.continueGenerationRun() },
                                                             onRetrySection = { sectionId -> viewModel.retryGenerationSection(sectionId) },
                                                             onGenerateLatex = { schema -> viewModel.generateLatex(schema) },
-                                                            onNext = { currentScreen = "latex_notebook" },
                                                             onBack = { viewModel.resetState(); currentScreen = "editor" }
                                                         )
                                                     } else {

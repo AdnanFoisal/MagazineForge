@@ -405,11 +405,17 @@ class EditorViewModel : ViewModel() {
                         }
                         
                         if (status.status == "COMPLETED") {
-                            // In Full AI mode, auto-chain latex → compile so the user
-                            // actually gets a PDF without manually tapping Compile.
-                            if (isFullAiMode) {
-                                generateLatex(status.schema)
-                            }
+                            // SchemaState.Success was set above, which triggers
+                            // the LaunchedEffect in MainActivity to navigate to
+                            // the CoAuthor screen. The user reviews/edits the
+                            // schema there, then taps "Generate LaTeX".
+                            //
+                            // We do NOT auto-chain to generateLatex here — that
+                            // would skip the CoAuthor screen entirely. The
+                            // auto-compile from LaTeX → PDF still happens inside
+                            // generateLatex() when isFullAiMode is true, so the
+                            // full pipeline is: schema (CoAuthor) → LaTeX → PDF,
+                            // with the user landing on the CoAuthor screen first.
                             break
                         }
                         if (status.status == "PAUSED" || status.status == "INTERRUPTED") {

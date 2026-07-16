@@ -23,7 +23,8 @@ interface ApiService {
     @Multipart
     @POST("upload-asset-fast")
     suspend fun uploadAssetFast(
-        @Part file: MultipartBody.Part
+        @Part file: MultipartBody.Part,
+        @Query("quality") quality: String = "standard"
     ): Response<com.magazineforge.app.models.UploadAssetResponse>
 
     @GET("health")

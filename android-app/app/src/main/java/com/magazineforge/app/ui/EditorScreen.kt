@@ -268,7 +268,7 @@ fun EditorScreen(
                             isCoverUploading = true
                             coroutineScope.launch {
                                 try {
-                                    val url = com.magazineforge.app.network.ApiClient.uploadImageWithRetry(context, uri)
+                                    val url = com.magazineforge.app.network.ApiClient.uploadImageWithRetry(context, uri, quality = "cover")
                                     coverImageUrl = url
                                     snackbarHostState.showSnackbar("Cover image uploaded")
                                 } catch (e: Exception) {
@@ -289,7 +289,7 @@ fun EditorScreen(
                             isBackCoverUploading = true
                             coroutineScope.launch {
                                 try {
-                                    val url = com.magazineforge.app.network.ApiClient.uploadImageWithRetry(context, uri)
+                                    val url = com.magazineforge.app.network.ApiClient.uploadImageWithRetry(context, uri, quality = "cover")
                                     backCoverImageUrl = url
                                     snackbarHostState.showSnackbar("Back cover image uploaded")
                                 } catch (e: Exception) {
@@ -517,7 +517,7 @@ fun EditorScreen(
                             isUploadingCover = true
                             coroutineScope.launch {
                                 try {
-                                    val url = com.magazineforge.app.network.ApiClient.uploadImageWithRetry(context, uri)
+                                    val url = com.magazineforge.app.network.ApiClient.uploadImageWithRetry(context, uri, quality = "cover")
                                     coverImageUrl = url
                                     snackbarHostState.showSnackbar("Cover image uploaded successfully")
                                 } catch (e: Exception) {

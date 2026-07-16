@@ -53,7 +53,7 @@ fun CoAuthorScreen(
         if (uri != null) {
             coroutineScope.launch {
                 try {
-                    val downloadUrl = com.magazineforge.app.network.ApiClient.uploadImageWithRetry(context, uri)
+                    val downloadUrl = com.magazineforge.app.network.ApiClient.uploadImageWithRetry(context, uri, quality = "cover")
                     if (downloadUrl.isNotEmpty()) {
                         onImageUploadedCallback?.invoke(downloadUrl)
                     }

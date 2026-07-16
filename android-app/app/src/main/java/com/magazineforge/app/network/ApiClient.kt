@@ -105,12 +105,14 @@ object ApiClient {
      * does all resize + compression with Pillow (100-300ms on the server CPU
      * vs 2-5s on a phone CPU).
      *
-     * This is ~5-10x faster than the old approach which decoded the bitmap
-     * on the phone, scaled it, re-encoded as JPEG, then uploaded.
+     * @param quality "cover" for cover/back cover images (2400px, 95% JPEG),
+     *                "standard" for article images (1200px, 85% JPEG, default),
+     *                "low" for thumbnails (800px, 75% JPEG)
      */
     suspend fun uploadImageWithRetry(
         context: android.content.Context,
         uri: android.net.Uri,
+        quality: String = "standard",
         onProgress: ((String) -> Unit)? = null
     ): String {
         // Step 1: Wake the HF Space.
@@ -134,7 +136,7 @@ object ApiClient {
                     // decode, no temp file, no memory spike.
                     val retryBody = object : okhttp3.RequestBody() {
                         override fun contentType(): okhttp3.MediaType? = mediaType
-                        override fun writeTo(sink: okhttp3.BufferedSink) {
+                        override fun writeTo(sink: okio.BufferedSink) {
                             retryStream.use { stream ->
                                 val buffer = ByteArray(64 * 1024)  // 64 KB chunks
                                 var bytesRead: Int
@@ -145,7 +147,7 @@ object ApiClient {
                         }
                     }
                     val body = okhttp3.MultipartBody.Part.createFormData("file", "upload.jpg", retryBody)
-                    val response = uploadService.uploadAssetFast(body)
+                    val response = uploadService.uploadAssetFast(body, quality)
                     if (response.isSuccessful) {
                         val path = response.body()?.url ?: ""
                         if (path.isNotEmpty()) {

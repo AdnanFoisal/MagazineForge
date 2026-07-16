@@ -21,6 +21,8 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.magazineforge.app.ui.theme.ThemeState
 import com.magazineforge.app.ui.theme.AllThemes
+import androidx.compose.ui.platform.LocalContext
+import com.magazineforge.app.utils.SecureStorage
 
 @Composable
 fun SettingsScreen(
@@ -36,6 +38,8 @@ fun SettingsScreen(
     var keyInput by remember { mutableStateOf(currentLiteLLMKey) }
     var passwordVisible by remember { mutableStateOf(false) }
     val currentTheme by ThemeState.currentTheme.collectAsState()
+    val context = LocalContext.current
+    val secureStorage = remember { SecureStorage(context) }
     
     LazyColumn(
         modifier = Modifier
@@ -170,7 +174,10 @@ fun SettingsScreen(
                                 color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Gray.copy(alpha = 0.3f),
                                 shape = RoundedCornerShape(8.dp)
                             )
-                            .clickable { ThemeState.setTheme(theme) },
+                            .clickable {
+                                ThemeState.setTheme(theme)
+                                secureStorage.saveThemeId(theme.id)
+                            },
                         contentAlignment = Alignment.Center
                     ) {
                         Text(

@@ -21,6 +21,8 @@ import com.magazineforge.app.ui.theme.LocalThemeTokens
 import com.magazineforge.app.ui.theme.LuxeTypography
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.MenuBook
 
 @Composable
 fun SplashScreen(onAnimationFinished: () -> Unit) {
@@ -90,11 +92,12 @@ fun SplashScreen(onAnimationFinished: () -> Unit) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Image(
-                painter = painterResource(id = R.mipmap.ic_launcher_round),
+            androidx.compose.material3.Icon(
+                imageVector = Icons.Rounded.MenuBook,
                 contentDescription = "MagazineForge Logo",
+                tint = androidx.compose.ui.graphics.Color(0xFFF1F5F9), // Slate 50
                 modifier = Modifier
-                    .size(120.dp)
+                    .size(100.dp)
                     .scale(logoScale.value)
                     .alpha(logoAlpha.value)
             )

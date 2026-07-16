@@ -106,7 +106,7 @@ flowchart LR
     NET -->|"JSON Request<br/>Authorization: Bearer HF_TOKEN"| ROUTER
 
     ROUTER -->|Generate Prompt| GS
-    ROUTER -->|Image search terms| IS
+    ROUTER -->|Image search (articles & covers)| IS
     ROUTER -->|compile-raw (Job ID)| COMPILE
     ROUTER <-->|Read/Write Job Status| JOBS
     ROUTER -->|"Inject JSON into .tex<br/>(((PLACEHOLDERS)))"| TEMPL
@@ -154,7 +154,7 @@ sequenceDiagram
     BE-->>UI: {valid, models}
 
     Note over U,VM: 2. Brief (EditorScreen)
-    U->>UI: topic + design direction
+    U->>UI: topic + design + cover/back cover images
     UI->>VM: generateBrief(url,key,prompt)
     VM->>API: POST /generate-brief
     API->>BE: generate_brief_endpoint()
@@ -395,6 +395,14 @@ classDiagram
         +bool enableTocTeasers
         +bool enableByline
         +str? coverImageUrl
+    }
+    class GenerationRunRequest {
+        +str prompt
+        +str templateVariant
+        +List~BriefArticle~ articles
+        +str? coverImageUrl
+        +str? backCoverImageUrl
+        +List~str~ articleImageUrls
     }
 
     MagazineSchema "1" --> "1" CoverSchema

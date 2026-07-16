@@ -103,12 +103,22 @@ fun CoAuthorScreen(
                 actions = {
                     val isSchemaValid = schema.cover.mainTitle.isNotBlank()
                     if (isFullAiMode) {
+                        // In Full AI mode, the button generates LaTeX (which then
+                        // auto-compiles to PDF via generateLatex's isFullAiMode
+                        // auto-chain). Previously this called onNext which just
+                        // navigated to the LaTeX notebook WITHOUT generating
+                        // LaTeX first — leaving the editor empty and causing
+                        // the subsequent compile to fail with "Emergency stop".
                         Button(
-                            onClick = onNext,
-                            enabled = isSchemaValid,
+                            onClick = { onGenerateLatex(schema) },
+                            enabled = isSchemaValid && !isGeneratingLatex,
                             colors = ButtonDefaults.buttonColors(containerColor = gold)
                         ) {
-                            Text("Open Editor", color = obsidian)
+                            if (isGeneratingLatex) {
+                                CircularProgressIndicator(modifier = Modifier.size(16.dp), color = obsidian)
+                            } else {
+                                Text("Generate", color = obsidian)
+                            }
                         }
                     } else {
                         if (isSchemaValid) {

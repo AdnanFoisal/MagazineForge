@@ -649,7 +649,23 @@ class EditorViewModel : ViewModel() {
                         _compileState.value = CompileState.Error("Invalid job ID received")
                     }
                 } else {
-                    _compileState.value = CompileState.Error("Compile Error: ${response.code()}")
+                    // Extract the server's error detail when available so the
+                    // user sees a helpful message (e.g. "LaTeX code is empty.
+                    // Tap 'Generate LaTeX' on the Co-Author screen first.")
+                    // instead of just "Compile Error: 422".
+                    val errorBody = try { response.errorBody()?.string() } catch (_: Exception) { null }
+                    val userMessage = if (errorBody != null) {
+                        // Try to parse {"detail": "..."} from FastAPI's error response
+                        try {
+                            val json = org.json.JSONObject(errorBody)
+                            json.optString("detail", "Compile Error: ${response.code()}")
+                        } catch (_: Exception) {
+                            "Compile Error: ${response.code()}"
+                        }
+                    } else {
+                        "Compile Error: ${response.code()}"
+                    }
+                    _compileState.value = CompileState.Error(userMessage)
                 }
             } catch (e: java.net.SocketTimeoutException) {
                 _compileState.value = CompileState.Error("Compilation request timed out.")

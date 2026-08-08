@@ -62,8 +62,8 @@ private enum class RenameOutcome { SUCCESS, UNCHANGED, EMPTY_NAME, NAME_TAKEN, F
  * two separators means no rename can produce a path the reader cannot round-trip
  * (a "." in particular would confuse nameWithoutExtension).
  */
-private val UNSAFE_NAME_CHARS = Regex("[^\\p{L}\\p{N} _-]")
-private val SEPARATOR_RUN = Regex("[\\s_]+")
+internal val UNSAFE_NAME_CHARS = Regex("[^\\p{L}\\p{N} _-]")
+internal val SEPARATOR_RUN = Regex("[\\s_]+")
 
 private const val MAX_TITLE_LENGTH = 60
 
@@ -81,7 +81,7 @@ private val nameCollator: java.text.Collator =
     }
 
 /** Inverse of the display transform below: spaces collapse back into "_". */
-private fun toTopicSegment(input: String): String =
+internal fun toTopicSegment(input: String): String =
     input
         .replace(UNSAFE_NAME_CHARS, " ")
         .replace(SEPARATOR_RUN, "_")

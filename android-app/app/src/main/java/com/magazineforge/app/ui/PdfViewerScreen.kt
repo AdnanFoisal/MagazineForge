@@ -232,76 +232,113 @@ fun PdfViewerScreen(
                             Icon(Icons.Default.Download, contentDescription = "Download")
                         }
 
-                        IconButton(onClick = {
-                            coroutineScope.launch {
-                                try {
-                                    // PdfRenderer allows only one open page at a
-                                    // time, so this shares the render mutex with
-                                    // the page-window renderer.
-                                    val rendered = renderMutex.withLock {
-                                        val page = pdfRenderer?.openPage(0)
-                                        if (page == null) null else {
-                                            try {
-                                                val w = (page.width * density * 2).toInt()
-                                                val h = (page.height * density * 2).toInt()
-                                                val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
-                                                bmp.eraseColor(android.graphics.Color.WHITE)
-                                                page.render(bmp, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
-                                                bmp
-                                            } finally {
-                                                page.close()
-                                            }
-                                        }
-                                    }
-                                    if (rendered != null) {
-                                        val pageBitmap = rendered
-                                        val width = pageBitmap.width
-                                        val height = pageBitmap.height
+                        var showShareMenu by remember { mutableStateOf(false) }
 
-                                        // Mockup container
-                                        val mWidth = width + 400
-                                        val mHeight = height + 400
-                                        val mockupBitmap = Bitmap.createBitmap(mWidth, mHeight, Bitmap.Config.ARGB_8888)
-                                        val canvas = android.graphics.Canvas(mockupBitmap)
-                                        canvas.drawColor(android.graphics.Color.parseColor("#0F0F10")) // Dark theme bg
-                                        
-                                        // Shadow
-                                        val paint = android.graphics.Paint()
-                                        paint.setShadowLayer(80f, 0f, 40f, android.graphics.Color.parseColor("#90000000"))
-                                        val rect = android.graphics.RectF(200f, 200f, 200f + width, 200f + height)
-                                        canvas.drawRect(rect, paint)
-                                        
-                                        // Draw the rendered page
-                                        canvas.drawBitmap(pageBitmap, 200f, 200f, null)
-                                        
-                                        // Save and share
+                        IconButton(onClick = { showShareMenu = true }) {
+                            Icon(Icons.Default.Share, contentDescription = "Share")
+                        }
+
+                        DropdownMenu(
+                            expanded = showShareMenu,
+                            onDismissRequest = { showShareMenu = false }
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("Share PDF Document") },
+                                onClick = {
+                                    showShareMenu = false
+                                    try {
                                         val resolver = context.contentResolver
                                         val contentValues = android.content.ContentValues().apply {
-                                            put(android.provider.MediaStore.MediaColumns.DISPLAY_NAME, "mockup_${System.currentTimeMillis()}.png")
-                                            put(android.provider.MediaStore.MediaColumns.MIME_TYPE, "image/png")
-                                            put(android.provider.MediaStore.MediaColumns.RELATIVE_PATH, android.os.Environment.DIRECTORY_PICTURES + "/MagazineForge")
+                                            put(android.provider.MediaStore.MediaColumns.DISPLAY_NAME, "magazine_${System.currentTimeMillis()}.pdf")
+                                            put(android.provider.MediaStore.MediaColumns.MIME_TYPE, "application/pdf")
+                                            put(android.provider.MediaStore.MediaColumns.RELATIVE_PATH, android.os.Environment.DIRECTORY_DOWNLOADS + "/MagazineForge")
                                         }
-                                        val uri = resolver.insert(android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
+                                        val uri = resolver.insert(android.provider.MediaStore.Files.getContentUri("external"), contentValues)
                                         if (uri != null) {
-                                            resolver.openOutputStream(uri)?.use { out ->
-                                                mockupBitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
+                                            resolver.openOutputStream(uri)?.use { outputStream ->
+                                                currentFile!!.inputStream().use { inputStream ->
+                                                    inputStream.copyTo(outputStream)
+                                                }
                                             }
-                                            
                                             val shareIntent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
-                                                type = "image/png"
+                                                type = "application/pdf"
                                                 putExtra(android.content.Intent.EXTRA_STREAM, uri)
                                                 addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
                                             }
-                                            context.startActivity(android.content.Intent.createChooser(shareIntent, "Share Magazine"))
+                                            context.startActivity(android.content.Intent.createChooser(shareIntent, "Share PDF Document"))
+                                        }
+                                    } catch (e: Exception) {
+                                        e.printStackTrace()
+                                        android.widget.Toast.makeText(context, "Failed to share PDF: ${e.message}", android.widget.Toast.LENGTH_SHORT).show()
+                                    }
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Share Cover Mockup (PNG)") },
+                                onClick = {
+                                    showShareMenu = false
+                                    coroutineScope.launch {
+                                        try {
+                                            val rendered = renderMutex.withLock {
+                                                val page = pdfRenderer?.openPage(0)
+                                                if (page == null) null else {
+                                                    try {
+                                                        val w = (page.width * density * 2).toInt()
+                                                        val h = (page.height * density * 2).toInt()
+                                                        val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+                                                        bmp.eraseColor(android.graphics.Color.WHITE)
+                                                        page.render(bmp, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY)
+                                                        bmp
+                                                    } finally {
+                                                        page.close()
+                                                    }
+                                                }
+                                            }
+                                            if (rendered != null) {
+                                                val pageBitmap = rendered
+                                                val width = pageBitmap.width
+                                                val height = pageBitmap.height
+
+                                                val mWidth = width + 400
+                                                val mHeight = height + 400
+                                                val mockupBitmap = Bitmap.createBitmap(mWidth, mHeight, Bitmap.Config.ARGB_8888)
+                                                val canvas = android.graphics.Canvas(mockupBitmap)
+                                                canvas.drawColor(android.graphics.Color.parseColor("#0F0F10"))
+                                                
+                                                val paint = android.graphics.Paint()
+                                                paint.setShadowLayer(80f, 0f, 40f, android.graphics.Color.parseColor("#90000000"))
+                                                val rect = android.graphics.RectF(200f, 200f, 200f + width, 200f + height)
+                                                canvas.drawRect(rect, paint)
+                                                
+                                                canvas.drawBitmap(pageBitmap, 200f, 200f, null)
+                                                
+                                                val resolver = context.contentResolver
+                                                val contentValues = android.content.ContentValues().apply {
+                                                    put(android.provider.MediaStore.MediaColumns.DISPLAY_NAME, "mockup_${System.currentTimeMillis()}.png")
+                                                    put(android.provider.MediaStore.MediaColumns.MIME_TYPE, "image/png")
+                                                    put(android.provider.MediaStore.MediaColumns.RELATIVE_PATH, android.os.Environment.DIRECTORY_PICTURES + "/MagazineForge")
+                                                }
+                                                val uri = resolver.insert(android.provider.MediaStore.Images.Media.EXTERNAL_CONTENT_URI, contentValues)
+                                                if (uri != null) {
+                                                    resolver.openOutputStream(uri)?.use { out ->
+                                                        mockupBitmap.compress(Bitmap.CompressFormat.PNG, 100, out)
+                                                    }
+                                                    
+                                                    val shareIntent = android.content.Intent(android.content.Intent.ACTION_SEND).apply {
+                                                        type = "image/png"
+                                                        putExtra(android.content.Intent.EXTRA_STREAM, uri)
+                                                        addFlags(android.content.Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                                                    }
+                                                    context.startActivity(android.content.Intent.createChooser(shareIntent, "Share Cover Mockup"))
+                                                }
+                                            }
+                                        } catch (e: Exception) {
+                                            e.printStackTrace()
+                                            android.widget.Toast.makeText(context, "Failed to generate mockup", android.widget.Toast.LENGTH_SHORT).show()
                                         }
                                     }
-                                } catch (e: Exception) {
-                                    e.printStackTrace()
-                                    android.widget.Toast.makeText(context, "Failed to generate mockup", android.widget.Toast.LENGTH_SHORT).show()
                                 }
-                            }
-                        }) {
-                            Icon(Icons.Default.Share, contentDescription = "Share")
+                            )
                         }
 
                     }

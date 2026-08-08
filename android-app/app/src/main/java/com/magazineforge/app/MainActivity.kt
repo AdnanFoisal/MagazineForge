@@ -279,13 +279,13 @@ class MainActivity : ComponentActivity() {
                                         LaunchedEffect(currentScreen) {
                                             val idx = bottomTabRoutes.indexOf(currentScreen)
                                             if (idx != -1 && pagerState.currentPage != idx && !pagerState.isScrollInProgress) {
-                                                pagerState.animateScrollToPage(idx)
+                                                pagerState.scrollToPage(idx)
                                             }
                                         }
                                         
                                         BackHandler(enabled = pagerState.currentPage != 0) {
                                             coroutineScope.launch {
-                                                pagerState.animateScrollToPage(0)
+                                                pagerState.scrollToPage(0)
                                             }
                                         }
                                         

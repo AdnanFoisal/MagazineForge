@@ -53,7 +53,8 @@ data class SectionComposerConfig(
     var enablePullQuote: Boolean = true,
     var enableBackCover: Boolean = true,
     var enableTocTeasers: Boolean = true,
-    var enableByline: Boolean = true
+    var enableByline: Boolean = true,
+    var paperTone: String = "cream"
 )
 
 
@@ -458,6 +459,38 @@ fun EditorScreen(
                                         Text("Uploading…", style = LuxeTypography.labelMedium)
                                     } else {
                                         Text(if (backCoverImageUrl.isNotEmpty() || backCoverPreviewUri != null) "Change" else "Upload", style = LuxeTypography.labelMedium)
+                                    }
+                                }
+                            }
+                        }
+
+                        // ── Paper Tone Selector (Only in Full AI Mode Studio) ──────────────────
+                        var paperTone by remember { mutableStateOf("Cream") }
+                        Card(
+                            colors = CardDefaults.cardColors(containerColor = darkSurface),
+                            border = BorderStroke(1.dp, borderCol),
+                            modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
+                        ) {
+                            Column(modifier = Modifier.padding(16.dp)) {
+                                Text("Paper Tone (Background)", style = LuxeTypography.titleSmall.copy(color = gold))
+                                Spacer(modifier = Modifier.height(8.dp))
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    listOf("Cream", "Bone", "Dark", "White").forEach { tone ->
+                                        val isSel = composerConfig.paperTone.equals(tone, ignoreCase = true)
+                                        FilterChip(
+                                            selected = isSel,
+                                            onClick = { composerConfig = composerConfig.copy(paperTone = tone.lowercase()) },
+                                            label = { Text(tone, style = LuxeTypography.labelMedium) },
+                                            colors = FilterChipDefaults.filterChipColors(
+                                                selectedContainerColor = gold,
+                                                selectedLabelColor = obsidian,
+                                                containerColor = darkSurface,
+                                                labelColor = tokens.editorTextSecondary
+                                            )
+                                        )
                                     }
                                 }
                             }

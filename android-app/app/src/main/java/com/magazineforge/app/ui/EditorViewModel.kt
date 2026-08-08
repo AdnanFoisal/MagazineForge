@@ -253,7 +253,8 @@ class EditorViewModel : ViewModel() {
                         voiceGuide = brief.voiceGuide ?: "",
                         forbiddenPhrases = brief.forbiddenPhrases ?: emptyList(),
                         authorCast = brief.authorCast ?: emptyList(),
-                        articleAngles = brief.articleAngles ?: emptyList()
+                        articleAngles = brief.articleAngles ?: emptyList(),
+                        paperTone = safeConfig.paperTone
                     )
                     
                     _generationRunState.value = GenerationRunState.Loading("Starting run...")
@@ -339,7 +340,8 @@ class EditorViewModel : ViewModel() {
                     voiceGuide = brief.voiceGuide ?: "",
                     forbiddenPhrases = brief.forbiddenPhrases ?: emptyList(),
                     authorCast = brief.authorCast ?: emptyList(),
-                    articleAngles = brief.articleAngles ?: emptyList()
+                    articleAngles = brief.articleAngles ?: emptyList(),
+                    paperTone = config.paperTone
                 )
 
                 val runResponse = ApiClient.retrofitService.createGenerationRun(

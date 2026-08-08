@@ -258,231 +258,203 @@ class MainActivity : ComponentActivity() {
                                 val isCompileLoading = compileState is CompileState.Loading
 
                                 val bottomTabRoutes = listOf("home", "library", "latex_notebook", "templates", "settings")
-                                val isBottomTab = currentScreen in bottomTabRoutes
-                                
+
+                                BackHandler(enabled = currentScreen != "home" && currentScreen in bottomTabRoutes) {
+                                    currentScreen = "home"
+                                }
+
                                 AnimatedContent(
-                                    targetState = isBottomTab,
-                                    transitionSpec = { fadeIn(tween(300)) togetherWith fadeOut(tween(300)) }
-                                ) { isMain ->
-                                    if (isMain) {
-                                        val pagerState = rememberPagerState(
-                                            initialPage = bottomTabRoutes.indexOf(currentScreen).coerceAtLeast(0),
-                                            pageCount = { 5 }
+                                    targetState = currentScreen,
+                                    transitionSpec = { fadeIn(tween(150)) togetherWith fadeOut(tween(150)) },
+                                    label = "ScreenTransition"
+                                ) { screen ->
+                                    when (screen) {
+                                        "home" -> HomeScreen(
+                                            viewModel = viewModel,
+                                            onMagazineSelected = { url -> selectedPdfForViewer = url },
+                                            onContinueEditing = { currentScreen = "latex_notebook" },
+                                            onFullAiModeClicked = { editorInitialTab = 0; viewModel.resetState(); currentScreen = "templates" },
+                                            onAssistedModeClicked = { editorInitialTab = 1; viewModel.resetState(); currentScreen = "templates" },
+                                            onViewLibrary = { currentScreen = "library" }
                                         )
-                                        
-                                        LaunchedEffect(pagerState.currentPage) {
-                                            if (bottomTabRoutes[pagerState.currentPage] != currentScreen) {
-                                                currentScreen = bottomTabRoutes[pagerState.currentPage]
+                                        "library" -> MyMagazinesScreen(
+                                            onBack = { currentScreen = "home" },
+                                            onMagazineSelected = { pdfFile -> selectedPdfForViewer = pdfFile.absolutePath }
+                                        )
+                                        "latex_notebook" -> LatexNotebookScreen(
+                                            initialLatex = viewModel.getLatexCode() ?: (latexState as? LatexState.Success)?.latexCode ?: "",
+                                            isCompiling = isCompileLoading,
+                                            compileState = compileState,
+                                            schemaState = schemaState,
+                                            onCompile = { code -> viewModel.compileRaw(applicationContext, code) },
+                                            onBack = { currentScreen = "home" },
+                                            onCodeChange = { code -> viewModel.updateLatexCode(code) },
+                                            onRewrite = { text, instruction, onResult ->
+                                                coroutineScope.launch {
+                                                    viewModel.rewriteSelection(litellmUrl, litellmKey, text, instruction, onResult)
+                                                }
                                             }
-                                        }
-                                        
-                                        LaunchedEffect(currentScreen) {
-                                            val idx = bottomTabRoutes.indexOf(currentScreen)
-                                            if (idx != -1 && pagerState.currentPage != idx && !pagerState.isScrollInProgress) {
-                                                pagerState.scrollToPage(idx)
-                                            }
-                                        }
-                                        
-                                        BackHandler(enabled = pagerState.currentPage != 0) {
-                                            coroutineScope.launch {
-                                                pagerState.scrollToPage(0)
-                                            }
-                                        }
-                                        
-                                        HorizontalPager(
-                                            state = pagerState, 
-                                            modifier = Modifier.fillMaxSize(),
-                                            beyondBoundsPageCount = 4 // Keeps all tabs in memory to completely eliminate lag!
-                                        ) { page ->
-                                            when (page) {
-                                                0 -> HomeScreen(
-                                                    viewModel = viewModel,
-                                                    onMagazineSelected = { url -> selectedPdfForViewer = url },
-                                                    onContinueEditing = { currentScreen = "latex_notebook" },
-                                                    onFullAiModeClicked = { editorInitialTab = 0; viewModel.resetState(); currentScreen = "templates" },
-                                                    onAssistedModeClicked = { editorInitialTab = 1; viewModel.resetState(); currentScreen = "templates" },
-                                                    onViewLibrary = { currentScreen = "library" }
-                                                )
-                                                1 -> MyMagazinesScreen(
-                                                    onBack = { currentScreen = "home" },
-                                                    onMagazineSelected = { pdfFile -> selectedPdfForViewer = pdfFile.absolutePath }
-                                                )
-                                                2 -> LatexNotebookScreen(
-                                                    initialLatex = viewModel.getLatexCode() ?: (latexState as? LatexState.Success)?.latexCode ?: "",
-                                                    isCompiling = isCompileLoading,
-                                                    compileState = compileState,
-                                                    schemaState = schemaState,
-                                                    onCompile = { code -> viewModel.compileRaw(applicationContext, code) },
-                                                    onBack = { currentScreen = "home" },
-                                                    onCodeChange = { code -> viewModel.updateLatexCode(code) },
-                                                    onRewrite = { text, instruction, onResult ->
-                                                        coroutineScope.launch {
-                                                            viewModel.rewriteSelection(litellmUrl, litellmKey, text, instruction, onResult)
-                                                        }
-                                                    }
-                                                )
-                                                3 -> TemplateGalleryScreen(
-                                                    runState = viewModel.generationRunState.collectAsState().value,
-                                                    onTemplateSelected = { template, description, name ->
-                                                        selectedTemplate = template
-                                                        initialEditorPrompt = description
-                                                        selectedTemplateName = name
-                                                        currentScreen = "editor"
-                                                    },
-                                                    onPreviewSelected = { templateVariant ->
-                                                        viewModel.isFullAiMode = false
-                                                        viewModel.generateChunkedPreview(litellmUrl, litellmKey, templateVariant)
-                                                        currentScreen = "co_author"
-                                                    },
-                                                    onLibraryClicked = { currentScreen = "library" },
-                                                    onPublishClicked = { currentScreen = "showcase" },
-                                                    onEditorClicked = { currentScreen = "latex_notebook" }
-                                                )
-                                                4 -> SettingsScreen(
-                                                    currentLiteLLMUrl = litellmUrl,
-                                                    currentLiteLLMKey = litellmKey,
-                                                    isVerifying = isVerifying,
-                                                    verifyError = verifyError,
-                                                    verifySuccess = verifySuccess,
-                                                    onSaveCredentials = { newUrl, newKey ->
-                                                        isVerifying = true
-                                                        verifyError = null
-                                                        verifySuccess = null
-                                                        coroutineScope.launch {
-                                                            try {
-                                                                val res = com.magazineforge.app.network.ApiClient.retrofitService.verifyKey(
-                                                                    com.magazineforge.app.models.VerifyKeyRequest(newUrl, newKey)
-                                                                )
-                                                                if (res.isSuccessful && res.body()?.valid == true) {
-                                                                    secureStorage.saveLiteLLMUrl(newUrl)
-                                                                    secureStorage.saveLiteLLMKey(newKey)
-                                                                    litellmUrl = newUrl
-                                                                    litellmKey = newKey
-                                                                    verifySuccess = true
-                                                                    verifyError = "Status: ${res.body()?.status ?: "Active"}"
-                                                                } else {
-                                                                    verifySuccess = false
-                                                                    verifyError = "Verification Failed: ${res.body()?.status ?: "Unknown error"}"
-                                                                }
-                                                            } catch (e: Exception) {
-                                                                verifyError = "Backend Connection Error"
-                                                                verifySuccess = false
-                                                            } finally {
-                                                                isVerifying = false
-                                                            }
-                                                        }
-                                                    },
-                                                    onClearFeedback = {
-                                                        verifyError = null
-                                                        verifySuccess = null
-                                                    }
-                                                )
-                                            }
-                                        }
-                                    } else {
-                                        AnimatedContent(
-                                            targetState = currentScreen,
-                                            transitionSpec = { fadeIn(tween(300)) togetherWith fadeOut(tween(300)) },
-                                            label = "ScreenTransition"
-                                        ) { screen: String ->
-                                            when (screen) {
-                                                "splash" -> SplashScreen(
-                                                    onAnimationFinished = {
-                                                        currentScreen = if (savedUrl != null) "home" else "onboarding"
-                                                    }
-                                                )
-                                                "onboarding" -> OnboardingScreen(
-                                                    onCreateClicked = { currentScreen = "home" },
-                                                    onExploreClicked = { currentScreen = "templates" }
-                                                )
-                                                "showcase" -> ShowcaseScreen(
-                                                    viewModel = viewModel,
-                                                    onMagazineSelected = { url -> selectedPdfForViewer = url }
-                                                )
-                                                "editor" -> EditorScreen(
-                                                    initialPrompt = initialEditorPrompt,
-                                                    isCompileLoading = schemaState is SchemaState.Loading || latexState is LatexState.Loading || compileState is CompileState.Loading,
-                                                    runState = runState,
-                                                    briefState = briefState,
-                                                    schemaState = schemaState,
-                                                    latexState = latexState,
-                                                    compileState = compileState,
-                                                    initialTabIndex = editorInitialTab,
-                                                    onGenerateBrief = { prompt, referenceImages, articleCount ->
-                                                        viewModel.generateBrief(litellmUrl, litellmKey, prompt, referenceImages, articleCount)
-                                                    },
-                                                    onCompileFromBrief = { prompt, config, brief, coverImgUrl, backCoverImgUrl, refImages ->
-                                                        viewModel.isFullAiMode = true
-                                                        viewModel.pendingTopic = prompt
-                                                        viewModel.pendingTone = brief.tone
-                                                        viewModel.pendingStyleDna = brief.styleDna
-                                                        viewModel.pendingConfig = config
-                                                        
-                                                        viewModel.startFullAiGeneration(
-                                                            litellmUrl = litellmUrl,
-                                                            litellmKey = litellmKey,
-                                                            prompt = prompt,
-                                                            templateVariant = selectedTemplate,
-                                                            config = config,
-                                                            brief = brief,
-                                                            coverImageUrl = coverImgUrl,
-                                                            backCoverImageUrl = backCoverImgUrl,
-                                                            referenceImageUrls = refImages
+                                        )
+                                        "templates" -> TemplateGalleryScreen(
+                                            runState = viewModel.generationRunState.collectAsState().value,
+                                            onTemplateSelected = { template, description, name ->
+                                                selectedTemplate = template
+                                                initialEditorPrompt = description
+                                                selectedTemplateName = name
+                                                currentScreen = "editor"
+                                            },
+                                            onPreviewSelected = { templateVariant ->
+                                                viewModel.isFullAiMode = false
+                                                viewModel.generateChunkedPreview(litellmUrl, litellmKey, templateVariant)
+                                                currentScreen = "co_author"
+                                            },
+                                            onLibraryClicked = { currentScreen = "library" },
+                                            onPublishClicked = { currentScreen = "showcase" },
+                                            onEditorClicked = { currentScreen = "latex_notebook" }
+                                        )
+                                        "settings" -> SettingsScreen(
+                                            currentLiteLLMUrl = litellmUrl,
+                                            currentLiteLLMKey = litellmKey,
+                                            isVerifying = isVerifying,
+                                            verifyError = verifyError,
+                                            verifySuccess = verifySuccess,
+                                            onSaveCredentials = { newUrl, newKey ->
+                                                isVerifying = true
+                                                verifyError = null
+                                                verifySuccess = null
+                                                coroutineScope.launch {
+                                                    try {
+                                                        val res = com.magazineforge.app.network.ApiClient.retrofitService.verifyKey(
+                                                            com.magazineforge.app.models.VerifyKeyRequest(newUrl, newKey)
                                                         )
-                                                    },
-                                                    onCompileClicked = { magazineTopic, pages, config, coverImgUrl ->
-                                                        viewModel.isFullAiMode = false
-                                                        val finalTopic = if (pages.isEmpty()) {
-                                                            magazineTopic
+                                                        if (res.isSuccessful && res.body()?.valid == true) {
+                                                            secureStorage.saveLiteLLMUrl(newUrl)
+                                                            secureStorage.saveLiteLLMKey(newKey)
+                                                            litellmUrl = newUrl
+                                                            litellmKey = newKey
+                                                            verifySuccess = true
+                                                            verifyError = "Status: ${res.body()?.status ?: "Active"}"
                                                         } else {
-                                                            val pagesStr = pages.joinToString("\n\n") { 
-                                                                "Page Type: ${it.type.uppercase()}\nTopic: ${it.topic}\nTarget Image URL: ${it.imageUrl}\n[CUSTOMIZATION CONFIGURATION]:\n- Writing Tone: ${it.tone}\n- Layout Density: ${it.layoutDensity}"
-                                                            }
-                                                            "Theme: $magazineTopic\n\nRequired Structure:\n$pagesStr\n\n(CRITICAL INSTRUCTION: You MUST strictly adhere to the [CUSTOMIZATION CONFIGURATION] for each page. Adapt your language, formatting, and generation to perfectly match the requested Tone and Layout Density. You MUST also use the exact Target Image URLs provided above for each corresponding page. Do NOT override them with Pollinations URLs unless no Target Image URL was provided.)\n(GLOBAL STYLE RULE: Dynamically adapt your writing tone, voice, and pacing to perfectamente match the specific magazine topic and target audience. Do not rely on a single default persona; if the topic is serious, be authoritative and measured; if it's pop-culture, be punchy and witty. Regardless of the dynamically chosen tone, you MUST strictly avoid generic AI transitions like 'In conclusion', 'Let's dive into', or 'A testament to'. Emphasize 'show, don't tell'. Focus heavily on rich formatting, using bullet points, bold text, blockquotes, and visual breaks frequently to make the reading experience dynamic.)"
+                                                            verifySuccess = false
+                                                            verifyError = "Verification Failed: ${res.body()?.status ?: "Unknown error"}"
                                                         }
-                                                        viewModel.generateSchema(
-                                                            litellmUrl = litellmUrl, 
-                                                            litellmKey = litellmKey, 
-                                                            magazineTopic = finalTopic, 
-                                                            templateName = selectedTemplate,
-                                                            config = config,
-                                                            coverImageUrl = coverImgUrl
-                                                        )
-                                                    },
-                                                    onCancel = { viewModel.resetState() },
-                                                    onBack = { currentScreen = "home" }
+                                                    } catch (e: Exception) {
+                                                        verifySuccess = false
+                                                        verifyError = "Network Error: ${e.localizedMessage}"
+                                                    } finally {
+                                                        isVerifying = false
+                                                    }
+                                                }
+                                            },
+                                            onClearFeedback = {
+                                                verifyError = null
+                                                verifySuccess = null
+                                            }
+                                        )
+                                        "editor" -> EditorScreen(
+                                            initialPrompt = initialEditorPrompt,
+                                            isCompileLoading = schemaState is SchemaState.Loading || latexState is LatexState.Loading || compileState is CompileState.Loading,
+                                            runState = runState,
+                                            briefState = briefState,
+                                            schemaState = schemaState,
+                                            latexState = latexState,
+                                            compileState = compileState,
+                                            initialTabIndex = editorInitialTab,
+                                            onGenerateBrief = { prompt, referenceImages, articleCount ->
+                                                viewModel.generateBrief(litellmUrl, litellmKey, prompt, referenceImages, articleCount)
+                                            },
+                                            onCompileFromBrief = { prompt, config, brief, coverImgUrl, backCoverImgUrl, refImages ->
+                                                viewModel.isFullAiMode = true
+                                                viewModel.pendingTopic = prompt
+                                                viewModel.pendingTone = brief.tone
+                                                viewModel.pendingStyleDna = brief.styleDna
+                                                viewModel.pendingConfig = config
+                                                
+                                                viewModel.startFullAiGeneration(
+                                                    litellmUrl = litellmUrl,
+                                                    litellmKey = litellmKey,
+                                                    prompt = prompt,
+                                                    templateVariant = selectedTemplate,
+                                                    config = config,
+                                                    brief = brief,
+                                                    coverImageUrl = coverImgUrl,
+                                                    backCoverImageUrl = backCoverImgUrl,
+                                                    referenceImageUrls = refImages
                                                 )
-                                                "co_author" -> {
-                                                    val schemaToRender = cachedSchema ?: (schemaState as? SchemaState.Success)?.schema
-                                                    if (schemaToRender != null) {
-                                                        CoAuthorScreen(
-                                                            initialSchema = schemaToRender,
-                                                            isGeneratingLatex = latexState is LatexState.Loading,
-                                                            runState = viewModel.generationRunState.collectAsState().value,
-                                                            isFullAiMode = viewModel.isFullAiMode,
-                                                            onGenerateRemaining = { viewModel.continueGenerationRun() },
-                                                            onRetrySection = { sectionId -> viewModel.retryGenerationSection(sectionId) },
-                                                            onGenerateLatex = { schema -> viewModel.generateLatex(schema) },
-                                                            onBack = { viewModel.resetState(); currentScreen = "editor" }
-                                                        )
-                                                    } else {
-                                                        Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                                                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                                                androidx.compose.material3.CircularProgressIndicator(color = tokens.primaryAccent)
-                                                                Spacer(modifier = Modifier.height(16.dp))
-                                                                val stateMsg = when (val state = viewModel.generationRunState.collectAsState().value) {
-                                                                    is GenerationRunState.Loading -> state.message
-                                                                    else -> "Preparing Magazine Preview..."
-                                                                }
-                                                                Text(stateMsg, color = tokens.textPrimary)
-                                                            }
+                                            },
+                                            onCompileClicked = { magazineTopic, pages, config, coverImgUrl ->
+                                                viewModel.isFullAiMode = false
+                                                val finalTopic = if (pages.isEmpty()) {
+                                                    magazineTopic
+                                                } else {
+                                                    val pagesStr = pages.joinToString("\n\n") { 
+                                                        "Page Type: ${it.type.uppercase()}\nTopic: ${it.topic}\nTarget Image URL: ${it.imageUrl}\n[CUSTOMIZATION CONFIGURATION]:\n- Writing Tone: ${it.tone}\n- Layout Density: ${it.layoutDensity}"
+                                                    }
+                                                    "Theme: $magazineTopic\n\nRequired Structure:\n$pagesStr\n\n(CRITICAL INSTRUCTION: You MUST strictly adhere to the [CUSTOMIZATION CONFIGURATION] for each page. Adapt your language, formatting, and generation to perfectly match the requested Tone and Layout Density. You MUST also use the exact Target Image URLs provided above for each corresponding page. Do NOT override them with Pollinations URLs unless no Target Image URL was provided.)\n(GLOBAL STYLE RULE: Dynamically adapt your writing tone, voice, and pacing to perfectamente match the specific magazine topic and target audience. Do not rely on a single default persona; if the topic is serious, be authoritative and measured; if it's pop-culture, be punchy and witty. Regardless of the dynamically chosen tone, you MUST strictly avoid generic AI transitions like 'In conclusion', 'Let's dive into', or 'A testament to'. Emphasize 'show, don't tell'. Focus heavily on rich formatting, using bullet points, bold text, blockquotes, and visual breaks frequently to make the reading experience dynamic.)"
+                                                }
+                                                viewModel.generateSchema(
+                                                    litellmUrl = litellmUrl, 
+                                                    litellmKey = litellmKey, 
+                                                    magazineTopic = finalTopic, 
+                                                    templateName = selectedTemplate,
+                                                    config = config,
+                                                    coverImageUrl = coverImgUrl
+                                                )
+                                            },
+                                            onCancel = { viewModel.resetState() },
+                                            onBack = { currentScreen = "home" }
+                                        )
+                                        "co_author" -> {
+                                            val schemaToRender = cachedSchema ?: (schemaState as? SchemaState.Success)?.schema
+                                            if (schemaToRender != null) {
+                                                CoAuthorScreen(
+                                                    initialSchema = schemaToRender,
+                                                    isGeneratingLatex = latexState is LatexState.Loading,
+                                                    runState = viewModel.generationRunState.collectAsState().value,
+                                                    isFullAiMode = viewModel.isFullAiMode,
+                                                    onGenerateRemaining = { viewModel.continueGenerationRun() },
+                                                    onRetrySection = { sectionId -> viewModel.retryGenerationSection(sectionId) },
+                                                    onGenerateLatex = { schema -> viewModel.generateLatex(schema) },
+                                                    onBack = { viewModel.resetState(); currentScreen = "editor" }
+                                                )
+                                            } else {
+                                                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                                        androidx.compose.material3.CircularProgressIndicator(color = tokens.primaryAccent)
+                                                        Spacer(modifier = Modifier.height(16.dp))
+                                                        val stateMsg = when (val state = viewModel.generationRunState.collectAsState().value) {
+                                                            is GenerationRunState.Loading -> state.message
+                                                            else -> "Preparing Magazine Preview..."
                                                         }
+                                                        Text(stateMsg, color = tokens.textPrimary)
                                                     }
                                                 }
                                             }
                                         }
+                                        "splash" -> SplashScreen(
+                                            onAnimationFinished = {
+                                                currentScreen = if (savedUrl != null) "home" else "onboarding"
+                                            }
+                                        )
+                                        "onboarding" -> OnboardingScreen(
+                                            onCreateClicked = { currentScreen = "home" },
+                                            onExploreClicked = { currentScreen = "templates" }
+                                        )
+                                        "showcase" -> ShowcaseScreen(
+                                            viewModel = viewModel,
+                                            onMagazineSelected = { url -> selectedPdfForViewer = url }
+                                        )
+                                        else -> HomeScreen(
+                                            viewModel = viewModel,
+                                            onMagazineSelected = { url -> selectedPdfForViewer = url },
+                                            onContinueEditing = { currentScreen = "latex_notebook" },
+                                            onFullAiModeClicked = { editorInitialTab = 0; viewModel.resetState(); currentScreen = "templates" },
+                                            onAssistedModeClicked = { editorInitialTab = 1; viewModel.resetState(); currentScreen = "templates" },
+                                            onViewLibrary = { currentScreen = "library" }
+                                        )
                                     }
                                 }
+                            }
                             // Floating Progress Card Overlay
                             if (compileState is CompileState.Loading && showProgressCard) {
                                 val loadingState = compileState as CompileState.Loading
@@ -654,6 +626,4 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
-}
-
 }

@@ -8,6 +8,14 @@ android-app/*.iml
 android-app/app/*.iml
 android-app/app/google-services.json
 
+# Signing keys. A keystore in the repo means its private key is permanently
+# recoverable from git history, so it can never sign anything you publish.
+# Supply it to CI as a base64 secret instead — see BUILD_AND_INSTALL.md.
+# NOTE: android-app/app/release.keystore is already TRACKED and so is not
+# covered by these patterns; it needs `git rm --cached` to untrack.
+*.keystore
+*.jks
+
 # Backend
 backend/__pycache__/
 backend/*.pyc

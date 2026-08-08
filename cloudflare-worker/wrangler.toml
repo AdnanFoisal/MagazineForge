@@ -1,0 +1,44 @@
+# Cloudflare Workers config for the MagazineForge token proxy.
+#
+# Everything referenced here is on the Workers Free plan:
+#   - 100,000 requests/day, resets 00:00 UTC
+#   - 10 ms CPU time per invocation (streaming a body is I/O, not CPU)
+#   - No egress/bandwidth charge
+#   - Encrypted secrets (wrangler secret put) are free
+# There is no KV, no R2, no D1, no Durable Object, and no Queue binding in
+# this file, so there is nothing here that can generate a bill.
+
+name = "magazineforge-proxy"
+main = "src/index.js"
+compatibility_date = "2024-09-23"
+
+# Do NOT add a [[kv_namespaces]], [[r2_buckets]], [[d1_databases]] or
+# [[durable_objects]] block unless you have re-checked the free-plan limits.
+
+# ---------------------------------------------------------------------------
+# OPTIONAL rate limiting. Commented out by default — see README "Rate limiting"
+# before enabling. The binding has no separate charge (you are billed only for
+# Workers requests and CPU, both of which are already free at your volume), but
+# it requires Wrangler >= 4.36.0. If your Wrangler is older, `wrangler deploy`
+# will fail on an unknown key, which is why this ships disabled: a first-time
+# deploy should not be able to fail on an optional feature.
+#
+# The Worker checks `if (env.APP_RATE_LIMITER)` at runtime, so leaving this
+# commented out simply disables rate limiting. No code change needed.
+#
+# `period` must be exactly 10 or 60 (seconds). Counters are per Cloudflare
+# location, not global, so treat this as a loose flood guard rather than an
+# exact quota.
+#
+# [[ratelimits]]
+# name = "APP_RATE_LIMITER"
+# namespace_id = "1001"
+#
+#   [ratelimits.simple]
+#   limit = 120
+#   period = 60
+
+# ---------------------------------------------------------------------------
+# HF_TOKEN and APP_KEY are NOT declared here on purpose. They are encrypted
+# secrets set with `wrangler secret put` (see README). Never put them in [vars]
+# — [vars] is plaintext and is committed to git.

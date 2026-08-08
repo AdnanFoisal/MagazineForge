@@ -26,6 +26,57 @@ import java.io.File
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 
+/**
+ * The subset of run_snapshot.json the Continue Editing card needs.
+ *
+ * EditorViewModel writes that file on every poll as Gson().toJson of a
+ * GenerationRunStatus. It cannot be read back with plain Gson: the schema holds
+ * a List<PageSchema>, and PageSchema is a sealed class whose deserializer lives
+ * on ApiClient's Retrofit Gson instance, not the default one. Reading the few
+ * scalars we need with org.json sidesteps that entirely and cannot throw
+ * anything but the JSONException we already catch.
+ */
+private data class DraftSnapshot(
+    val runId: String,
+    val title: String,
+    val completedSections: Int,
+    val totalSections: Int,
+    val status: String
+)
+
+private fun readDraftSnapshot(filesDir: File): DraftSnapshot? {
+    return try {
+        val file = File(filesDir, "run_snapshot.json")
+        if (!file.exists() || file.length() == 0L) return null
+        val root = org.json.JSONObject(file.readText())
+
+        val runId = root.optString("runId").orEmpty()
+        val status = root.optString("status").orEmpty()
+        val total = root.optInt("totalSections", 0)
+        val completed = root.optInt("completedSections", 0)
+        val title = root.optJSONObject("schema")
+            ?.optJSONObject("cover")
+            ?.optString("main_title")
+            .orEmpty()
+            .trim()
+
+        // A cancelled run has nothing left to continue, and anything missing a
+        // run id, a title or a section count would render as partial data.
+        if (runId.isBlank() || title.isBlank() || total <= 0) return null
+        if (status.equals("CANCELLED", ignoreCase = true)) return null
+
+        DraftSnapshot(
+            runId = runId,
+            title = title,
+            completedSections = completed.coerceIn(0, total),
+            totalSections = total,
+            status = status
+        )
+    } catch (e: Exception) {
+        null
+    }
+}
+
 @Composable
 fun HomeScreen(
     viewModel: EditorViewModel,
@@ -33,13 +84,19 @@ fun HomeScreen(
     onContinueEditing: () -> Unit,
     onFullAiModeClicked: () -> Unit,
     onAssistedModeClicked: () -> Unit,
-    onViewLibrary: () -> Unit
+    onViewLibrary: () -> Unit,
+    onResumeRun: ((String) -> Unit)? = null
 ) {
     val tokens = LocalThemeTokens.current
     val context = LocalContext.current
-    
+
     var recentFiles by remember { mutableStateOf<List<File>>(emptyList()) }
-    
+    var draft by remember { mutableStateOf<DraftSnapshot?>(null) }
+
+    LaunchedEffect(Unit) {
+        draft = withContext(Dispatchers.IO) { readDraftSnapshot(context.filesDir) }
+    }
+
     LaunchedEffect(Unit) {
         val dir = File(context.filesDir, "magazines")
         if (dir.exists()) {
@@ -163,41 +220,56 @@ fun HomeScreen(
         }
         
         Spacer(modifier = Modifier.height(32.dp))
-        
-        // Continue Editing
-        Text(
-            text = "Continue Editing",
-            fontWeight = FontWeight.SemiBold,
-            fontSize = 18.sp,
-            color = tokens.textPrimary,
-            modifier = Modifier.padding(bottom = 16.dp)
-        )
-        
-        Card(
-            shape = RoundedCornerShape(tokens.cornerRadius),
-            colors = CardDefaults.cardColors(containerColor = tokens.surface),
-            modifier = Modifier.fillMaxWidth().clickable(onClick = onContinueEditing)
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Text(
-                    text = "Draft: Summer Travel Guide",
-                    fontWeight = FontWeight.SemiBold,
-                    fontSize = 16.sp,
-                    color = tokens.textPrimary
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = "3 of 5 articles completed",
-                    fontSize = 14.sp,
-                    color = tokens.textSecondary
-                )
-                Spacer(modifier = Modifier.height(12.dp))
-                LinearProgressIndicator(
-                    progress = 0.6f,
-                    modifier = Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp)),
-                    color = tokens.primaryAccent,
-                    trackColor = tokens.primaryAccent.copy(alpha = 0.2f)
-                )
+
+        // Continue Editing — driven entirely by run_snapshot.json. The whole
+        // section (heading included) is hidden when there is no parseable
+        // snapshot, so no placeholder or half-filled card is ever shown.
+        val currentDraft = draft
+        if (currentDraft != null) {
+            Text(
+                text = "Continue Editing",
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 18.sp,
+                color = tokens.textPrimary,
+                modifier = Modifier.padding(bottom = 16.dp)
+            )
+
+            Card(
+                shape = RoundedCornerShape(tokens.cornerRadius),
+                colors = CardDefaults.cardColors(containerColor = tokens.surface),
+                modifier = Modifier.fillMaxWidth().clickable {
+                    val resume = onResumeRun
+                    if (resume != null) resume(currentDraft.runId) else onContinueEditing()
+                }
+            ) {
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Text(
+                        text = currentDraft.title,
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 16.sp,
+                        color = tokens.textPrimary,
+                        maxLines = 2
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "${currentDraft.completedSections} of ${currentDraft.totalSections} articles completed",
+                        fontSize = 14.sp,
+                        color = tokens.textSecondary
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    LinearProgressIndicator(
+                        progress = currentDraft.completedSections.toFloat() / currentDraft.totalSections.toFloat(),
+                        modifier = Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp)),
+                        color = tokens.primaryAccent,
+                        trackColor = tokens.primaryAccent.copy(alpha = 0.2f)
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Run ${currentDraft.runId.take(8)} · ${currentDraft.status}",
+                        fontSize = 11.sp,
+                        color = tokens.textSecondary
+                    )
+                }
             }
         }
     }
@@ -252,7 +324,18 @@ fun RecentIssueCard(file: File, onClick: (String) -> Unit) {
     val rawName = file.nameWithoutExtension
     val coverFilename = "${rawName}_cover.jpg"
     val coverFile = File(file.parentFile, coverFilename)
-    val title = rawName.substringAfterLast("_").replace("-", " ")
+    // Files are magazine_<epochMillis>_<safeTopic>.pdf, and saveFilesToDisk
+    // builds safeTopic by replacing every non-alphanumeric char with "_" — so
+    // spaces inside the topic are underscores too, indistinguishable from the
+    // structural ones. The topic is therefore everything from segment 2 on.
+    // substringAfterLast("_") took only the final word, titling "Space
+    // Exploration" as "Exploration" here while My Library showed it in full.
+    val titleParts = rawName.split("_")
+    val title = if (titleParts.size > 2) {
+        titleParts.subList(2, titleParts.size).joinToString(" ")
+    } else {
+        rawName.replace("_", " ")
+    }.trim().replace(Regex("\\s+"), " ")
     
     Column(
         modifier = Modifier

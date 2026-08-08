@@ -20,7 +20,14 @@ data class GenerationRunRequest(
     @SerializedName("enableByline") val enableByline: Boolean = true,
     @SerializedName("coverImageUrl") val coverImageUrl: String = "",
     @SerializedName("backCoverImageUrl") val backCoverImageUrl: String = "",
-    @SerializedName("articleImageUrls") val articleImageUrls: List<String> = emptyList()
+    @SerializedName("articleImageUrls") val articleImageUrls: List<String> = emptyList(),
+    // Issue bible forwarded from the brief. When these are empty the backend
+    // spends an extra LLM call regenerating a voice guide server-side, and the
+    // regenerated one can drift from the brief the user already approved.
+    @SerializedName("voiceGuide") val voiceGuide: String = "",
+    @SerializedName("forbiddenPhrases") val forbiddenPhrases: List<String> = emptyList(),
+    @SerializedName("authorCast") val authorCast: List<String> = emptyList(),
+    @SerializedName("articleAngles") val articleAngles: List<String> = emptyList()
 )
 
 data class GenerationRunCreateResponse(

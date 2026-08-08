@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
+import com.magazineforge.app.network.resolveApiUrl
 import com.magazineforge.app.ui.theme.*
 import org.json.JSONArray
 
@@ -54,7 +55,9 @@ fun loadTemplates(context: Context): List<TemplateModel> {
                 description = obj.getString("description"),
                 thumbnailUrl = obj.getString("thumbnailUrl"),
                 texTemplate = obj.getString("texTemplate"),
-                samplePdfUrl = obj.optString("samplePdfUrl", "")
+                // template_config.json stores this host-less; BASE_URL is
+                // prepended here so the gallery follows the proxy switch.
+                samplePdfUrl = resolveApiUrl(obj.optString("samplePdfUrl", ""))
             )
         )
     }

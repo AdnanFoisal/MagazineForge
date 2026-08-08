@@ -168,10 +168,10 @@ fun SettingsScreen(
                             .weight(1f)
                             .height(100.dp)
                             .clip(RoundedCornerShape(8.dp))
-                            .background(if (theme.isDark) Color(0xFF1A1A1A) else Color(0xFFF5F5F5))
+                            .background(theme.screenBackground)
                             .border(
                                 width = if (isSelected) 2.dp else 1.dp,
-                                color = if (isSelected) MaterialTheme.colorScheme.primary else Color.Gray.copy(alpha = 0.3f),
+                                color = if (isSelected) theme.primaryAccent else theme.textSecondary.copy(alpha = 0.35f),
                                 shape = RoundedCornerShape(8.dp)
                             )
                             .clickable {
@@ -180,12 +180,39 @@ fun SettingsScreen(
                             },
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(
-                            text = theme.displayName,
-                            style = MaterialTheme.typography.labelMedium.copy(
-                                color = if (theme.isDark) Color.White else Color.Black
+                        // Preview each theme in its own colours rather than a
+                        // generic light/dark swatch.
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(14.dp)
+                                        .clip(RoundedCornerShape(3.dp))
+                                        .background(theme.primaryAccent)
+                                )
+                                Box(
+                                    modifier = Modifier
+                                        .size(14.dp)
+                                        .clip(RoundedCornerShape(3.dp))
+                                        .background(theme.secondaryAccent)
+                                )
+                                Box(
+                                    modifier = Modifier
+                                        .size(14.dp)
+                                        .clip(RoundedCornerShape(3.dp))
+                                        .background(theme.surface)
+                                )
+                            }
+                            Text(
+                                text = theme.displayName,
+                                style = MaterialTheme.typography.labelMedium.copy(
+                                    color = theme.textPrimary
+                                )
                             )
-                        )
+                        }
                     }
                 }
                 if (rowThemes.size == 1) {

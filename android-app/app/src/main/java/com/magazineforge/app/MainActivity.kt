@@ -92,9 +92,11 @@ class MainActivity : ComponentActivity() {
         val secureStorage = SecureStorage(this)
         val savedUrl = secureStorage.getLiteLLMUrl()
         
-        val savedThemeId = secureStorage.getThemeId()
-        val initialTheme = com.magazineforge.app.ui.theme.AllThemes.find { it.id == savedThemeId } ?: com.magazineforge.app.ui.theme.SunsetEditorial
-        com.magazineforge.app.ui.theme.ThemeState.setTheme(initialTheme)
+        // themeForId() resolves live ids directly and maps ids from the previous
+        // six-theme set onto the closest current theme. Matching against
+        // AllThemes here instead would send every upgrading user to the default
+        // and discard that mapping.
+        com.magazineforge.app.ui.theme.ThemeState.setThemeById(secureStorage.getThemeId())
 
         setContent {
             MagazineForgeTheme {

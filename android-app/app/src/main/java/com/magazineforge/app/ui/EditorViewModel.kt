@@ -63,8 +63,17 @@ sealed class CompileState {
     data class Error(val message: String) : CompileState()
 }
 
+/**
+ * Caps the topic segment of a persisted magazine filename. Bounds the whole name
+ * well inside the 255-byte filesystem limit even for multi-byte scripts (the
+ * prompt this is derived from is unbounded, and an over-long name makes the save
+ * throw), and matches the rename field's limit so a generated title is always
+ * short enough to edit in place.
+ */
+private const val MAX_TOPIC_SEGMENT = 60
+
 class EditorViewModel : ViewModel() {
-    
+
     private val _generationRunState = MutableStateFlow<GenerationRunState>(GenerationRunState.Idle)
     val generationRunState = _generationRunState.asStateFlow()
     
@@ -240,7 +249,11 @@ class EditorViewModel : ViewModel() {
                         enableBackCover = safeConfig.enableBackCover,
                         enableTocTeasers = safeConfig.enableTocTeasers,
                         enableByline = safeConfig.enableByline,
-                        coverImageUrl = ""
+                        coverImageUrl = "",
+                        voiceGuide = brief.voiceGuide ?: "",
+                        forbiddenPhrases = brief.forbiddenPhrases ?: emptyList(),
+                        authorCast = brief.authorCast ?: emptyList(),
+                        articleAngles = brief.articleAngles ?: emptyList()
                     )
                     
                     _generationRunState.value = GenerationRunState.Loading("Starting run...")
@@ -319,7 +332,14 @@ class EditorViewModel : ViewModel() {
                     enableByline = config.enableByline,
                     coverImageUrl = coverImageUrl,
                     backCoverImageUrl = backCoverImageUrl,
-                    articleImageUrls = articleImgUrls
+                    articleImageUrls = articleImgUrls,
+                    // Forward the brief's issue bible. Omitting it makes the
+                    // backend burn an extra LLM call rebuilding a voice guide
+                    // that can drift from the brief the user just approved.
+                    voiceGuide = brief.voiceGuide ?: "",
+                    forbiddenPhrases = brief.forbiddenPhrases ?: emptyList(),
+                    authorCast = brief.authorCast ?: emptyList(),
+                    articleAngles = brief.articleAngles ?: emptyList()
                 )
 
                 val runResponse = ApiClient.retrofitService.createGenerationRun(
@@ -537,15 +557,72 @@ class EditorViewModel : ViewModel() {
         }
     }
     
+    /**
+     * The backend declares the retry path parameter as `section_id: int`, while
+     * GET /generation-runs/{run_id} reports `sectionId` as a JSON *string*
+     * (generation_runs.py stringifies section_index). The model keeps String so
+     * it mirrors the wire format and stays usable as a UI key; the conversion
+     * to Int happens here, at the call site, so a non-numeric id fails fast with
+     * a visible message instead of 422-ing on the server.
+     */
     fun retryGenerationSection(sectionId: String) {
         val runId = currentRunId ?: return
+        val sectionIndex = sectionId.toIntOrNull()
+        if (sectionIndex == null) {
+            _generationRunState.value = GenerationRunState.Error("Can't retry section '$sectionId' — unexpected section id.")
+            return
+        }
         viewModelScope.launch {
             try {
-                val response = ApiClient.retrofitService.retryGenerationSection(runId, sectionId, currentLiteLLMUrl, currentLiteLLMKey)
+                val response = ApiClient.retrofitService.retryGenerationSection(runId, sectionIndex, currentLiteLLMUrl, currentLiteLLMKey)
                 if (response.isSuccessful) {
                     startPollingRun(runId)
+                } else {
+                    _generationRunState.value = GenerationRunState.Error("Failed to retry section: ${response.code()}")
                 }
-            } catch(e: Exception) {}
+            } catch(e: Exception) {
+                _generationRunState.value = GenerationRunState.Error("Retry error: ${e.message}")
+            }
+        }
+    }
+
+    /**
+     * Abort the active run: stop polling immediately so the UI is released even
+     * if the network call is slow, then tell the backend to mark the run
+     * CANCELLED (POST /generation-runs/{run_id}/cancel -> 202). The stale
+     * snapshot is deleted so Home won't offer a cancelled run to resume.
+     */
+    fun cancelGenerationRun() {
+        val runId = currentRunId ?: return
+        pollingJob?.cancel()
+        pollingJob = null
+        currentRunId = null
+
+        val message = "Generation cancelled."
+        _generationRunState.value = GenerationRunState.Error(message)
+        if (_schemaState.value is SchemaState.Loading) {
+            _schemaState.value = SchemaState.Error(message)
+        }
+        if (_latexState.value is LatexState.Loading) {
+            _latexState.value = LatexState.Error(message)
+        }
+        if (_compileState.value is CompileState.Loading) {
+            _compileState.value = CompileState.Error(message)
+        }
+
+        viewModelScope.launch {
+            try {
+                ApiClient.retrofitService.cancelGenerationRun(runId)
+            } catch (e: Exception) {
+                // The local run is already torn down; a failed cancel only means
+                // the server finishes work nobody is waiting for.
+            }
+            withContext(Dispatchers.IO) {
+                try {
+                    val snapshot = File(appContext?.filesDir, "run_snapshot.json")
+                    if (snapshot.exists()) snapshot.delete()
+                } catch (e: Exception) { }
+            }
         }
     }
 
@@ -727,8 +804,13 @@ class EditorViewModel : ViewModel() {
                                 title = currentTopic,
                                 templateVariant = currentVariant,
                                 latexCode = currentRawLatex,
-                                pdfUrl = "https://adnanfoisal-magazineforge.hf.space/job/$jobId/download",
-                                coverImageUrl = if (coverBytes != null) currentCoverUrl else ""
+                                // Stored host-less so the record survives the
+                                // move to the Worker proxy. Resolved through
+                                // resolveApiUrl() at display time.
+                                pdfUrl = "job/$jobId/download",
+                                coverImageUrl = if (coverBytes != null && currentCoverUrl.isNotEmpty()) {
+                                    "job/$jobId/cover"
+                                } else ""
                             )
                             com.magazineforge.app.network.ShowcaseRepository().publishMagazine(showcaseItem)
                         } catch (e: Exception) {
@@ -759,7 +841,19 @@ class EditorViewModel : ViewModel() {
                 if (!dir.exists()) {
                     dir.mkdirs()
                 }
-                val safeTopic = currentTopic.replace("[^a-zA-Z0-9]".toRegex(), "_")
+                // \p{L}/\p{N} are Unicode-category classes, so non-Latin titles
+                // survive. The old [^a-zA-Z0-9] mapped every CJK/Cyrillic/accented
+                // character to "_", so a topic like "日本語" became "___" and the
+                // library rendered a blank card title that search could never
+                // match. "." stays excluded — it would break nameWithoutExtension,
+                // which is how the topic is parsed back out.
+                val safeTopic = currentTopic
+                    .replace("[^\\p{L}\\p{N}]".toRegex(), "_")
+                    .replace("_+".toRegex(), "_")
+                    .trim('_')
+                    .take(MAX_TOPIC_SEGMENT)
+                    .trim('_')
+                    .ifEmpty { "Untitled" }
                 val timestamp = System.currentTimeMillis()
                 val filename = "magazine_${timestamp}_${safeTopic}.pdf"
                 val persistentFile = File(dir, filename)

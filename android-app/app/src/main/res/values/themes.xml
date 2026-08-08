@@ -1,12 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <style name="Theme.MagazineForge" parent="android:Theme.Material.Light.NoActionBar">
-        <item name="android:statusBarColor">#F6F4F0</item>
-        <item name="android:navigationBarColor">#F6F4F0</item>
+        <!-- Matches DefaultTheme (PaperAndInk) screenBackground; Compose overrides
+             these at runtime once MagazineForgeTheme applies the active theme. -->
+        <item name="android:statusBarColor">#F4EFE6</item>
+        <item name="android:navigationBarColor">#F4EFE6</item>
+        <item name="android:windowBackground">#F4EFE6</item>
     </style>
     
     <style name="Theme.App.Starting" parent="Theme.SplashScreen">
-        <item name="windowSplashScreenBackground">#0F172A</item>
+        <!-- Must match DefaultTheme (PaperAndInk) screenBackground in ThemeTokens.kt
+             so there is no visible seam between the system splash and SplashScreen. -->
+        <item name="windowSplashScreenBackground">#F4EFE6</item>
         <item name="windowSplashScreenAnimatedIcon">@drawable/transparent</item>
         <item name="postSplashScreenTheme">@style/Theme.MagazineForge</item>
     </style>

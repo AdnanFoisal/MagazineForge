@@ -130,11 +130,12 @@ fun LatexNotebookScreen(
     var searchQuery by remember { mutableStateOf("") }
     var showMenu by remember { mutableStateOf(false) }
 
-    // Colors
-    val editorBg = Color(0xFF1E1E1E) // VSCode Dark Theme background
-    val gutterBg = Color(0xFF252526)
-    val lineNumberColor = Color(0xFF858585)
-    val textColor = Color(0xFFFFFFFF) // Pure white for better contrast
+    // Colors come from the theme's dedicated editor surfaces, which stay dark
+    // even under light themes so code always reads as code.
+    val editorBg = tokens.editorSurface
+    val gutterBg = tokens.editorGutter
+    val lineNumberColor = tokens.editorTextSecondary
+    val textColor = tokens.editorText
     val accentColor = tokens.primaryAccent
 
     val horizontalScrollState = rememberScrollState()
@@ -143,15 +144,15 @@ fun LatexNotebookScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { 
+                title = {
                     Column {
                         Text("LaTeX Editor", color = accentColor, style = com.magazineforge.app.ui.theme.LuxeTypography.titleMedium)
-                        Text("magboy_engine_v3", color = tokens.textSecondary, fontSize = 10.sp)
+                        Text("magboy_engine_v3", color = tokens.editorTextSecondary, fontSize = 10.sp)
                     }
                 },
                 navigationIcon = {
                     IconButton(onClick = onBack) {
-                        Icon(Icons.Default.ArrowBack, "Back", tint = tokens.textPrimary)
+                        Icon(Icons.Default.ArrowBack, "Back", tint = tokens.editorText)
                     }
                 },
                 actions = {
@@ -167,7 +168,7 @@ fun LatexNotebookScreen(
                         },
                         enabled = undoStack.isNotEmpty()
                     ) {
-                        Icon(Icons.Default.Undo, "Undo", tint = if (undoStack.isNotEmpty()) tokens.textPrimary else tokens.textSecondary.copy(alpha=0.3f))
+                        Icon(Icons.Default.Undo, "Undo", tint = if (undoStack.isNotEmpty()) tokens.editorText else tokens.editorTextSecondary.copy(alpha=0.3f))
                     }
                     
                     IconButton(
@@ -182,34 +183,34 @@ fun LatexNotebookScreen(
                         },
                         enabled = redoStack.isNotEmpty()
                     ) {
-                        Icon(Icons.Default.Redo, "Redo", tint = if (redoStack.isNotEmpty()) tokens.textPrimary else tokens.textSecondary.copy(alpha=0.3f))
+                        Icon(Icons.Default.Redo, "Redo", tint = if (redoStack.isNotEmpty()) tokens.editorText else tokens.editorTextSecondary.copy(alpha=0.3f))
                     }
 
                     IconButton(onClick = { showSearch = !showSearch }) {
-                        Icon(Icons.Default.Search, "Search", tint = if (showSearch) accentColor else tokens.textPrimary)
+                        Icon(Icons.Default.Search, "Search", tint = if (showSearch) accentColor else tokens.editorText)
                     }
-                    
+
                     val currentContext = androidx.compose.ui.platform.LocalContext.current
                     Box {
                         IconButton(onClick = { showMenu = true }) {
-                            Icon(Icons.Default.MoreVert, contentDescription = "More options", tint = tokens.textPrimary)
+                            Icon(Icons.Default.MoreVert, contentDescription = "More options", tint = tokens.editorText)
                         }
                         DropdownMenu(
                             expanded = showMenu,
                             onDismissRequest = { showMenu = false },
-                            modifier = Modifier.background(tokens.surface)
+                            modifier = Modifier.background(tokens.editorGutter)
                         ) {
                             DropdownMenuItem(
-                                text = { Text("Clear Editor", color = Color.Red) },
-                                onClick = { 
+                                text = { Text("Clear Editor", color = Color(0xFFE5484D)) },
+                                onClick = {
                                     undoStack = undoStack + latexCode
                                     textFieldValue = TextFieldValue("")
                                     onCodeChange("")
-                                    showMenu = false 
+                                    showMenu = false
                                 }
                             )
                             DropdownMenuItem(
-                                text = { Text("Save .tex File", color = tokens.textPrimary) },
+                                text = { Text("Save .tex File", color = tokens.editorText) },
                                 onClick = { 
                                     showMenu = false
                                     saveLatexToDownloads(currentContext, latexCode)
@@ -250,10 +251,10 @@ fun LatexNotebookScreen(
                         value = searchQuery,
                         onValueChange = { searchQuery = it },
                         modifier = Modifier.weight(1f),
-                        placeholder = { Text("Find...", color = tokens.textSecondary) },
+                        placeholder = { Text("Find...", color = tokens.editorTextSecondary) },
                         colors = OutlinedTextFieldDefaults.colors(
-                            focusedTextColor = tokens.textPrimary,
-                            unfocusedTextColor = tokens.textPrimary,
+                            focusedTextColor = tokens.editorText,
+                            unfocusedTextColor = tokens.editorText,
                             focusedBorderColor = accentColor,
                             unfocusedBorderColor = Color.Transparent,
                             focusedContainerColor = editorBg,
@@ -263,7 +264,7 @@ fun LatexNotebookScreen(
                         trailingIcon = {
                             if (searchQuery.isNotEmpty()) {
                                 IconButton(onClick = { searchQuery = "" }) {
-                                    Icon(Icons.Default.Close, "Clear", tint = tokens.textSecondary)
+                                    Icon(Icons.Default.Close, "Clear", tint = tokens.editorTextSecondary)
                                 }
                             }
                         }

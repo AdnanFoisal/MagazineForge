@@ -16,35 +16,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.magazineforge.app.ui.theme.IconMark
 import com.magazineforge.app.ui.theme.LocalThemeTokens
 import com.magazineforge.app.ui.theme.ThemeBackground
-
-@Composable
-fun IconMark(modifier: Modifier = Modifier) {
-    val tokens = LocalThemeTokens.current
-    // Two-tone folded ribbon / bookmark mark
-    androidx.compose.foundation.Canvas(modifier = modifier) {
-        val width = size.width
-        val height = size.height
-        
-        val path1 = androidx.compose.ui.graphics.Path().apply {
-            moveTo(width * 0.2f, height * 0.1f)
-            lineTo(width * 0.6f, height * 0.1f)
-            lineTo(width * 0.8f, height * 0.5f)
-            lineTo(width * 0.4f, height * 0.9f)
-            close()
-        }
-        val path2 = androidx.compose.ui.graphics.Path().apply {
-            moveTo(width * 0.6f, height * 0.1f)
-            lineTo(width * 0.8f, height * 0.1f)
-            lineTo(width * 0.8f, height * 0.8f)
-            lineTo(width * 0.4f, height * 0.9f)
-            close()
-        }
-        drawPath(path1, color = tokens.iconMarkTint1)
-        drawPath(path2, color = tokens.iconMarkTint2)
-    }
-}
 
 @Composable
 fun OnboardingScreen(

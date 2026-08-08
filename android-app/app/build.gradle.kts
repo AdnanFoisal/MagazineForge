@@ -26,6 +26,34 @@ android {
         val hfToken = localProperties.getProperty("HF_TOKEN") ?: ""
         buildConfigField("String", "HF_TOKEN", "\"$hfToken\"")
 
+        // ── App key for the Cloudflare Worker proxy ────────────────────────
+        // Set APP_KEY in local.properties (gitignored) to the value you passed
+        // to `wrangler secret put APP_KEY`. See cloudflare-worker/README.md.
+        //
+        // Rather than emitting a plain `static final String` — which lands in
+        // the DEX string constant pool and is recoverable with a single
+        // `strings | grep` — the key is XOR'd against a fixed pad and emitted
+        // as an int[]. Array initialisers compile to bytecode in <clinit>, not
+        // to a pooled string constant, so the key is not greppable and does
+        // not survive a naive `strings` dump. ApiClient.deobfuscateAppKey()
+        // reverses it at runtime.
+        //
+        // This is a speed bump, NOT a secret store. Anyone running jadx can
+        // read the pad and the array and recover the key in a few minutes.
+        // The real protection is that this key is worthless on its own: it
+        // only unlocks the Worker proxy, is rotatable server-side, and — most
+        // importantly — is NOT the HuggingFace token.
+        //
+        // Defaults to an empty key when local.properties has no APP_KEY entry,
+        // so a build with no secrets configured still succeeds (mirrors the
+        // `?: ""` fallback used for HF_TOKEN above).
+        val appKey = localProperties.getProperty("APP_KEY") ?: ""
+        val xorPad = intArrayOf(0x5A, 0xC3, 0x1F, 0x76, 0xE2, 0x8B, 0x4D, 0x39)
+        val obfuscated = appKey.toByteArray(Charsets.UTF_8)
+            .mapIndexed { i, b -> (b.toInt() and 0xFF) xor xorPad[i % xorPad.size] }
+        buildConfigField("int[]", "APP_KEY_X", obfuscated.joinToString(",", "{", "}"))
+        buildConfigField("int[]", "APP_KEY_PAD", xorPad.joinToString(",", "{", "}"))
+
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables {
             useSupportLibrary = true
@@ -43,13 +71,21 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            // R8 full-mode shrink + obfuscate, and strip unused resources.
+            // Keep rules live in proguard-rules.pro — this project reflects
+            // heavily (Gson, Retrofit, Firebase), so those rules are load
+            // bearing, not decorative.
+            isMinifyEnabled = true
+            isShrinkResources = true
             signingConfig = signingConfigs.getByName("release")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
             )
         }
+        // debug is intentionally left at the AGP defaults (isMinifyEnabled =
+        // false). `assembleDebug` must stay fast and un-obfuscated so stack
+        // traces from the build agent remain readable.
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17

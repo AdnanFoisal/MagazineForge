@@ -52,7 +52,8 @@ data class ChartSchema(
     @SerializedName("chart_type") var chartType: String,
     @SerializedName("x_label") var xLabel: String,
     @SerializedName("y_label") var yLabel: String,
-    @SerializedName("data_points") var dataPoints: List<DataPointSchema>
+    @SerializedName("data_points") var dataPoints: List<DataPointSchema>,
+    @SerializedName("description") var description: String = ""
 ) : PageSchema()
 
 data class PhotoEssaySchema(
@@ -161,7 +162,18 @@ data class GenerateBriefResponse(
     @SerializedName("article_count")
     val articleCount: Int,
     @SerializedName("articles")
-    val articles: List<BriefArticle>
+    val articles: List<BriefArticle>,
+    // Issue bible. The backend declares these Optional, and the MOCK_COMPILE
+    // brief response omits them entirely, so they stay nullable — Gson leaves
+    // absent fields null regardless of a Kotlin default.
+    @SerializedName("voice_guide")
+    val voiceGuide: String? = "",
+    @SerializedName("forbidden_phrases")
+    val forbiddenPhrases: List<String>? = emptyList(),
+    @SerializedName("author_cast")
+    val authorCast: List<String>? = emptyList(),
+    @SerializedName("article_angles")
+    val articleAngles: List<String>? = emptyList()
 )
 
 data class GenerateBriefRequest(

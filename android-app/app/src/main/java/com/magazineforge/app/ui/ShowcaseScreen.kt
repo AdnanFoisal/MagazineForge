@@ -22,6 +22,8 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.magazineforge.app.models.ShowcaseItem
 import com.magazineforge.app.network.ShowcaseRepository
+import com.magazineforge.app.network.resolveApiUrl
+import com.magazineforge.app.ui.theme.AllThemes
 import com.magazineforge.app.ui.theme.LocalThemeTokens
 
 
@@ -40,7 +42,9 @@ fun ShowcaseScreen(
     var showcaseItems by remember { mutableStateOf<List<ShowcaseItem>>(emptyList()) }
     var isLoading by remember { mutableStateOf(true) }
     var selectedFilter by remember { mutableStateOf("All") }
-    val filters = listOf("All", "Sunset Editorial", "Amber Noir", "Cosmic Purple", "Nature Sage", "Riso Print", "Emerald Editorial")
+    // Derived from the live theme set so renaming or replacing themes never
+    // leaves a dead filter chip behind.
+    val filters = remember { listOf("All") + AllThemes.map { it.displayName } }
 
     LaunchedEffect(Unit) {
         isLoading = true
@@ -123,7 +127,7 @@ fun ShowcaseScreen(
                             if (item.latexCode.isNotEmpty()) {
                                 viewModel.compileRaw(context, item.latexCode, item.title, item.templateVariant, true)
                             } else if (item.pdfUrl.isNotEmpty()) {
-                                onMagazineSelected(item.pdfUrl)
+                                onMagazineSelected(resolveApiUrl(item.pdfUrl))
                             }
                         }
                     )
@@ -143,9 +147,9 @@ fun ShowcaseCard(item: ShowcaseItem, onClick: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(8.dp),
-        colors = CardDefaults.cardColors(containerColor = androidx.compose.ui.graphics.Color(0xFF1A1A1A)),
-        border = androidx.compose.foundation.BorderStroke(1.dp, androidx.compose.ui.graphics.Color(0xFF2A2A2A))
+        shape = RoundedCornerShape(tokens.cornerRadius),
+        colors = CardDefaults.cardColors(containerColor = tokens.surface),
+        border = androidx.compose.foundation.BorderStroke(1.dp, tokens.textSecondary.copy(alpha = 0.25f))
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Box(modifier = Modifier
@@ -156,18 +160,16 @@ fun ShowcaseCard(item: ShowcaseItem, onClick: () -> Unit) {
             ) {
                 if (item.coverImageUrl.isNotEmpty()) {
                     CoverArtImage(
-                        model = item.coverImageUrl,
+                        model = resolveApiUrl(item.coverImageUrl),
                         contentDescription = "Cover Image",
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.fillMaxSize()
                     )
                 } else {
-                    val gradientColor1 = remember(item.templateVariant) { 
-                        androidx.compose.ui.graphics.Color((0xFF000000..0xFFFFFFFF).random()) 
-                    }
-                    val gradientColor2 = remember(item.templateVariant) { 
-                        androidx.compose.ui.graphics.Color((0xFF000000..0xFFFFFFFF).random()) 
-                    }
+                    // Deterministic per-variant gradient drawn from the theme's
+                    // accents, so placeholders stay on-brand instead of random.
+                    val gradientColor1 = tokens.primaryAccent
+                    val gradientColor2 = tokens.secondaryAccent
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
@@ -181,7 +183,7 @@ fun ShowcaseCard(item: ShowcaseItem, onClick: () -> Unit) {
                         Text(
                             text = item.templateVariant.take(2).uppercase(),
                             style = LuxeTypography.displayMedium.copy(
-                                color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.5f),
+                                color = tokens.ctaText.copy(alpha = 0.6f),
                                 fontWeight = androidx.compose.ui.text.font.FontWeight.Black
                             )
                         )

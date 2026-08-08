@@ -1,0 +1,16 @@
+{
+  "name": "magazineforge-proxy",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Token proxy that keeps HF_TOKEN out of the MagazineForge APK",
+  "scripts": {
+    "dev": "wrangler dev",
+    "check": "node tools/check-allowlist.mjs",
+    "deploy": "npm run check && wrangler deploy",
+    "tail": "wrangler tail"
+  },
+  "devDependencies": {
+    "wrangler": "^4.40.3"
+  }
+}

@@ -87,9 +87,17 @@ interface ApiService {
     @POST("generation-runs/{run_id}/retry/{section_id}")
     suspend fun retryGenerationSection(
         @Path("run_id") runId: String,
-        @Path("section_id") sectionId: String,
+        @Path("section_id") sectionId: Int,
         @Header("X-LiteLLM-Url") litellmUrl: String,
         @Header("X-LiteLLM-Key") litellmKey: String
+    ): Response<com.magazineforge.app.models.GenerationRunCreateResponse>
+
+    // POST /generation-runs/{run_id}/cancel -> 202 {"runId": ..., "status": "CANCELLED"}
+    // The backend handler takes no Request and never calls get_api_keys, so —
+    // unlike /continue and /retry — this endpoint sends no LiteLLM headers.
+    @POST("generation-runs/{run_id}/cancel")
+    suspend fun cancelGenerationRun(
+        @Path("run_id") runId: String
     ): Response<com.magazineforge.app.models.GenerationRunCreateResponse>
 
     @POST("generate-latex")

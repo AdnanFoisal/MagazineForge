@@ -6,7 +6,7 @@
     "description": "Elegant serif typography with a minimalist clean slate.",
     "thumbnailUrl": "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?q=80&w=600&auto=format&fit=crop",
     "texTemplate": "cover_template_a",
-    "samplePdfUrl": "https://adnanfoisal-magazineforge.hf.space/static/samples/food_classic.pdf"
+    "samplePdfUrl": "static/samples/food_classic.pdf"
   },
   {
     "id": "food_modern",
@@ -15,7 +15,7 @@
     "description": "Bold, punchy sans-serif with vibrant color blocking.",
     "thumbnailUrl": "https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=600&auto=format&fit=crop",
     "texTemplate": "cover_template_b",
-    "samplePdfUrl": "https://adnanfoisal-magazineforge.hf.space/static/samples/food_modern.pdf"
+    "samplePdfUrl": "static/samples/food_modern.pdf"
   },
   {
     "id": "food_rustic",
@@ -24,7 +24,7 @@
     "description": "Warm, earthy tones with organic layout structures.",
     "thumbnailUrl": "https://images.unsplash.com/photo-1555939594-58d7cb561ad1?q=80&w=600&auto=format&fit=crop",
     "texTemplate": "cover_template_c",
-    "samplePdfUrl": "https://adnanfoisal-magazineforge.hf.space/static/samples/food_rustic.pdf"
+    "samplePdfUrl": "static/samples/food_rustic.pdf"
   },
   {
     "id": "travel_landscape",
@@ -33,7 +33,7 @@
     "description": "Full-bleed landscape imagery with minimal condensed text.",
     "thumbnailUrl": "https://images.unsplash.com/photo-1469854523086-cc02fe5d8800?q=80&w=600&auto=format&fit=crop",
     "texTemplate": "cover_template_a",
-    "samplePdfUrl": "https://adnanfoisal-magazineforge.hf.space/static/samples/travel_landscape.pdf"
+    "samplePdfUrl": "static/samples/travel_landscape.pdf"
   },
   {
     "id": "travel_journal",
@@ -42,7 +42,7 @@
     "description": "Diary-style callouts with overlapping photo frames.",
     "thumbnailUrl": "https://images.unsplash.com/photo-1501504905252-473c47e087f8?q=80&w=600&auto=format&fit=crop",
     "texTemplate": "cover_template_b",
-    "samplePdfUrl": "https://adnanfoisal-magazineforge.hf.space/static/samples/travel_journal.pdf"
+    "samplePdfUrl": "static/samples/travel_journal.pdf"
   },
   {
     "id": "travel_guide",
@@ -51,7 +51,7 @@
     "description": "Structured, information-dense grid with bold accents.",
     "thumbnailUrl": "https://images.unsplash.com/photo-1499856871958-5b9627545d1a?q=80&w=600&auto=format&fit=crop",
     "texTemplate": "cover_template_c",
-    "samplePdfUrl": "https://adnanfoisal-magazineforge.hf.space/static/samples/travel_guide.pdf"
+    "samplePdfUrl": "static/samples/travel_guide.pdf"
   },
   {
     "id": "tech_cyber",
@@ -60,7 +60,7 @@
     "description": "High-contrast dark mode with electric monospace accents.",
     "thumbnailUrl": "https://images.unsplash.com/photo-1526374965328-7f61d4dc18c5?q=80&w=600&auto=format&fit=crop",
     "texTemplate": "cover_template_a",
-    "samplePdfUrl": "https://adnanfoisal-magazineforge.hf.space/static/samples/tech_cyber.pdf"
+    "samplePdfUrl": "static/samples/tech_cyber.pdf"
   },
   {
     "id": "tech_minimal",
@@ -69,7 +69,7 @@
     "description": "Stark white background with precise geometric sans-serifs.",
     "thumbnailUrl": "https://images.unsplash.com/photo-1498050108023-c5249f4df085?q=80&w=600&auto=format&fit=crop",
     "texTemplate": "cover_template_b",
-    "samplePdfUrl": "https://adnanfoisal-magazineforge.hf.space/static/samples/tech_minimal.pdf"
+    "samplePdfUrl": "static/samples/tech_minimal.pdf"
   },
   {
     "id": "tech_spec",
@@ -78,7 +78,7 @@
     "description": "Grid-locked data layout with glowing highlight lines.",
     "thumbnailUrl": "https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=600&auto=format&fit=crop",
     "texTemplate": "cover_template_c",
-    "samplePdfUrl": "https://adnanfoisal-magazineforge.hf.space/static/samples/tech_spec.pdf"
+    "samplePdfUrl": "static/samples/tech_spec.pdf"
   },
   {
     "id": "lifestyle_vogue",
@@ -87,7 +87,7 @@
     "description": "Ultra-thin typography with immense negative space.",
     "thumbnailUrl": "https://images.unsplash.com/photo-1445205170230-053b83016050?q=80&w=600&auto=format&fit=crop",
     "texTemplate": "cover_template_a",
-    "samplePdfUrl": "https://adnanfoisal-magazineforge.hf.space/static/samples/lifestyle_vogue.pdf"
+    "samplePdfUrl": "static/samples/lifestyle_vogue.pdf"
   },
   {
     "id": "lifestyle_indie",
@@ -96,7 +96,7 @@
     "description": "Pastel tones with playful, unconventional text placement.",
     "thumbnailUrl": "https://images.unsplash.com/photo-1512418490979-92798cec1380?q=80&w=600&auto=format&fit=crop",
     "texTemplate": "cover_template_b",
-    "samplePdfUrl": "https://adnanfoisal-magazineforge.hf.space/static/samples/lifestyle_indie.pdf"
+    "samplePdfUrl": "static/samples/lifestyle_indie.pdf"
   },
   {
     "id": "lifestyle_wellness",
@@ -105,7 +105,7 @@
     "description": "Earthy nudes and beige with soft serif typography.",
     "thumbnailUrl": "https://images.unsplash.com/photo-1506126613408-eca07ce68773?q=80&w=600&auto=format&fit=crop",
     "texTemplate": "cover_template_c",
-    "samplePdfUrl": "https://adnanfoisal-magazineforge.hf.space/static/samples/lifestyle_wellness.pdf"
+    "samplePdfUrl": "static/samples/lifestyle_wellness.pdf"
   },
   {
     "id": "science_cosmos",
@@ -114,7 +114,7 @@
     "description": "Navy backgrounds with vibrant data callouts.",
     "thumbnailUrl": "https://images.unsplash.com/photo-1462331940025-496dfbfc7564?q=80&w=600&auto=format&fit=crop",
     "texTemplate": "cover_template_a",
-    "samplePdfUrl": "https://adnanfoisal-magazineforge.hf.space/static/samples/science_cosmos.pdf"
+    "samplePdfUrl": "static/samples/science_cosmos.pdf"
   },
   {
     "id": "science_nature",
@@ -123,7 +123,7 @@
     "description": "Forest green accents overlaid on highly detailed imagery.",
     "thumbnailUrl": "https://images.unsplash.com/photo-1423666639041-f56000c27a9a?q=80&w=600&auto=format&fit=crop",
     "texTemplate": "cover_template_b",
-    "samplePdfUrl": "https://adnanfoisal-magazineforge.hf.space/static/samples/science_nature.pdf"
+    "samplePdfUrl": "static/samples/science_nature.pdf"
   },
   {
     "id": "science_journal",
@@ -132,7 +132,7 @@
     "description": "Structured, multi-column classic journal style.",
     "thumbnailUrl": "https://images.unsplash.com/photo-1532094349884-543bc11b234d?q=80&w=600&auto=format&fit=crop",
     "texTemplate": "cover_template_c",
-    "samplePdfUrl": "https://adnanfoisal-magazineforge.hf.space/static/samples/science_journal.pdf"
+    "samplePdfUrl": "static/samples/science_journal.pdf"
   },
   {
     "id": "custom_corporate",
@@ -141,7 +141,7 @@
     "description": "Clean, predictable, balanced business style.",
     "thumbnailUrl": "https://images.unsplash.com/photo-1497215728101-856f4ea42174?q=80&w=600&auto=format&fit=crop",
     "texTemplate": "cover_template_a",
-    "samplePdfUrl": "https://adnanfoisal-magazineforge.hf.space/static/samples/custom_corporate.pdf"
+    "samplePdfUrl": "static/samples/custom_corporate.pdf"
   },
   {
     "id": "custom_bold",
@@ -150,7 +150,7 @@
     "description": "Massive typography with primary brand colors.",
     "thumbnailUrl": "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=600&auto=format&fit=crop",
     "texTemplate": "cover_template_b",
-    "samplePdfUrl": "https://adnanfoisal-magazineforge.hf.space/static/samples/custom_bold.pdf"
+    "samplePdfUrl": "static/samples/custom_bold.pdf"
   },
   {
     "id": "custom_blank",
@@ -159,6 +159,6 @@
     "description": "Minimalist framework ready for any content.",
     "thumbnailUrl": "https://images.unsplash.com/photo-1513542789411-b6a5d4f31634?q=80&w=600&auto=format&fit=crop",
     "texTemplate": "cover_template_c",
-    "samplePdfUrl": "https://adnanfoisal-magazineforge.hf.space/static/samples/custom_blank.pdf"
+    "samplePdfUrl": "static/samples/custom_blank.pdf"
   }
 ]

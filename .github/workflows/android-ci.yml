@@ -28,18 +28,28 @@ jobs:
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
-      - name: Create local.properties with HF_TOKEN
-        # Write both sdk.dir and HF_TOKEN (if the repo secret is set) so
-        # BuildConfig.HF_TOKEN is populated and the app can authenticate
-        # against the private Hugging Face Space at runtime. If the secret
-        # is not set, HF_TOKEN falls back to an empty string and the build
-        # still succeeds — the app just won't be able to reach the backend
-        # until the user enters credentials manually.
+      - name: Create local.properties with build secrets
+        # Write sdk.dir plus the two build secrets.
+        #
+        # HF_TOKEN populates BuildConfig.HF_TOKEN so the app can authenticate
+        # directly against the Hugging Face Space (the current BASE_URL).
+        #
+        # APP_KEY populates the XOR-obfuscated BuildConfig.APP_KEY_X used to
+        # send the X-App-Key header to the Cloudflare Worker proxy. It must
+        # match the value given to `wrangler secret put APP_KEY` — see
+        # cloudflare-worker/README.md. It is only load-bearing AFTER BASE_URL
+        # is switched to the Worker URL; until then the Space ignores it.
+        #
+        # Both fall back to an empty string when the repo secret is unset
+        # (app/build.gradle.kts uses `?: ""`), so the build still succeeds on a
+        # fork or a fresh clone with no secrets configured — the resulting APK
+        # simply cannot reach the backend.
         working-directory: android-app
         run: |
           cat > local.properties <<EOF
           sdk.dir=$ANDROID_HOME
           HF_TOKEN=${{ secrets.HF_TOKEN }}
+          APP_KEY=${{ secrets.APP_KEY }}
           EOF
 
       - name: Grant execute permission for gradlew
@@ -78,8 +88,13 @@ jobs:
 
       - name: Run Unit Tests
         # Tests run AFTER the upload so a test failure doesn't block the
-        # APK from being published. Test results are still visible in the
-        # Actions logs.
+        # APK from being published — the upload step above uses `if: always()`
+        # and has already completed by this point.
+        #
+        # NOTE: `continue-on-error: true` was removed here. It made every test
+        # failure a green check, so a broken test was indistinguishable from a
+        # passing one. There are currently no test sources under app/src/test,
+        # so this step runs zero tests and passes trivially; removing the flag
+        # changes nothing today and makes failures real once tests are added.
         run: ./gradlew testDebugUnitTest --no-daemon
         working-directory: android-app
-        continue-on-error: true

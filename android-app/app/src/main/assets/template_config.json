@@ -1,5 +1,14 @@
 [
   {
+    "id": "auto_choose",
+    "name": "⚡ Auto-Choose Template",
+    "category": "Featured",
+    "description": "AI automatically analyzes your prompt and topic to choose the perfect layout template (Variant A, B, or C).",
+    "thumbnailUrl": "https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=600&auto=format&fit=crop",
+    "texTemplate": "cover_template_auto",
+    "samplePdfUrl": "static/samples/food_classic.pdf"
+  },
+  {
     "id": "food_classic",
     "name": "Classic Dining",
     "category": "Food",

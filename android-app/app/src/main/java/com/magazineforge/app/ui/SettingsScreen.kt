@@ -57,6 +57,7 @@ fun SettingsScreen(
         
         item {
             var userNameInput by remember { mutableStateOf(secureStorage.getUserName()) }
+            var isSaved by remember { mutableStateOf(false) }
             Card(
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 shape = RoundedCornerShape(12.dp)
@@ -68,7 +69,7 @@ fun SettingsScreen(
                         onValueChange = {
                             if (it.length <= 7) {
                                 userNameInput = it
-                                secureStorage.saveUserName(it)
+                                isSaved = false
                             }
                         },
                         modifier = Modifier.fillMaxWidth(),
@@ -81,6 +82,16 @@ fun SettingsScreen(
                             focusedLabelColor = MaterialTheme.colorScheme.primary
                         )
                     )
+                    Button(
+                        onClick = {
+                            secureStorage.saveUserName(userNameInput)
+                            isSaved = true
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                    ) {
+                        Text(if (isSaved) "Profile Saved!" else "Save Profile")
+                    }
                 }
             }
         }

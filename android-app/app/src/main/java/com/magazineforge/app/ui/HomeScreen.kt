@@ -119,7 +119,7 @@ fun HomeScreen(
     ) {
         val context = androidx.compose.ui.platform.LocalContext.current
         val secureStorage = remember { com.magazineforge.app.utils.SecureStorage(context) }
-        val userName = remember { secureStorage.getUserName() }
+        val userName = secureStorage.getUserName()
 
         val greeting = remember {
             val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)

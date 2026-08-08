@@ -117,29 +117,30 @@ fun HomeScreen(
             .padding(top = 24.dp)
             .padding(horizontal = 24.dp)
     ) {
-        // Greeting — time-based: "Good morning" before 12:00, "Good afternoon"
-        // 12:00-17:00, "Good evening" 17:00-22:00, "Good night" after 22:00.
-        // Recomputed every time the screen enters composition.
+        val context = androidx.compose.ui.platform.LocalContext.current
+        val secureStorage = remember { com.magazineforge.app.utils.SecureStorage(context) }
+        val userName = remember { secureStorage.getUserName() }
+
         val greeting = remember {
             val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
             when (hour) {
-                in 0..11 -> "Good morning"
-                in 12..16 -> "Good afternoon"
-                in 17..21 -> "Good evening"
-                else -> "Good night"
+                in 5..11 -> "Good Morning"
+                in 12..16 -> "Good Afternoon"
+                in 17..21 -> "Good Evening"
+                else -> "Good Night"
             }
         }
         val greetingEmoji = remember {
             val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
             when (hour) {
-                in 0..11 -> "\uD83C\uDF1E"  // sunrise
+                in 5..11 -> "\uD83C\uDF1E"  // sunrise
                 in 12..16 -> "\u2600\uFE0F"  // sun
                 in 17..21 -> "\uD83C\uDF05"  // sunset
                 else -> "\uD83C\uDF19"        // crescent moon
             }
         }
         Text(
-            text = "$greeting, Maker $greetingEmoji",
+            text = "$greeting, $userName $greetingEmoji",
             fontFamily = tokens.wordmarkFontFamily,
             fontWeight = FontWeight.Bold,
             fontSize = 28.sp,

@@ -49,4 +49,14 @@ class SecureStorage(context: Context) {
     fun getThemeId(): String? {
         return sharedPreferences.getString("active_theme_id", null)
     }
+
+    fun saveUserName(name: String) {
+        val trimmed = name.trim().take(7)
+        sharedPreferences.edit().putString("user_name", if (trimmed.isEmpty()) "Maker" else trimmed).apply()
+    }
+
+    fun getUserName(): String {
+        val name = sharedPreferences.getString("user_name", "Maker")
+        return if (name.isNullOrBlank()) "Maker" else name.take(7)
+    }
 }

@@ -56,6 +56,36 @@ fun SettingsScreen(
         }
         
         item {
+            var userNameInput by remember { mutableStateOf(secureStorage.getUserName()) }
+            Card(
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Column(modifier = Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    Text("User Profile", style = MaterialTheme.typography.titleMedium.copy(color = MaterialTheme.colorScheme.onSurface))
+                    OutlinedTextField(
+                        value = userNameInput,
+                        onValueChange = {
+                            if (it.length <= 7) {
+                                userNameInput = it
+                                secureStorage.saveUserName(it)
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        label = { Text("Your Name (Max 7 chars)") },
+                        placeholder = { Text("e.g. Adam") },
+                        singleLine = true,
+                        supportingText = { Text("${userNameInput.length}/7 characters — fits cleanly on greeting line") },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = MaterialTheme.colorScheme.primary,
+                            focusedLabelColor = MaterialTheme.colorScheme.primary
+                        )
+                    )
+                }
+            }
+        }
+
+        item {
             Card(
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 shape = RoundedCornerShape(12.dp)

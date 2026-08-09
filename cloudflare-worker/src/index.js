@@ -33,7 +33,7 @@ const FILE = '[A-Za-z0-9._-]{1,128}';
  * the two non-Retrofit call sites that also resolve against
  * ApiClient.BASE_URL. Nothing here is guessed.
  *
- * 20 routes total: 18 Retrofit + /assets/<file> + /static/samples/<file>.
+ * 21 routes total: 19 Retrofit + /assets/<file> + /static/samples/<file>.
  * If you add an endpoint to ApiService.kt, add it here too or it will 404.
  */
 const ALLOWLIST = [
@@ -45,6 +45,7 @@ const ALLOWLIST = [
   ['GET', `^/job/${ID}/status$`],                            // getJobStatus
   ['GET', `^/job/${ID}/download$`],                          // downloadJob (streams PDF)
   ['GET', `^/job/${ID}/cover$`],                             // downloadCover (streams JPEG)
+  ['POST', `^/extract-contract$`],                          // extractContract (Intent Gate)
   ['POST', `^/generate-brief$`],                            // generateBrief
   ['POST', `^/generate-schema$`],                           // generateSchema
   ['POST', `^/generation-runs$`],                           // createGenerationRun (?generate_all=)

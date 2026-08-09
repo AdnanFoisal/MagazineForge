@@ -32,7 +32,8 @@ import com.magazineforge.app.ui.EditorViewModel
 import com.magazineforge.app.ui.OnboardingScreen
 import com.magazineforge.app.ui.PdfViewerScreen
 import com.magazineforge.app.ui.SplashScreen
-import com.magazineforge.app.ui.TemplateGalleryScreen
+import com.magazineforge.app.ui.IntentCardScreen
+import com.magazineforge.app.ui.templateVariantForRegister
 import com.magazineforge.app.ui.MyMagazinesScreen
 import com.magazineforge.app.ui.ShowcaseScreen
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -60,7 +61,6 @@ import androidx.compose.material.icons.filled.Collections
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material.icons.filled.Book
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.Style
 import com.magazineforge.app.ui.SettingsScreen
 import androidx.compose.foundation.ExperimentalFoundationApi
 import com.magazineforge.app.ui.SplashScreen
@@ -108,10 +108,32 @@ class MainActivity : ComponentActivity() {
                     val context = androidx.compose.ui.platform.LocalContext.current
                     
                     var currentScreen by rememberSaveable { mutableStateOf("splash") }
-                    var selectedTemplate by remember { mutableStateOf("") }
-                    var selectedTemplateName by remember { mutableStateOf("") }
-                    var initialEditorPrompt by remember { mutableStateOf("") }
+                    // The prompt the user typed in the editor, carried across to
+                    // the intent gate so the card can show what it was derived
+                    // from and so a retry can re-extract without going back.
+                    var pendingPrompt by remember { mutableStateOf("") }
+                    // Set once the user confirms the intent card. Its
+                    // visualRegister picks the cover variant unless Settings
+                    // carries an explicit override.
+                    var confirmedContract by remember { mutableStateOf<com.magazineforge.app.models.ContractSchema?>(null) }
+                    // The other two arguments the editor's "Generate Brief" tap
+                    // carries. Held here because that tap now detours through
+                    // the intent gate before the brief is actually requested.
+                    var pendingReferenceImages by remember { mutableStateOf<List<String>>(emptyList()) }
+                    var pendingArticleCount by remember { mutableIntStateOf(-1) }
                     val secureStorage = remember { SecureStorage(context) }
+                    // Which cover template the run uses. An explicit Visual Style
+                    // in Settings always wins; "auto" (the default) defers to the
+                    // register on the contract the user confirmed at the gate.
+                    // Read at tap time so a Settings change needs no observer.
+                    val resolveTemplateVariant: () -> String = {
+                        val override = secureStorage.getVisualRegister()
+                        if (override != SecureStorage.VISUAL_REGISTER_AUTO) {
+                            templateVariantForRegister(override)
+                        } else {
+                            templateVariantForRegister(confirmedContract?.visualRegister)
+                        }
+                    }
                     var litellmUrl by remember { mutableStateOf(secureStorage.getLiteLLMUrl() ?: "") }
                     var litellmKey by remember { mutableStateOf(secureStorage.getLiteLLMKey() ?: "") }
 
@@ -130,6 +152,7 @@ class MainActivity : ComponentActivity() {
                     viewModel.initContext(androidx.compose.ui.platform.LocalContext.current)
                     
                     val briefState by viewModel.briefState.collectAsState()
+                    val contractState by viewModel.contractState.collectAsState()
                     val schemaState by viewModel.schemaState.collectAsState()
                     val latexState by viewModel.latexState.collectAsState()
                     val compileState by viewModel.compileState.collectAsState()
@@ -184,7 +207,7 @@ class MainActivity : ComponentActivity() {
 
                     Scaffold(
                         bottomBar = {
-                            val bottomTabRoutes = listOf("home", "library", "latex_notebook", "templates", "settings")
+                            val bottomTabRoutes = listOf("home", "library", "latex_notebook", "settings")
                             if (currentScreen in bottomTabRoutes && selectedPdfForViewer == null && compileState !is CompileState.Success && compileState !is CompileState.Error) {
                                 NavigationBar(
                                     containerColor = LocalThemeTokens.current.surface,
@@ -194,7 +217,6 @@ class MainActivity : ComponentActivity() {
                                         Triple("home", "Home", Icons.Default.Home),
                                         Triple("library", "Library", Icons.Default.Book),
                                         Triple("latex_notebook", "Editor", Icons.Default.Edit),
-                                        Triple("templates", "Templates", Icons.Default.Style),
                                         Triple("settings", "Settings", Icons.Default.Settings)
                                     )
                                     items.forEach { (route, label, icon) ->
@@ -257,7 +279,7 @@ class MainActivity : ComponentActivity() {
                             } else {
                                 val isCompileLoading = compileState is CompileState.Loading
 
-                                val bottomTabRoutes = listOf("home", "library", "latex_notebook", "templates", "settings")
+                                val bottomTabRoutes = listOf("home", "library", "latex_notebook", "settings")
 
                                 BackHandler(enabled = currentScreen != "home" && currentScreen in bottomTabRoutes) {
                                     currentScreen = "home"
@@ -273,8 +295,8 @@ class MainActivity : ComponentActivity() {
                                             viewModel = viewModel,
                                             onMagazineSelected = { url -> selectedPdfForViewer = url },
                                             onContinueEditing = { currentScreen = "latex_notebook" },
-                                            onFullAiModeClicked = { editorInitialTab = 0; viewModel.resetState(); currentScreen = "templates" },
-                                            onAssistedModeClicked = { editorInitialTab = 1; viewModel.resetState(); currentScreen = "templates" },
+                                            onFullAiModeClicked = { editorInitialTab = 0; viewModel.resetState(); confirmedContract = null; pendingPrompt = ""; currentScreen = "editor" },
+                                            onAssistedModeClicked = { editorInitialTab = 1; viewModel.resetState(); confirmedContract = null; pendingPrompt = ""; currentScreen = "editor" },
                                             onViewLibrary = { currentScreen = "library" }
                                         )
                                         "library" -> MyMagazinesScreen(
@@ -295,22 +317,23 @@ class MainActivity : ComponentActivity() {
                                                 }
                                             }
                                         )
-                                        "templates" -> TemplateGalleryScreen(
-                                            runState = viewModel.generationRunState.collectAsState().value,
-                                            onTemplateSelected = { template, description, name ->
-                                                selectedTemplate = template
-                                                initialEditorPrompt = description
-                                                selectedTemplateName = name
+                                        "intent" -> IntentCardScreen(
+                                            contractState = contractState,
+                                            prompt = pendingPrompt,
+                                            onConfirm = { contract ->
+                                                confirmedContract = contract
+                                                viewModel.generateBrief(
+                                                    litellmUrl,
+                                                    litellmKey,
+                                                    pendingPrompt,
+                                                    pendingReferenceImages,
+                                                    pendingArticleCount,
+                                                    contract
+                                                )
                                                 currentScreen = "editor"
                                             },
-                                            onPreviewSelected = { templateVariant ->
-                                                viewModel.isFullAiMode = false
-                                                viewModel.generateChunkedPreview(litellmUrl, litellmKey, templateVariant)
-                                                currentScreen = "co_author"
-                                            },
-                                            onLibraryClicked = { currentScreen = "library" },
-                                            onPublishClicked = { currentScreen = "showcase" },
-                                            onEditorClicked = { currentScreen = "latex_notebook" }
+                                            onRetry = { viewModel.extractContract(litellmUrl, litellmKey, pendingPrompt) },
+                                            onBack = { currentScreen = "editor" }
                                         )
                                         "settings" -> SettingsScreen(
                                             currentLiteLLMUrl = litellmUrl,
@@ -352,7 +375,11 @@ class MainActivity : ComponentActivity() {
                                             }
                                         )
                                         "editor" -> EditorScreen(
-                                            initialPrompt = initialEditorPrompt,
+                                            // Starts empty on every fresh entry — the Home tiles
+                                            // clear pendingPrompt. This only ever carries the
+                                            // user's OWN prompt back after the intent-gate detour,
+                                            // which unmounts the editor and would otherwise drop it.
+                                            initialPrompt = pendingPrompt,
                                             isCompileLoading = schemaState is SchemaState.Loading || latexState is LatexState.Loading || compileState is CompileState.Loading,
                                             runState = runState,
                                             briefState = briefState,
@@ -361,7 +388,15 @@ class MainActivity : ComponentActivity() {
                                             compileState = compileState,
                                             initialTabIndex = editorInitialTab,
                                             onGenerateBrief = { prompt, referenceImages, articleCount ->
-                                                viewModel.generateBrief(litellmUrl, litellmKey, prompt, referenceImages, articleCount)
+                                                // The brief is no longer requested here. The prompt
+                                                // first goes through the intent gate; confirming
+                                                // there is what fires generateBrief, with the
+                                                // contract attached.
+                                                pendingPrompt = prompt
+                                                pendingReferenceImages = referenceImages
+                                                pendingArticleCount = articleCount
+                                                viewModel.extractContract(litellmUrl, litellmKey, prompt)
+                                                currentScreen = "intent"
                                             },
                                             onCompileFromBrief = { prompt, config, brief, coverImgUrl, backCoverImgUrl, refImages ->
                                                 viewModel.isFullAiMode = true
@@ -369,17 +404,18 @@ class MainActivity : ComponentActivity() {
                                                 viewModel.pendingTone = brief.tone
                                                 viewModel.pendingStyleDna = brief.styleDna
                                                 viewModel.pendingConfig = config
-                                                
+
                                                 viewModel.startFullAiGeneration(
                                                     litellmUrl = litellmUrl,
                                                     litellmKey = litellmKey,
                                                     prompt = prompt,
-                                                    templateVariant = selectedTemplate,
+                                                    templateVariant = resolveTemplateVariant(),
                                                     config = config,
                                                     brief = brief,
                                                     coverImageUrl = coverImgUrl,
                                                     backCoverImageUrl = backCoverImgUrl,
-                                                    referenceImageUrls = refImages
+                                                    referenceImageUrls = refImages,
+                                                    contract = confirmedContract
                                                 )
                                             },
                                             onCompileClicked = { magazineTopic, pages, config, coverImgUrl ->
@@ -393,10 +429,10 @@ class MainActivity : ComponentActivity() {
                                                     "Theme: $magazineTopic\n\nRequired Structure:\n$pagesStr\n\n(CRITICAL INSTRUCTION: You MUST strictly adhere to the [CUSTOMIZATION CONFIGURATION] for each page. Adapt your language, formatting, and generation to perfectly match the requested Tone and Layout Density. You MUST also use the exact Target Image URLs provided above for each corresponding page. Do NOT override them with Pollinations URLs unless no Target Image URL was provided.)\n(GLOBAL STYLE RULE: Dynamically adapt your writing tone, voice, and pacing to perfectamente match the specific magazine topic and target audience. Do not rely on a single default persona; if the topic is serious, be authoritative and measured; if it's pop-culture, be punchy and witty. Regardless of the dynamically chosen tone, you MUST strictly avoid generic AI transitions like 'In conclusion', 'Let's dive into', or 'A testament to'. Emphasize 'show, don't tell'. Focus heavily on rich formatting, using bullet points, bold text, blockquotes, and visual breaks frequently to make the reading experience dynamic.)"
                                                 }
                                                 viewModel.generateSchema(
-                                                    litellmUrl = litellmUrl, 
-                                                    litellmKey = litellmKey, 
-                                                    magazineTopic = finalTopic, 
-                                                    templateName = selectedTemplate,
+                                                    litellmUrl = litellmUrl,
+                                                    litellmKey = litellmKey,
+                                                    magazineTopic = finalTopic,
+                                                    templateName = resolveTemplateVariant(),
                                                     config = config,
                                                     coverImageUrl = coverImgUrl
                                                 )
@@ -438,7 +474,7 @@ class MainActivity : ComponentActivity() {
                                         )
                                         "onboarding" -> OnboardingScreen(
                                             onCreateClicked = { currentScreen = "home" },
-                                            onExploreClicked = { currentScreen = "templates" }
+                                            onExploreClicked = { currentScreen = "showcase" }
                                         )
                                         "showcase" -> ShowcaseScreen(
                                             viewModel = viewModel,
@@ -448,8 +484,8 @@ class MainActivity : ComponentActivity() {
                                             viewModel = viewModel,
                                             onMagazineSelected = { url -> selectedPdfForViewer = url },
                                             onContinueEditing = { currentScreen = "latex_notebook" },
-                                            onFullAiModeClicked = { editorInitialTab = 0; viewModel.resetState(); currentScreen = "templates" },
-                                            onAssistedModeClicked = { editorInitialTab = 1; viewModel.resetState(); currentScreen = "templates" },
+                                            onFullAiModeClicked = { editorInitialTab = 0; viewModel.resetState(); confirmedContract = null; pendingPrompt = ""; currentScreen = "editor" },
+                                            onAssistedModeClicked = { editorInitialTab = 1; viewModel.resetState(); confirmedContract = null; pendingPrompt = ""; currentScreen = "editor" },
                                             onViewLibrary = { currentScreen = "library" }
                                         )
                                     }
@@ -532,9 +568,15 @@ class MainActivity : ComponentActivity() {
                                 } else {
                                     when (currentScreen) {
                                         "editor" -> {
-                                            currentScreen = "templates"
+                                            currentScreen = "home"
                                         }
-                                        "templates", "library", "gallery", "showcase" -> {
+                                        "intent" -> {
+                                            // Back out to the prompt, not out of the
+                                            // flow — the prompt is still in pendingPrompt
+                                            // and the editor restores it.
+                                            currentScreen = "editor"
+                                        }
+                                        "library", "gallery", "showcase" -> {
                                             currentScreen = "home"
                                         }
                                         "co_author" -> {

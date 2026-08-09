@@ -50,6 +50,13 @@ interface ApiService {
         @Path("job_id") jobId: String
     ): Response<ResponseBody>
 
+    @POST("extract-contract")
+    suspend fun extractContract(
+        @Header("X-LiteLLM-Url") litellmUrl: String,
+        @Header("X-LiteLLM-Key") litellmKey: String,
+        @Body request: com.magazineforge.app.models.ExtractContractRequest
+    ): Response<com.magazineforge.app.models.ExtractContractResponse>
+
     @POST("generate-brief")
     suspend fun generateBrief(
         @Header("X-LiteLLM-Url") litellmUrl: String,

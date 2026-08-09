@@ -3,9 +3,11 @@ package com.magazineforge.app.ui
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Visibility
@@ -189,6 +191,58 @@ fun SettingsScreen(
             }
         }
         
+        item {
+            var selectedVisualRegister by remember { mutableStateOf(secureStorage.getVisualRegister()) }
+            Card(
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Column(modifier = Modifier.padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    Text("Visual Style", style = MaterialTheme.typography.titleMedium.copy(color = MaterialTheme.colorScheme.onSurface))
+                    Text(
+                        "Auto lets the AI pick the register from what you asked for. Choose one to override it.",
+                        style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    )
+                    // Four chips do not fit across a 360dp phone once the screen and
+                    // card padding are taken out, and Material3 1.2.0's FilterChip has
+                    // no contentPadding to trim, so the row scrolls instead of
+                    // squeezing "Editorial"/"Technical" onto two lines.
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState()),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        for (register in SecureStorage.VISUAL_REGISTERS) {
+                            val isSelected = selectedVisualRegister == register
+                            FilterChip(
+                                selected = isSelected,
+                                onClick = {
+                                    selectedVisualRegister = register
+                                    secureStorage.saveVisualRegister(register)
+                                },
+                                label = {
+                                    Text(
+                                        text = register.replaceFirstChar {
+                                            if (it.isLowerCase()) it.titlecase(java.util.Locale.getDefault()) else it.toString()
+                                        },
+                                        style = MaterialTheme.typography.labelMedium,
+                                        maxLines = 1
+                                    )
+                                },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = MaterialTheme.colorScheme.primary,
+                                    selectedLabelColor = MaterialTheme.colorScheme.onPrimary,
+                                    containerColor = MaterialTheme.colorScheme.surface,
+                                    labelColor = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            )
+                        }
+                    }
+                }
+            }
+        }
+
         item {
             Text(
                 "Appearance", 

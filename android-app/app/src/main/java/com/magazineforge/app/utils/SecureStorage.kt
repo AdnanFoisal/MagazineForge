@@ -6,6 +6,14 @@ import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
 
 class SecureStorage(context: Context) {
+    companion object {
+        /** Settings' Visual Style is not overriding the contract. */
+        const val VISUAL_REGISTER_AUTO = "auto"
+
+        /** Every value [saveVisualRegister] will persist. */
+        val VISUAL_REGISTERS = listOf(VISUAL_REGISTER_AUTO, "editorial", "modern", "technical")
+    }
+
     private val sharedPreferences: SharedPreferences = try {
         val masterKey = MasterKey.Builder(context)
             .setKeyScheme(MasterKey.KeyScheme.AES256_GCM)
@@ -66,6 +74,23 @@ class SecureStorage(context: Context) {
     
     fun getThemeId(): String? {
         return sharedPreferences.getString("active_theme_id", null)
+    }
+
+    /**
+     * Visual Style override for the Intent Gate. "auto" (the default, and what
+     * an unknown or missing value resolves to) means the confirmed contract's
+     * own visual_register decides the cover variant; anything else overrides it.
+     * Always stored lowercase so comparisons never need to case-fold.
+     */
+    fun saveVisualRegister(register: String) {
+        val normalized = register.trim().lowercase()
+        val safe = if (normalized in VISUAL_REGISTERS) normalized else VISUAL_REGISTER_AUTO
+        sharedPreferences.edit().putString("visual_register", safe).apply()
+    }
+
+    fun getVisualRegister(): String {
+        val stored = sharedPreferences.getString("visual_register", VISUAL_REGISTER_AUTO)?.lowercase()
+        return if (stored != null && stored in VISUAL_REGISTERS) stored else VISUAL_REGISTER_AUTO
     }
 
     fun saveUserName(name: String) {

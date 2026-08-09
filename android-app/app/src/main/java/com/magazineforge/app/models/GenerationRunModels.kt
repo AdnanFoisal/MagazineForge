@@ -28,7 +28,8 @@ data class GenerationRunRequest(
     @SerializedName("forbiddenPhrases") val forbiddenPhrases: List<String> = emptyList(),
     @SerializedName("authorCast") val authorCast: List<String> = emptyList(),
     @SerializedName("articleAngles") val articleAngles: List<String> = emptyList(),
-    @SerializedName("paperTone") val paperTone: String = "cream"
+    @SerializedName("paperTone") val paperTone: String = "cream",
+    @SerializedName("contract") val contract: ContractSchema? = null
 )
 
 data class GenerationRunCreateResponse(

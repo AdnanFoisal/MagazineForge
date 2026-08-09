@@ -154,6 +154,36 @@ data class BriefArticle(
     val topic: String
 )
 
+// Intent Gate. The backend declares these with Pydantic snake_case field names,
+// so unlike the camelCase request DTOs below they serialize as must_cover /
+// visual_register / extraction_ok.
+data class ContractSchema(
+    @SerializedName("subject")
+    val subject: String = "",
+    @SerializedName("audience")
+    val audience: String = "general interest",
+    @SerializedName("must_cover")
+    val mustCover: List<String> = emptyList(),
+    @SerializedName("avoid")
+    val avoid: List<String> = emptyList(),
+    @SerializedName("language")
+    val language: String = "en",
+    @SerializedName("visual_register")
+    val visualRegister: String = "editorial"
+)
+
+data class ExtractContractRequest(
+    @SerializedName("prompt")
+    val prompt: String
+)
+
+data class ExtractContractResponse(
+    @SerializedName("contract")
+    val contract: ContractSchema? = null,
+    @SerializedName("extraction_ok")
+    val extractionOk: Boolean = false
+)
+
 data class GenerateBriefResponse(
     @SerializedName("category")
     val category: String,
@@ -177,7 +207,9 @@ data class GenerateBriefResponse(
     @SerializedName("author_cast")
     val authorCast: List<String>? = emptyList(),
     @SerializedName("article_angles")
-    val articleAngles: List<String>? = emptyList()
+    val articleAngles: List<String>? = emptyList(),
+    @SerializedName("contract")
+    val contract: ContractSchema? = null
 )
 
 data class GenerateBriefRequest(
@@ -186,7 +218,9 @@ data class GenerateBriefRequest(
     @SerializedName("referenceImages")
     val referenceImages: List<String> = emptyList(),
     @SerializedName("articleCount")
-    val articleCount: Int? = null
+    val articleCount: Int? = null,
+    @SerializedName("contract")
+    val contract: ContractSchema? = null
 )
 
 data class GenerateSchemaRequest(
@@ -217,7 +251,9 @@ data class GenerateSchemaRequest(
     @SerializedName("coverImageUrl")
     val coverImageUrl: String = "",
     @SerializedName("paperTone")
-    val paperTone: String = "cream"
+    val paperTone: String = "cream",
+    @SerializedName("contract")
+    val contract: ContractSchema? = null
 )
 
 data class GenerateLatexRequest(

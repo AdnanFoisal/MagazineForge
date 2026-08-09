@@ -5,6 +5,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.google.firebase.storage.FirebaseStorage
 import com.magazineforge.app.models.ArticleSchema
+import com.magazineforge.app.models.ContractSchema
+import com.magazineforge.app.models.ExtractContractRequest
 import com.magazineforge.app.models.MagazineSchema
 import com.magazineforge.app.network.ApiClient
 import kotlinx.coroutines.Dispatchers
@@ -40,6 +42,21 @@ sealed class BriefState {
     object Loading : BriefState()
     data class Success(val brief: GenerateBriefResponse) : BriefState()
     data class Error(val message: String) : BriefState()
+}
+
+/**
+ * The intent gate's state. [Success] carries the extractor's own verdict
+ * alongside the contract because the backend answers 200 with `subject` set to
+ * the raw prompt when parsing failed — indistinguishable from a clean read
+ * without [Success.extractionOk]. `contract` stays nullable: Gson builds these
+ * data classes through Unsafe, so a field the backend omitted arrives null no
+ * matter what default the DTO declares.
+ */
+sealed class ContractState {
+    object Idle : ContractState()
+    object Loading : ContractState()
+    data class Success(val contract: ContractSchema?, val extractionOk: Boolean) : ContractState()
+    data class Error(val message: String) : ContractState()
 }
 
 sealed class SchemaState {
@@ -95,6 +112,18 @@ class EditorViewModel : ViewModel() {
 
     private val _briefState = MutableStateFlow<BriefState>(BriefState.Idle)
     val briefState = _briefState.asStateFlow()
+
+    private val _contractState = MutableStateFlow<ContractState>(ContractState.Idle)
+    val contractState = _contractState.asStateFlow()
+
+    /**
+     * The contract the user confirmed at the intent gate. Every downstream
+     * request carries it so the backend builds from what the user agreed to
+     * rather than re-reading the raw prompt. Null until the gate is passed,
+     * which the DTOs already treat as "no contract".
+     */
+    var confirmedContract: ContractSchema? = null
+        private set
 
     private val _schemaState = MutableStateFlow<SchemaState>(SchemaState.Idle)
     val schemaState = _schemaState.asStateFlow()
@@ -156,6 +185,8 @@ class EditorViewModel : ViewModel() {
     fun resetState() {
         _generationRunState.value = GenerationRunState.Idle
         _briefState.value = BriefState.Idle
+        _contractState.value = ContractState.Idle
+        confirmedContract = null
         _schemaState.value = SchemaState.Idle
         pollingJob?.cancel()
         _latexState.value = LatexState.Idle
@@ -180,19 +211,94 @@ class EditorViewModel : ViewModel() {
         }
     }
 
-    fun generateBrief(litellmUrl: String, litellmKey: String, prompt: String, referenceImages: List<String> = emptyList(), articleCount: Int? = null) {
+    fun resetContractState() {
+        if (_contractState.value is ContractState.Error) {
+            _contractState.value = ContractState.Idle
+        }
+    }
+
+    /**
+     * The intent gate. Asks the backend what it understood from the prompt so the
+     * user can confirm or correct it before committing to a generation run that
+     * takes minutes.
+     *
+     * A 200 with a null contract, or `extraction_ok: false`, is not an error here
+     * — the gate is still shown so the user can fill the fields in by hand. Only
+     * transport and HTTP failures land in [ContractState.Error].
+     */
+    fun extractContract(litellmUrl: String, litellmKey: String, prompt: String) {
+        if (prompt.isBlank()) {
+            _contractState.value = ContractState.Error("Prompt can't be empty")
+            return
+        }
+        currentLiteLLMUrl = litellmUrl
+        currentLiteLLMKey = litellmKey
+        _contractState.value = ContractState.Loading
+
+        viewModelScope.launch {
+            try {
+                ApiClient.ensureSpaceAwake()
+                val request = ExtractContractRequest(prompt = prompt)
+                val response = ApiClient.retrofitService.extractContract(litellmUrl, litellmKey, request)
+
+                if (response.isSuccessful) {
+                    val body = response.body()
+                    if (body != null) {
+                        _contractState.value = ContractState.Success(
+                            contract = body.contract,
+                            extractionOk = body.extractionOk
+                        )
+                    } else {
+                        _contractState.value = ContractState.Error("Empty response body")
+                    }
+                } else {
+                    val code = response.code()
+                    if (code == 401 || code == 429) {
+                        _contractState.value = ContractState.Error("Your API keys may be invalid or rate-limited — check them in Settings")
+                    } else {
+                        val errorStr = response.errorBody()?.string() ?: "Unknown error"
+                        _contractState.value = ContractState.Error("Error $code: $errorStr")
+                    }
+                }
+            } catch (e: java.net.SocketTimeoutException) {
+                _contractState.value = ContractState.Error("Request timed out. The server might be warming up or busy.")
+            } catch (e: Exception) {
+                _contractState.value = ContractState.Error(e.message ?: "Reading your prompt failed unexpectedly")
+            }
+        }
+    }
+
+    fun generateBrief(
+        litellmUrl: String,
+        litellmKey: String,
+        prompt: String,
+        referenceImages: List<String> = emptyList(),
+        articleCount: Int? = null,
+        contract: ContractSchema? = null
+    ) {
         if (prompt.isBlank()) {
             _briefState.value = BriefState.Error("Prompt can't be empty")
             return
         }
         currentLiteLLMUrl = litellmUrl
         currentLiteLLMKey = litellmKey
+        // Latch the gate's result so the run request built later — after the user
+        // reviews the brief — carries the same contract without having to thread
+        // it back down through the UI.
+        if (contract != null) {
+            confirmedContract = contract
+        }
         _briefState.value = BriefState.Loading
-        
+
         viewModelScope.launch {
             try {
                 ApiClient.ensureSpaceAwake()
-                val request = GenerateBriefRequest(prompt = prompt, referenceImages = referenceImages, articleCount = articleCount)
+                val request = GenerateBriefRequest(
+                    prompt = prompt,
+                    referenceImages = referenceImages,
+                    articleCount = articleCount,
+                    contract = confirmedContract
+                )
                 val response = ApiClient.retrofitService.generateBrief(litellmUrl, litellmKey, request)
                 
                 if (response.isSuccessful) {
@@ -262,7 +368,8 @@ class EditorViewModel : ViewModel() {
                         forbiddenPhrases = brief.forbiddenPhrases ?: emptyList(),
                         authorCast = brief.authorCast ?: emptyList(),
                         articleAngles = brief.articleAngles ?: emptyList(),
-                        paperTone = safeConfig.paperTone
+                        paperTone = safeConfig.paperTone,
+                        contract = confirmedContract
                     )
                     
                     _generationRunState.value = GenerationRunState.Loading("Starting run...")
@@ -300,11 +407,15 @@ class EditorViewModel : ViewModel() {
         brief: com.magazineforge.app.models.GenerateBriefResponse,
         coverImageUrl: String = "",
         backCoverImageUrl: String = "",
-        referenceImageUrls: List<String> = emptyList()
+        referenceImageUrls: List<String> = emptyList(),
+        contract: ContractSchema? = null
     ) {
         isFullAiMode = true
         currentLiteLLMUrl = litellmUrl
         currentLiteLLMKey = litellmKey
+        if (contract != null) {
+            confirmedContract = contract
+        }
         val normalizedVariant = normalizeTemplateVariant(templateVariant)
         if (normalizedVariant == null) {
             val message = "Unsupported template: $templateVariant"
@@ -356,7 +467,11 @@ class EditorViewModel : ViewModel() {
                     forbiddenPhrases = brief.forbiddenPhrases ?: emptyList(),
                     authorCast = brief.authorCast ?: emptyList(),
                     articleAngles = brief.articleAngles ?: emptyList(),
-                    paperTone = config.paperTone
+                    paperTone = config.paperTone,
+                    // What the user confirmed at the intent gate. Without it the
+                    // backend falls back to re-reading the raw prompt, which is
+                    // exactly the guesswork the gate exists to replace.
+                    contract = confirmedContract
                 )
 
                 val runResponse = ApiClient.retrofitService.createGenerationRun(
@@ -529,7 +644,8 @@ class EditorViewModel : ViewModel() {
                     enableTocTeasers = safeConfig.enableTocTeasers,
                     enableByline = safeConfig.enableByline,
                     coverImageUrl = coverImageUrl,
-                    paperTone = safeConfig.paperTone
+                    paperTone = safeConfig.paperTone,
+                    contract = confirmedContract
                 )
                 val response = ApiClient.retrofitService.generateSchema(
                     litellmUrl = litellmUrl,

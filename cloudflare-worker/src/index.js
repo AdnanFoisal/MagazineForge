@@ -42,6 +42,7 @@ const ALLOWLIST = [
   ['POST', `^/upload-asset-fast$`],                         // uploadAssetFast (?quality=)
   ['GET', `^/health$`],                                     // checkHealth / ensureSpaceAwake
   ['POST', `^/verify-key$`],                                // verifyKey
+  ['POST', `^/verify-image-keys$`],                         // verifyImageKeys (Pixabay/Pexels)
   ['GET', `^/job/${ID}/status$`],                            // getJobStatus
   ['GET', `^/job/${ID}/download$`],                          // downloadJob (streams PDF)
   ['GET', `^/job/${ID}/cover$`],                             // downloadCover (streams JPEG)

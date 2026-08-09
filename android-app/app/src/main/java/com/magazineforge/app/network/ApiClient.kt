@@ -163,7 +163,48 @@ object ApiClient {
         if (APP_KEY.isNotEmpty()) {
             builder.addHeader("X-App-Key", APP_KEY)
         }
+        // The user's own stock-photo keys, when they saved any. Read into locals
+        // first so a concurrent save cannot change the value between the emptiness
+        // check and the header write. The host check above is what keeps these
+        // personal keys off third-party image CDNs.
+        val pixabay = headerSafe(userPixabayKey)
+        if (pixabay.isNotEmpty()) {
+            builder.addHeader("X-Pixabay-Key", pixabay)
+        }
+        val pexels = headerSafe(userPexelsKey)
+        if (pexels.isNotEmpty()) {
+            builder.addHeader("X-Pexels-Key", pexels)
+        }
         chain.proceed(builder.build())
+    }
+
+    /**
+     * User-supplied Pixabay/Pexels keys, primed from SecureStorage at startup and
+     * refreshed whenever Settings saves.
+     *
+     * Cached here instead of read per request because the interceptor runs on
+     * OkHttp's dispatcher threads, where a keystore-backed
+     * EncryptedSharedPreferences read on every call would be slow and repeated
+     * for no gain. `@Volatile` publishes a save made on the main thread to those
+     * threads without needing a lock.
+     */
+    @Volatile
+    var userPixabayKey: String = ""
+
+    @Volatile
+    var userPexelsKey: String = ""
+
+    /**
+     * Drops anything OkHttp would reject in a header value.
+     *
+     * OkHttp throws on non-ASCII and control characters, and this interceptor sits
+     * in front of *every* backend call — so one stray newline in a pasted key would
+     * take down the whole app rather than just image search. Real Pixabay and
+     * Pexels keys are alphanumeric, so nothing legitimate is lost here.
+     */
+    private fun headerSafe(value: String): String {
+        val trimmed = value.trim()
+        return if (trimmed.all { it.code in 0x20..0x7E }) trimmed else ""
     }
 
     val okHttpClient = OkHttpClient.Builder()

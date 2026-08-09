@@ -67,7 +67,35 @@ class SecureStorage(context: Context) {
     fun clearLiteLLMKey() {
         sharedPreferences.edit().remove("litellm_key").apply()
     }
-    
+
+    // User-supplied stock-photo keys. Verified in Settings before saving, so a
+    // bad paste never silently blanks a magazine's images. Stored blank when
+    // the user clears a box — the deployment's own keys take over.
+
+    fun savePixabayKey(key: String) {
+        sharedPreferences.edit().putString("pixabay_key", key.trim()).apply()
+    }
+
+    fun getPixabayKey(): String {
+        return sharedPreferences.getString("pixabay_key", "")?.trim() ?: ""
+    }
+
+    fun clearPixabayKey() {
+        sharedPreferences.edit().remove("pixabay_key").apply()
+    }
+
+    fun savePexelsKey(key: String) {
+        sharedPreferences.edit().putString("pexels_key", key.trim()).apply()
+    }
+
+    fun getPexelsKey(): String {
+        return sharedPreferences.getString("pexels_key", "")?.trim() ?: ""
+    }
+
+    fun clearPexelsKey() {
+        sharedPreferences.edit().remove("pexels_key").apply()
+    }
+
     fun saveThemeId(themeId: String) {
         sharedPreferences.edit().putString("active_theme_id", themeId).apply()
     }

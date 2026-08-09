@@ -98,6 +98,12 @@ class MainActivity : ComponentActivity() {
         // and discard that mapping.
         com.magazineforge.app.ui.theme.ThemeState.setThemeById(secureStorage.getThemeId())
 
+        // Prime the verified stock-photo keys so the very first generation of the
+        // session already uses them. ApiClient's interceptor reads these on
+        // OkHttp threads and cannot touch EncryptedSharedPreferences itself.
+        com.magazineforge.app.network.ApiClient.userPixabayKey = secureStorage.getPixabayKey()
+        com.magazineforge.app.network.ApiClient.userPexelsKey = secureStorage.getPexelsKey()
+
         setContent {
             MagazineForgeTheme {
                 Surface(

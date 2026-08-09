@@ -35,6 +35,15 @@ interface ApiService {
         @Body request: com.magazineforge.app.models.VerifyKeyRequest
     ): Response<com.magazineforge.app.models.VerifyKeyResponse>
 
+    // Checks the user's own stock-photo keys, one small live search per
+    // provider. No LiteLLM headers: the backend handler takes only a body.
+    // Once saved, the keys ride every generation request as X-Pixabay-Key /
+    // X-Pexels-Key, attached by ApiClient's host-gated interceptor.
+    @POST("verify-image-keys")
+    suspend fun verifyImageKeys(
+        @Body request: com.magazineforge.app.models.VerifyImageKeysRequest
+    ): Response<com.magazineforge.app.models.VerifyImageKeysResponse>
+
     @GET("job/{job_id}/status")
     suspend fun getJobStatus(
         @Path("job_id") jobId: String

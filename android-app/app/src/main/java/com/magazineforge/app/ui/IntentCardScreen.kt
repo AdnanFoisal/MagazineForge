@@ -84,6 +84,8 @@ fun IntentCardScreen(
     var language by remember { mutableStateOf("") }
     var mustCoverText by remember { mutableStateOf("") }
     var avoidText by remember { mutableStateOf("") }
+    var expandedPrompt by remember { mutableStateOf("") }
+    var imageSubjectsText by remember { mutableStateOf("") }
     var visualRegister by remember { mutableStateOf(VisualRegisterOptions.first().value) }
 
     // Seed the editable fields from whatever the extractor returned. Keyed on
@@ -101,6 +103,8 @@ fun IntentCardScreen(
             language = contract?.language ?: "en"
             mustCoverText = contract?.mustCover.toLines()
             avoidText = contract?.avoid.toLines()
+            expandedPrompt = contract?.expandedPrompt ?: ""
+            imageSubjectsText = contract?.imageSubjects.toLines()
             val extractedRegister = (contract?.visualRegister ?: "").lowercase()
             visualRegister = VisualRegisterOptions
                 .firstOrNull { it.value == extractedRegister }?.value
@@ -259,6 +263,19 @@ fun IntentCardScreen(
                             }
                         }
 
+                        // The expansion goes first: it is the whole picture in
+                        // plain language, and the fields below are the parts of
+                        // it that get enforced individually.
+                        IntentField(
+                            label = "What we'll build (full expansion)",
+                            placeholder = "The plan for this issue",
+                            value = expandedPrompt,
+                            onValueChange = { expandedPrompt = it },
+                            singleLine = false,
+                            minLines = 5,
+                            supportingText = "Edit this and the whole issue follows your version"
+                        )
+
                         IntentField(
                             label = "Subject",
                             placeholder = "What this issue is about",
@@ -298,6 +315,17 @@ fun IntentCardScreen(
                             supportingText = "One item per line"
                         )
 
+                        IntentField(
+                            label = "Photo subjects",
+                            placeholder = "One per line",
+                            value = imageSubjectsText,
+                            onValueChange = { imageSubjectsText = it },
+                            singleLine = false,
+                            supportingText = "What the photographs should show. Each page is " +
+                                "matched to whichever of these it's about, so name things a " +
+                                "camera can point at — not moods or eras."
+                        )
+
                         Text(
                             "Visual Register",
                             style = LuxeTypography.titleSmall.copy(color = gold),
@@ -324,7 +352,9 @@ fun IntentCardScreen(
                                         mustCover = mustCoverText.toListItems(),
                                         avoid = avoidText.toListItems(),
                                         language = language.trim().ifBlank { "en" },
-                                        visualRegister = visualRegister
+                                        visualRegister = visualRegister,
+                                        expandedPrompt = expandedPrompt.trim(),
+                                        imageSubjects = imageSubjectsText.toListItems()
                                     )
                                 )
                             },
@@ -369,7 +399,8 @@ private fun IntentField(
     value: String,
     onValueChange: (String) -> Unit,
     singleLine: Boolean = true,
-    supportingText: String? = null
+    supportingText: String? = null,
+    minLines: Int? = null
 ) {
     val tokens = LocalThemeTokens.current
     OutlinedTextField(
@@ -378,7 +409,7 @@ private fun IntentField(
         label = { Text(label) },
         placeholder = { Text(placeholder) },
         singleLine = singleLine,
-        minLines = if (singleLine) 1 else 3,
+        minLines = minLines ?: if (singleLine) 1 else 3,
         supportingText = supportingText?.let {
             { Text(it, style = LuxeTypography.labelSmall.copy(color = tokens.editorTextSecondary)) }
         },

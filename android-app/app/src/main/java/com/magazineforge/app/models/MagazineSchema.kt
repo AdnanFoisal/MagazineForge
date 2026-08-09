@@ -169,7 +169,16 @@ data class ContractSchema(
     @SerializedName("language")
     val language: String = "en",
     @SerializedName("visual_register")
-    val visualRegister: String = "editorial"
+    val visualRegister: String = "editorial",
+    // The model's plain-language reading of the prompt, shown on the Intent
+    // screen so the user can see — and correct — what a ten-minute run is
+    // about to be built from. Edited text is sent back and used verbatim.
+    @SerializedName("expanded_prompt")
+    val expandedPrompt: String = "",
+    // The photographable things this issue is about. These anchor image
+    // search, so editing them changes which photos appear.
+    @SerializedName("image_subjects")
+    val imageSubjects: List<String> = emptyList()
 )
 
 data class ExtractContractRequest(

@@ -465,14 +465,18 @@ fun EditorScreen(
                         }
 
                         // ── Paper Tone Selector (Only in Full AI Mode Studio) ──────────────────
-                        var paperTone by remember { mutableStateOf("Cream") }
                         Card(
                             colors = CardDefaults.cardColors(containerColor = darkSurface),
                             border = BorderStroke(1.dp, borderCol),
                             modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp)
                         ) {
                             Column(modifier = Modifier.padding(16.dp)) {
-                                Text("Paper Tone (Background)", style = LuxeTypography.titleSmall.copy(color = gold))
+                                Text("Interior Paper Tone", style = LuxeTypography.titleSmall.copy(color = gold))
+                                Text(
+                                    "Changes the finished magazine paper only. Cover and article photos stay intact.",
+                                    style = LuxeTypography.bodySmall.copy(color = tokens.editorTextSecondary),
+                                    modifier = Modifier.padding(top = 4.dp)
+                                )
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),

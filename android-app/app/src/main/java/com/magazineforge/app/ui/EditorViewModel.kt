@@ -72,6 +72,19 @@ sealed class CompileState {
  */
 private const val MAX_TOPIC_SEGMENT = 60
 
+/**
+ * Converts gallery identifiers into the compact API values. "auto" is a
+ * valid backend-supported variant; an unknown value must never crash the UI.
+ */
+internal fun normalizeTemplateVariant(templateName: String): String? {
+    val candidate = when {
+        templateName.startsWith("cover_template_") -> templateName.removePrefix("cover_template_")
+        else -> templateName
+    }.lowercase()
+
+    return candidate.takeIf { it in setOf("a", "b", "c", "auto") }
+}
+
 class EditorViewModel : ViewModel() {
 
     private val _generationRunState = MutableStateFlow<GenerationRunState>(GenerationRunState.Idle)
@@ -140,16 +153,6 @@ class EditorViewModel : ViewModel() {
             ?.apply()
     }
 
-    private fun normalizeTemplateVariant(templateName: String): String {
-        val candidate = when {
-            templateName.startsWith("cover_template_") -> templateName.removePrefix("cover_template_")
-            templateName in setOf("a", "b", "c") -> templateName
-            else -> templateName.split("_").lastOrNull().orEmpty()
-        }.lowercase()
-
-        return candidate.takeIf { it in setOf("a", "b", "c") } ?: error("Unrecognized template variant: $templateName")
-    }
-    
     fun resetState() {
         _generationRunState.value = GenerationRunState.Idle
         _briefState.value = BriefState.Idle
@@ -216,10 +219,15 @@ class EditorViewModel : ViewModel() {
         }
     }
 
-        fun generateChunkedPreview(litellmUrl: String, litellmKey: String, templateVariant: String) {
+    fun generateChunkedPreview(litellmUrl: String, litellmKey: String, templateVariant: String) {
         currentLiteLLMUrl = litellmUrl
         currentLiteLLMKey = litellmKey
-        currentVariant = normalizeTemplateVariant(templateVariant)
+        val normalizedVariant = normalizeTemplateVariant(templateVariant)
+        if (normalizedVariant == null) {
+            _generationRunState.value = GenerationRunState.Error("Unsupported template: $templateVariant")
+            return
+        }
+        currentVariant = normalizedVariant
         
         _generationRunState.value = GenerationRunState.Loading("Generating brief...")
         
@@ -297,7 +305,14 @@ class EditorViewModel : ViewModel() {
         isFullAiMode = true
         currentLiteLLMUrl = litellmUrl
         currentLiteLLMKey = litellmKey
-        currentVariant = normalizeTemplateVariant(templateVariant)
+        val normalizedVariant = normalizeTemplateVariant(templateVariant)
+        if (normalizedVariant == null) {
+            val message = "Unsupported template: $templateVariant"
+            _generationRunState.value = GenerationRunState.Error(message)
+            _schemaState.value = SchemaState.Error(message)
+            return
+        }
+        currentVariant = normalizedVariant
         currentTopic = prompt
         pendingConfig = config
         currentRawLatex = ""
@@ -485,7 +500,12 @@ class EditorViewModel : ViewModel() {
         currentTopic = magazineTopic
         currentLiteLLMUrl = litellmUrl
         currentLiteLLMKey = litellmKey
-        currentVariant = normalizeTemplateVariant(templateName)
+        val normalizedVariant = normalizeTemplateVariant(templateName)
+        if (normalizedVariant == null) {
+            _schemaState.value = SchemaState.Error("Unsupported template: $templateName")
+            return
+        }
+        currentVariant = normalizedVariant
         currentRawLatex = ""
         currentEditedLatex = null
         
@@ -508,7 +528,8 @@ class EditorViewModel : ViewModel() {
                     enableBackCover = safeConfig.enableBackCover,
                     enableTocTeasers = safeConfig.enableTocTeasers,
                     enableByline = safeConfig.enableByline,
-                    coverImageUrl = coverImageUrl
+                    coverImageUrl = coverImageUrl,
+                    paperTone = safeConfig.paperTone
                 )
                 val response = ApiClient.retrofitService.generateSchema(
                     litellmUrl = litellmUrl,

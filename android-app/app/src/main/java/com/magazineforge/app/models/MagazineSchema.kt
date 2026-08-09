@@ -12,7 +12,11 @@ data class MagazineSchema(
     @SerializedName("pages")
     var pages: List<PageSchema>,
     @SerializedName("back_cover")
-    var backCover: BackCoverSchema?
+    var backCover: BackCoverSchema?,
+    // Returned by generation runs and sent back after Co-Author editing. Without
+    // this field Gson drops the user's paper-tone choice before /generate-latex.
+    @SerializedName("paper_tone")
+    var paperTone: String = "cream"
 )
 
 sealed class PageSchema {
@@ -211,7 +215,9 @@ data class GenerateSchemaRequest(
     @SerializedName("enableByline")
     val enableByline: Boolean = true,
     @SerializedName("coverImageUrl")
-    val coverImageUrl: String = ""
+    val coverImageUrl: String = "",
+    @SerializedName("paperTone")
+    val paperTone: String = "cream"
 )
 
 data class GenerateLatexRequest(

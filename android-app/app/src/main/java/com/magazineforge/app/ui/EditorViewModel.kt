@@ -408,7 +408,8 @@ class EditorViewModel : ViewModel() {
         coverImageUrl: String = "",
         backCoverImageUrl: String = "",
         referenceImageUrls: List<String> = emptyList(),
-        contract: ContractSchema? = null
+        contract: ContractSchema? = null,
+        coverTitle: String = ""
     ) {
         isFullAiMode = true
         currentLiteLLMUrl = litellmUrl
@@ -445,7 +446,10 @@ class EditorViewModel : ViewModel() {
                     prompt = prompt,
                     templateVariant = currentVariant,
                     articles = brief.articles,
-                    coverTitle = brief.titles.firstOrNull() ?: "",
+                    // The title the user picked on the brief card. Falling back to
+                    // the first proposal is what made every issue on a topic carry
+                    // the same masthead, so it is only a last resort now.
+                    coverTitle = coverTitle.ifBlank { brief.titles.firstOrNull() ?: "" },
                     category = brief.category,
                     tone = brief.tone,
                     layoutDensity = brief.styleDna,

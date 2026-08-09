@@ -69,7 +69,7 @@ fun EditorScreen(
     latexState: LatexState,
     compileState: CompileState,
     onGenerateBrief: (String, List<String>, Int) -> Unit,
-    onCompileFromBrief: (String, SectionComposerConfig, GenerateBriefResponse, String, String, List<String>) -> Unit,
+    onCompileFromBrief: (String, SectionComposerConfig, GenerateBriefResponse, String, String, List<String>, String) -> Unit,
     onCompileClicked: (magazineTopic: String, pages: List<PageBlock>, config: SectionComposerConfig, coverImgUrl: String) -> Unit,
     onCancel: () -> Unit,
     onBack: () -> Unit,
@@ -84,6 +84,11 @@ fun EditorScreen(
     var composerConfig by remember { mutableStateOf(SectionComposerConfig()) }
     var showComposer by remember { mutableStateOf(false) }
     var pageSelection by remember { mutableStateOf("Auto") }
+
+    // Which proposed title goes on the cover. Lives at screen scope because the
+    // retry button in the error dialog recompiles the same brief and has to send
+    // the same choice the user made.
+    var selectedTitleIndex by remember { mutableIntStateOf(-1) }
 
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
@@ -188,6 +193,22 @@ fun EditorScreen(
                 if (briefState is BriefState.Success) {
                     // Phase 2: Brief Review
                     val brief = briefState.brief
+
+                    // Which of the proposed titles goes on the cover. The model
+                    // offers three and the pick used to be silently fixed to the
+                    // first, so every issue on a given topic came out wearing the
+                    // same masthead. Start on a different one each brief and let
+                    // the choice be changed.
+                    //
+                    // The elvis is not redundant despite the warning: Gson builds
+                    // this class through Unsafe, so a field the JSON omits is null
+                    // at runtime whatever its Kotlin type says.
+                    val briefTitles = brief.titles ?: emptyList()
+                    LaunchedEffect(briefTitles) {
+                        if (briefTitles.isNotEmpty()) {
+                            selectedTitleIndex = briefTitles.indices.random()
+                        }
+                    }
                     Column(
                         modifier = Modifier.weight(1f).fillMaxWidth().padding(horizontal = 24.dp).verticalScroll(rememberScrollState()),
                         horizontalAlignment = Alignment.CenterHorizontally,
@@ -207,9 +228,32 @@ fun EditorScreen(
                                 Text("Tone: ${brief.tone}", style = LuxeTypography.titleMedium.copy(color = tokens.textPrimary))
                                 Text("Layout Density: ${brief.styleDna}", style = LuxeTypography.titleMedium.copy(color = tokens.textPrimary))
                                 Spacer(modifier = Modifier.height(8.dp))
-                                Text("Potential Titles:", style = LuxeTypography.titleMedium.copy(color = tokens.primaryAccent))
-                                brief.titles?.forEach { title ->
-                                    Text("- $title", style = LuxeTypography.bodyMedium.copy(color = tokens.textPrimary))
+                                Text("Cover Title — tap to choose:", style = LuxeTypography.titleMedium.copy(color = tokens.primaryAccent))
+                                briefTitles.forEachIndexed { index, title ->
+                                    val isPicked = index == selectedTitleIndex
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .clickable { selectedTitleIndex = index }
+                                            .padding(vertical = 6.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        RadioButton(
+                                            selected = isPicked,
+                                            onClick = { selectedTitleIndex = index },
+                                            colors = RadioButtonDefaults.colors(
+                                                selectedColor = gold,
+                                                unselectedColor = borderCol
+                                            )
+                                        )
+                                        Text(
+                                            title,
+                                            style = LuxeTypography.bodyMedium.copy(
+                                                color = if (isPicked) gold else tokens.textPrimary,
+                                                fontWeight = if (isPicked) FontWeight.Bold else FontWeight.Normal
+                                            )
+                                        )
+                                    }
                                 }
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Text("Articles:", style = LuxeTypography.titleMedium.copy(color = tokens.primaryAccent))
@@ -230,7 +274,8 @@ fun EditorScreen(
 
                         Button(
                             onClick = {
-                                onCompileFromBrief(prompt, composerConfig, brief, coverImageUrl, backCoverImageUrl, referenceImages.toList())
+                                onCompileFromBrief(prompt, composerConfig, brief, coverImageUrl, backCoverImageUrl, referenceImages.toList(),
+                                    briefTitles.getOrNull(selectedTitleIndex) ?: briefTitles.firstOrNull() ?: "")
                             },
                             modifier = Modifier.fillMaxWidth().padding(bottom = 32.dp).height(56.dp),
                             shape = RoundedCornerShape(8.dp),
@@ -955,7 +1000,9 @@ fun EditorScreen(
                                 if (selectedTabIndex == 0) {
                                     val brief = (briefState as? BriefState.Success)?.brief
                                     if (brief != null) {
-                                        onCompileFromBrief(prompt, composerConfig, brief, coverImageUrl, backCoverImageUrl, referenceImages.toList())
+                                        val titles = brief.titles ?: emptyList()
+                                        onCompileFromBrief(prompt, composerConfig, brief, coverImageUrl, backCoverImageUrl, referenceImages.toList(),
+                                            titles.getOrNull(selectedTitleIndex) ?: titles.firstOrNull() ?: "")
                                     }
                                 } else {
                                     onCompileClicked(prompt, pages, composerConfig, coverImageUrl)

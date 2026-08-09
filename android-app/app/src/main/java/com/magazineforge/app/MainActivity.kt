@@ -404,7 +404,7 @@ class MainActivity : ComponentActivity() {
                                                 viewModel.extractContract(litellmUrl, litellmKey, prompt)
                                                 currentScreen = "intent"
                                             },
-                                            onCompileFromBrief = { prompt, config, brief, coverImgUrl, backCoverImgUrl, refImages ->
+                                            onCompileFromBrief = { prompt, config, brief, coverImgUrl, backCoverImgUrl, refImages, coverTitle ->
                                                 viewModel.isFullAiMode = true
                                                 viewModel.pendingTopic = prompt
                                                 viewModel.pendingTone = brief.tone
@@ -421,7 +421,8 @@ class MainActivity : ComponentActivity() {
                                                     coverImageUrl = coverImgUrl,
                                                     backCoverImageUrl = backCoverImgUrl,
                                                     referenceImageUrls = refImages,
-                                                    contract = confirmedContract
+                                                    contract = confirmedContract,
+                                                    coverTitle = coverTitle
                                                 )
                                             },
                                             onCompileClicked = { magazineTopic, pages, config, coverImgUrl ->

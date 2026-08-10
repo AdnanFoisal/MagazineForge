@@ -66,6 +66,13 @@ interface ApiService {
         @Body request: com.magazineforge.app.models.ExtractContractRequest
     ): Response<com.magazineforge.app.models.ExtractContractResponse>
 
+    @POST("refine-prompt")
+    suspend fun refinePrompt(
+        @Header("X-LiteLLM-Url") litellmUrl: String,
+        @Header("X-LiteLLM-Key") litellmKey: String,
+        @Body request: com.magazineforge.app.models.RefinePromptRequest
+    ): Response<com.magazineforge.app.models.RefinePromptResponse>
+
     @POST("generate-brief")
     suspend fun generateBrief(
         @Header("X-LiteLLM-Url") litellmUrl: String,

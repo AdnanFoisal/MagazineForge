@@ -204,6 +204,18 @@ data class ExtractContractResponse(
     val extractionOk: Boolean = false
 )
 
+data class RefinePromptRequest(
+    @SerializedName("prompt")
+    val prompt: String
+)
+
+data class RefinePromptResponse(
+    @SerializedName("refined_prompt")
+    val refinedPrompt: String = "",
+    @SerializedName("contract")
+    val contract: ContractSchema? = null
+)
+
 data class GenerateBriefResponse(
     @SerializedName("category")
     val category: String,

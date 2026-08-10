@@ -194,6 +194,12 @@ fun CoAuthorScreen(
                     label = { Text("Subtitle") },
                     modifier = Modifier.fillMaxWidth()
                 )
+                OutlinedTextField(
+                    value = schema.cover.accentHex,
+                    onValueChange = { schema = schema.copy(cover = schema.cover.copy(accentHex = it)) },
+                    label = { Text("Title & Accent Color (#Hex)") },
+                    modifier = Modifier.fillMaxWidth()
+                )
                 ImageUploadField(
                     label = "Cover Image URL",
                     value = schema.cover.imageUrl,

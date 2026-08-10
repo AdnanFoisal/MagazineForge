@@ -268,6 +268,38 @@ class EditorViewModel : ViewModel() {
         }
     }
 
+    fun refinePrompt(
+        prompt: String,
+        onResult: (String?, String?) -> Unit
+    ) {
+        if (prompt.isBlank()) {
+            onResult(null, "Prompt cannot be empty")
+            return
+        }
+        viewModelScope.launch {
+            try {
+                ApiClient.ensureSpaceAwake()
+                val request = com.magazineforge.app.models.RefinePromptRequest(prompt = prompt)
+                val response = ApiClient.retrofitService.refinePrompt(currentLiteLLMUrl, currentLiteLLMKey, request)
+                if (response.isSuccessful && response.body() != null) {
+                    val body = response.body()!!
+                    val refined = body.refinedPrompt
+                    if (body.contract != null) {
+                        _contractState.value = ContractState.Success(
+                            contract = body.contract,
+                            extractionOk = true
+                        )
+                    }
+                    onResult(refined, null)
+                } else {
+                    onResult(null, "Refine failed: ${response.code()}")
+                }
+            } catch (e: Exception) {
+                onResult(null, e.message ?: "Failed to refine prompt")
+            }
+        }
+    }
+
     fun generateBrief(
         litellmUrl: String,
         litellmKey: String,

@@ -255,6 +255,43 @@ fun EditorScreen(
                                         )
                                     }
                                 }
+                                var customTitleText by remember { mutableStateOf("") }
+                                val isCustomPicked = selectedTitleIndex == 3
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .clickable { selectedTitleIndex = 3 }
+                                        .padding(vertical = 6.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    RadioButton(
+                                        selected = isCustomPicked,
+                                        onClick = { selectedTitleIndex = 3 },
+                                        colors = RadioButtonDefaults.colors(
+                                            selectedColor = gold,
+                                            unselectedColor = borderCol
+                                        )
+                                    )
+                                    if (isCustomPicked) {
+                                        OutlinedTextField(
+                                            value = customTitleText,
+                                            onValueChange = { customTitleText = it },
+                                            placeholder = { Text("Type custom title...", color = tokens.textPrimary.copy(alpha = 0.5f)) },
+                                            modifier = Modifier.fillMaxWidth().weight(1f),
+                                            singleLine = true,
+                                            colors = OutlinedTextFieldDefaults.colors(
+                                                focusedBorderColor = gold,
+                                                unfocusedBorderColor = borderCol,
+                                                cursorColor = gold
+                                            )
+                                        )
+                                    } else {
+                                        Text(
+                                            if (customTitleText.isNotBlank()) "Custom: $customTitleText" else "Custom Title...",
+                                            style = LuxeTypography.bodyMedium.copy(color = tokens.textPrimary)
+                                        )
+                                    }
+                                }
                                 Spacer(modifier = Modifier.height(8.dp))
                                 Text("Articles:", style = LuxeTypography.titleMedium.copy(color = tokens.primaryAccent))
                                 brief.articles?.forEach { article ->
@@ -274,8 +311,12 @@ fun EditorScreen(
 
                         Button(
                             onClick = {
-                                onCompileFromBrief(prompt, composerConfig, brief, coverImageUrl, backCoverImageUrl, referenceImages.toList(),
-                                    briefTitles.getOrNull(selectedTitleIndex) ?: briefTitles.firstOrNull() ?: "")
+                                val chosenTitle = if (selectedTitleIndex == 3 && customTitleText.isNotBlank()) {
+                                    customTitleText.trim()
+                                } else {
+                                    briefTitles.getOrNull(selectedTitleIndex) ?: briefTitles.firstOrNull() ?: ""
+                                }
+                                onCompileFromBrief(prompt, composerConfig, brief, coverImageUrl, backCoverImageUrl, referenceImages.toList(), chosenTitle)
                             },
                             modifier = Modifier.fillMaxWidth().padding(bottom = 32.dp).height(56.dp),
                             shape = RoundedCornerShape(8.dp),

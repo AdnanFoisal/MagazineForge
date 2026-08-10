@@ -263,11 +263,49 @@ fun IntentCardScreen(
                             }
                         }
 
+                        val viewModel: EditorViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+                        var isRefining by remember { mutableStateOf(false) }
+
                         // The expansion goes first: it is the whole picture in
                         // plain language, and the fields below are the parts of
                         // it that get enforced individually.
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(bottom = 6.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                "What we'll build",
+                                style = LuxeTypography.titleSmall.copy(color = gold)
+                            )
+                            Button(
+                                onClick = {
+                                    isRefining = true
+                                    val currentInput = expandedPrompt.ifBlank { prompt }
+                                    viewModel.refinePrompt(currentInput) { refined, _ ->
+                                        isRefining = false
+                                        if (!refined.isNullOrBlank()) {
+                                            expandedPrompt = refined
+                                        }
+                                    }
+                                },
+                                enabled = !isRefining,
+                                colors = ButtonDefaults.buttonColors(containerColor = gold, contentColor = obsidian),
+                                contentPadding = PaddingValues(horizontal = 12.dp, vertical = 4.dp),
+                                modifier = Modifier.height(34.dp)
+                            ) {
+                                if (isRefining) {
+                                    CircularProgressIndicator(modifier = Modifier.size(14.dp), color = obsidian, strokeWidth = 2.dp)
+                                } else {
+                                    Text("✨ Refine Prompt", style = LuxeTypography.labelSmall.copy(fontWeight = FontWeight.Bold))
+                                }
+                            }
+                        }
+
                         IntentField(
-                            label = "What we'll build (full expansion)",
+                            label = "",
                             placeholder = "The plan for this issue",
                             value = expandedPrompt,
                             onValueChange = { expandedPrompt = it },

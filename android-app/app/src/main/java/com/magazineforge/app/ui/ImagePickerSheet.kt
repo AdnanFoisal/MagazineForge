@@ -24,6 +24,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import coil.compose.AsyncImage
 import com.magazineforge.app.models.PreviewImageItem
+import com.magazineforge.app.ui.theme.LuxeTypography
 
 /**
  * Modal bottom sheet / dialog that lets the user pick a stock photo for a magazine slot.

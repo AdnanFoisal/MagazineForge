@@ -15,6 +15,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -278,6 +279,39 @@ fun CoAuthorScreen(
                                 modifier = Modifier.fillMaxWidth(),
                                 minLines = 5
                             )
+                            page.images.forEachIndexed { imgIndex, img ->
+                                ImageUploadField(
+                                    label = "Article Image URL ${imgIndex + 1}",
+                                    value = img.imageUrl,
+                                    onValueChange = {
+                                        val newImages = page.images.toMutableList()
+                                        newImages[imgIndex] = img.copy(imageUrl = it)
+                                        val newPages = schema.pages.toMutableList()
+                                        newPages[index] = page.copy(images = newImages)
+                                        schema = schema.copy(pages = newPages)
+                                    },
+                                    onPickImage = {
+                                        pickImage { url ->
+                                            val newImages = page.images.toMutableList()
+                                            newImages[imgIndex] = img.copy(imageUrl = url)
+                                            val newPages = schema.pages.toMutableList()
+                                            newPages[index] = page.copy(images = newImages)
+                                            schema = schema.copy(pages = newPages)
+                                        }
+                                    },
+                                    onPickFromSearch = {
+                                        pickerQuery = img.imageQuery.ifBlank { page.headline }.ifBlank { schema.cover.mainTitle }
+                                        pickerCallback = { url ->
+                                            val newImages = page.images.toMutableList()
+                                            newImages[imgIndex] = img.copy(imageUrl = url)
+                                            val newPages = schema.pages.toMutableList()
+                                            newPages[index] = page.copy(images = newImages)
+                                            schema = schema.copy(pages = newPages)
+                                        }
+                                        pickerOpen = true
+                                    }
+                                )
+                            }
                         }
                     }
                     is AdSchema -> {
@@ -291,6 +325,31 @@ fun CoAuthorScreen(
                                 },
                                 label = { Text("Ad Headline") },
                                 modifier = Modifier.fillMaxWidth()
+                            )
+                            ImageUploadField(
+                                label = "Ad Image URL",
+                                value = page.imageUrl,
+                                onValueChange = {
+                                    val newPages = schema.pages.toMutableList()
+                                    newPages[index] = page.copy(imageUrl = it)
+                                    schema = schema.copy(pages = newPages)
+                                },
+                                onPickImage = {
+                                    pickImage { url ->
+                                        val newPages = schema.pages.toMutableList()
+                                        newPages[index] = page.copy(imageUrl = url)
+                                        schema = schema.copy(pages = newPages)
+                                    }
+                                },
+                                onPickFromSearch = {
+                                    pickerQuery = page.imageQuery.ifBlank { page.headline }.ifBlank { page.fakeCompanyName }.ifBlank { schema.cover.mainTitle }
+                                    pickerCallback = { url ->
+                                        val newPages = schema.pages.toMutableList()
+                                        newPages[index] = page.copy(imageUrl = url)
+                                        schema = schema.copy(pages = newPages)
+                                    }
+                                    pickerOpen = true
+                                }
                             )
                         }
                     }
@@ -420,6 +479,39 @@ fun CoAuthorScreen(
                                 modifier = Modifier.fillMaxWidth(),
                                 minLines = 3
                             )
+                            page.images.forEachIndexed { imgIndex, img ->
+                                ImageUploadField(
+                                    label = "Essay Image URL ${imgIndex + 1}",
+                                    value = img.imageUrl,
+                                    onValueChange = {
+                                        val newImages = page.images.toMutableList()
+                                        newImages[imgIndex] = img.copy(imageUrl = it)
+                                        val newPages = schema.pages.toMutableList()
+                                        newPages[index] = page.copy(images = newImages)
+                                        schema = schema.copy(pages = newPages)
+                                    },
+                                    onPickImage = {
+                                        pickImage { url ->
+                                            val newImages = page.images.toMutableList()
+                                            newImages[imgIndex] = img.copy(imageUrl = url)
+                                            val newPages = schema.pages.toMutableList()
+                                            newPages[index] = page.copy(images = newImages)
+                                            schema = schema.copy(pages = newPages)
+                                        }
+                                    },
+                                    onPickFromSearch = {
+                                        pickerQuery = img.imageQuery.ifBlank { page.headline }.ifBlank { schema.cover.mainTitle }
+                                        pickerCallback = { url ->
+                                            val newImages = page.images.toMutableList()
+                                            newImages[imgIndex] = img.copy(imageUrl = url)
+                                            val newPages = schema.pages.toMutableList()
+                                            newPages[index] = page.copy(images = newImages)
+                                            schema = schema.copy(pages = newPages)
+                                        }
+                                        pickerOpen = true
+                                    }
+                                )
+                            }
                         }
                     }
                     else -> {

@@ -11,9 +11,11 @@ import androidx.compose.foundation.clickable
 import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ExpandLess
 import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.Image
@@ -195,6 +197,10 @@ fun CoAuthorScreen(
                     onValueChange = { schema = schema.copy(cover = schema.cover.copy(subtitle = it)) },
                     label = { Text("Subtitle") },
                     modifier = Modifier.fillMaxWidth()
+                )
+                ColorSwatchPicker(
+                    selectedHex = schema.cover.accentHex,
+                    onColorSelected = { selectedHex -> schema = schema.copy(cover = schema.cover.copy(accentHex = selectedHex)) }
                 )
                 OutlinedTextField(
                     value = schema.cover.accentHex,
@@ -753,6 +759,88 @@ fun ImageUploadField(
                     contentScale = androidx.compose.ui.layout.ContentScale.Crop,
                     modifier = Modifier.fillMaxSize()
                 )
+            }
+        } else {
+            Spacer(modifier = Modifier.height(4.dp))
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(65.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(tokens.surface.copy(alpha = 0.5f))
+                    .border(BorderStroke(1.dp, tokens.secondaryAccent.copy(alpha = 0.2f)), RoundedCornerShape(8.dp)),
+                contentAlignment = Alignment.Center
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.Image, contentDescription = null, tint = tokens.textSecondary.copy(alpha = 0.5f), modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("No image selected — tap 🔍 to search or 📷 to upload", style = com.magazineforge.app.ui.theme.LuxeTypography.bodySmall.copy(color = tokens.textSecondary.copy(alpha = 0.7f)))
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun ColorSwatchPicker(
+    selectedHex: String,
+    onColorSelected: (String) -> Unit
+) {
+    val tokens = com.magazineforge.app.ui.theme.LocalThemeTokens.current
+    val colorSwatches = listOf(
+        "#FFFFFF" to "White",
+        "#FFD700" to "Gold",
+        "#E63946" to "Crimson",
+        "#00A896" to "Cyan",
+        "#7B2CBF" to "Purple",
+        "#F4A261" to "Amber",
+        "#1A1A1A" to "Dark"
+    )
+
+    Column(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+        Text(
+            "Quick Color Swatches",
+            style = com.magazineforge.app.ui.theme.LuxeTypography.labelSmall.copy(color = tokens.textPrimary)
+        )
+        Spacer(modifier = Modifier.height(6.dp))
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            colorSwatches.forEach { (hex, name) ->
+                val parsedColor = try {
+                    androidx.compose.ui.graphics.Color(android.graphics.Color.parseColor(hex))
+                } catch (e: Exception) {
+                    androidx.compose.ui.graphics.Color.White
+                }
+                val isSelected = selectedHex.equals(hex, ignoreCase = true) ||
+                        (selectedHex.isBlank() && hex == "#FFFFFF")
+
+                Box(
+                    modifier = Modifier
+                        .size(34.dp)
+                        .clip(CircleShape)
+                        .background(parsedColor)
+                        .border(
+                            BorderStroke(
+                                width = if (isSelected) 3.dp else 1.dp,
+                                color = if (isSelected) tokens.primaryAccent else tokens.secondaryAccent.copy(alpha = 0.4f)
+                            ),
+                            CircleShape
+                        )
+                        .clickable { onColorSelected(hex) },
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (isSelected) {
+                        Icon(
+                            imageVector = Icons.Default.Check,
+                            contentDescription = name,
+                            tint = if (hex == "#FFFFFF" || hex == "#FFD700" || hex == "#F4A261") androidx.compose.ui.graphics.Color.Black else androidx.compose.ui.graphics.Color.White,
+                            modifier = Modifier.size(16.dp)
+                        )
+                    }
+                }
             }
         }
     }

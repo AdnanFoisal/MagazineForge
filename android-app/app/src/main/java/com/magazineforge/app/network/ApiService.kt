@@ -138,4 +138,15 @@ interface ApiService {
         @Header("X-LiteLLM-Key") litellmKey: String,
         @Body request: com.magazineforge.app.models.RewriteSelectionRequest
     ): Response<com.magazineforge.app.models.RewriteSelectionResponse>
+
+    // --- NEW: Image picker feature ------------------------------------------
+    // Returns multiple candidate image URLs for a query so the user can pick
+    // one interactively in the ImagePickerSheet. Doesn't claim URLs — the
+    // user chooses, and the chosen URL is written into the schema before compile.
+    // No LiteLLM headers: the backend handler takes only a body + image keys
+    // (attached by ApiClient's host-gated interceptor).
+    @POST("preview-images")
+    suspend fun previewImages(
+        @Body request: com.magazineforge.app.models.PreviewImagesRequest
+    ): Response<com.magazineforge.app.models.PreviewImagesResponse>
 }

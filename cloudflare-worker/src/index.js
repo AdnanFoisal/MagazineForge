@@ -58,6 +58,7 @@ const ALLOWLIST = [
   ['POST', `^/render-page$`],                               // renderPage (streams PDF/PNG)
   ['POST', `^/compile-raw$`],                               // compileRaw
   ['POST', `^/rewrite-selection$`],                         // rewriteSelection
+  ['POST', `^/preview-images$`],                             // previewImages (image picker)
 
   // --- Not Retrofit, but still resolved against BASE_URL ---
   // Coil loads uploaded images from "${BASE_URL}${response.url}" where the

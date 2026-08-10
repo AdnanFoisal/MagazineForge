@@ -826,7 +826,7 @@ class EditorViewModel : ViewModel() {
             try {
                 val request = com.magazineforge.app.models.RewriteSelectionRequest(text = text, instruction = instruction)
                 val response = ApiClient.retrofitService.rewriteSelection(litellmUrl, litellmKey, request)
-                
+
                 if (response.isSuccessful) {
                     onResult(response.body()?.rewrittenText)
                 } else {
@@ -834,6 +834,43 @@ class EditorViewModel : ViewModel() {
                 }
             } catch (e: Exception) {
                 onResult(null)
+            }
+        }
+    }
+
+    // --- NEW: Image picker feature -------------------------------------------
+    // Returns candidate image URLs from Pixabay/Pexels for the given query.
+    // Called by ImagePickerSheet when the user taps an image slot in CoAuthor.
+    // Uses the issue's confirmed contract subject + image_subjects to bias the
+    // search toward relevant photos. No LiteLLM headers needed.
+    fun previewImages(
+        query: String,
+        onResult: (List<com.magazineforge.app.models.PreviewImageItem>, String?) -> Unit
+    ) {
+        viewModelScope.launch {
+            try {
+                ApiClient.ensureSpaceAwake()
+                val subject = confirmedContract?.subject ?: currentTopic
+                val imageSubjects = confirmedContract?.imageSubjects ?: emptyList()
+                val request = com.magazineforge.app.models.PreviewImagesRequest(
+                    query = query,
+                    count = 12,
+                    subject = subject,
+                    imageSubjects = imageSubjects
+                )
+                val response = ApiClient.retrofitService.previewImages(request)
+                if (response.isSuccessful) {
+                    val body = response.body()
+                    if (body != null) {
+                        onResult(body.images, body.error)
+                    } else {
+                        onResult(emptyList(), "Empty response from server")
+                    }
+                } else {
+                    onResult(emptyList(), "Server returned HTTP ${response.code()}")
+                }
+            } catch (e: Exception) {
+                onResult(emptyList(), "Network error: ${e.message ?: e.javaClass.simpleName}")
             }
         }
     }

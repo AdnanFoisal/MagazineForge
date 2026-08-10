@@ -48,6 +48,37 @@ fun CoAuthorScreen(
     val context = androidx.compose.ui.platform.LocalContext.current
     val coroutineScope = rememberCoroutineScope()
     var onImageUploadedCallback by remember { mutableStateOf<((String) -> Unit)?>(null) }
+
+    // --- NEW: Image picker state ---------------------------------------------
+    // The picker is opened by tapping the "search" icon on any ImageUploadField.
+    // pickerQuery pre-fills the search box with the slot's image_query (or the
+    // magazine's subject as fallback) so the user sees relevant results
+    // immediately. pickerCallback receives the chosen URL and writes it into
+    // the right schema slot.
+    var pickerOpen by remember { mutableStateOf(false) }
+    var pickerQuery by remember { mutableStateOf("") }
+    var pickerCallback by remember { mutableStateOf<((String) -> Unit)?>(null) }
+
+    val viewModel: EditorViewModel = androidx.lifecycle.viewmodel.compose.viewModel()
+
+    if (pickerOpen) {
+        ImagePickerSheet(
+            initialQuery = pickerQuery,
+            onSearch = { query, onResult ->
+                viewModel.previewImages(query) { images, err ->
+                    onResult(images, err)
+                }
+            },
+            onPicked = { url ->
+                pickerCallback?.invoke(url)
+                pickerCallback = null
+            },
+            onDismiss = {
+                pickerOpen = false
+                pickerCallback = null
+            }
+        )
+    }
     
     val launcher = rememberLauncherForActivityResult(ActivityResultContracts.GetContent()) { uri: Uri? ->
         if (uri != null) {
@@ -166,7 +197,12 @@ fun CoAuthorScreen(
                     label = "Cover Image URL",
                     value = schema.cover.imageUrl,
                     onValueChange = { schema = schema.copy(cover = schema.cover.copy(imageUrl = it)) },
-                    onPickImage = { pickImage { url -> schema = schema.copy(cover = schema.cover.copy(imageUrl = url)) } }
+                    onPickImage = { pickImage { url -> schema = schema.copy(cover = schema.cover.copy(imageUrl = url)) } },
+                    onPickFromSearch = {
+                        pickerQuery = schema.cover.imageQuery.ifBlank { schema.cover.mainTitle }
+                        pickerCallback = { url -> schema = schema.copy(cover = schema.cover.copy(imageUrl = url)) }
+                        pickerOpen = true
+                    }
                 )
             }
             
@@ -447,7 +483,12 @@ fun CoAuthorScreen(
                         label = "Back Cover Image URL",
                         value = backCover.imageUrl ?: "",
                         onValueChange = { schema = schema.copy(backCover = backCover.copy(imageUrl = it)) },
-                        onPickImage = { pickImage { url -> schema = schema.copy(backCover = backCover.copy(imageUrl = url)) } }
+                        onPickImage = { pickImage { url -> schema = schema.copy(backCover = backCover.copy(imageUrl = url)) } },
+                        onPickFromSearch = {
+                            pickerQuery = backCover.imageQuery.ifBlank { backCover.tagline }.ifBlank { schema.cover.mainTitle }
+                            pickerCallback = { url -> schema = schema.copy(backCover = backCover.copy(imageUrl = url)) }
+                            pickerOpen = true
+                        }
                     )
                 }
             }
@@ -506,7 +547,8 @@ fun ImageUploadField(
     label: String,
     value: String,
     onValueChange: (String) -> Unit,
-    onPickImage: () -> Unit
+    onPickImage: () -> Unit,
+    onPickFromSearch: (() -> Unit)? = null
 ) {
     val tokens = com.magazineforge.app.ui.theme.LocalThemeTokens.current
     var useDriveLink by remember { mutableStateOf(false) }
@@ -565,6 +607,20 @@ fun ImageUploadField(
                         contentDescription = "Pick Image",
                         tint = com.magazineforge.app.ui.theme.LocalThemeTokens.current.primaryAccent
                     )
+                }
+                // NEW: Search stock photos button (only shown when caller wires it)
+                if (onPickFromSearch != null) {
+                    Spacer(modifier = Modifier.width(4.dp))
+                    IconButton(
+                        onClick = onPickFromSearch,
+                        modifier = Modifier.background(com.magazineforge.app.ui.theme.LocalThemeTokens.current.primaryAccent.copy(alpha = 0.1f), RoundedCornerShape(8.dp))
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Search,
+                            contentDescription = "Search stock photos",
+                            tint = com.magazineforge.app.ui.theme.LocalThemeTokens.current.primaryAccent
+                        )
+                    }
                 }
             }
         }

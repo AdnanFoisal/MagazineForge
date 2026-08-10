@@ -34,7 +34,11 @@ data class ArticleSchema(
     @SerializedName("pull_quotes") var pullQuotes: List<PullQuoteSchema>,
     @SerializedName("images") var images: List<ArticleImageSchema>,
     @SerializedName("sidebar") var sidebar: SidebarSchema?,
-    @SerializedName("layout") var layout: String
+    @SerializedName("layout") var layout: String,
+    // Mirror of backend schemas.py image_query field. Was silently stripped
+    // by Pydantic before the backend schema fix; now survives so the LLM's
+    // per-article image query reaches ImageService.page_query().
+    @SerializedName("image_query") var imageQuery: String = ""
 ) : PageSchema()
 
 data class AdSchema(
@@ -42,7 +46,8 @@ data class AdSchema(
     @SerializedName("headline") var headline: String,
     @SerializedName("subtext") var subtext: String,
     @SerializedName("fake_company_name") var fakeCompanyName: String,
-    @SerializedName("image_url") var imageUrl: String
+    @SerializedName("image_url") var imageUrl: String,
+    @SerializedName("image_query") var imageQuery: String = ""
 ) : PageSchema()
 
 data class DataPointSchema(
@@ -96,7 +101,9 @@ data class CoverSchema(
     @SerializedName("callouts")
     var callouts: List<String>,
     @SerializedName("image_url")
-    var imageUrl: String
+    var imageUrl: String,
+    @SerializedName("image_query")
+    var imageQuery: String = ""
 )
 
 data class MastheadSchema(
@@ -127,6 +134,8 @@ data class PullQuoteSchema(
 data class ArticleImageSchema(
     @SerializedName("image_url")
     var imageUrl: String,
+    @SerializedName("image_query")
+    var imageQuery: String = "",
     @SerializedName("caption")
     var caption: String,
     @SerializedName("placement")
@@ -146,7 +155,9 @@ data class BackCoverSchema(
     @SerializedName("tagline")
     var tagline: String,
     @SerializedName("image_url")
-    var imageUrl: String?
+    var imageUrl: String?,
+    @SerializedName("image_query")
+    var imageQuery: String = ""
 )
 
 data class BriefArticle(
@@ -300,4 +311,31 @@ data class RewriteSelectionResponse(
 data class RenderPageRequest(
     @SerializedName("latexCode") val latexCode: String,
     @SerializedName("pageNumber") val pageNumber: Int
+)
+
+// --- NEW: Image picker feature ------------------------------------------------
+// User taps an image slot in CoAuthor -> ImagePickerSheet opens -> calls
+// /preview-images with the section's image_query -> backend returns multiple
+// candidate URLs -> user picks one -> schema is updated before compile.
+
+data class PreviewImagesRequest(
+    @SerializedName("query") val query: String,
+    @SerializedName("count") val count: Int = 12,
+    @SerializedName("subject") val subject: String = "",
+    @SerializedName("image_subjects") val imageSubjects: List<String> = emptyList()
+)
+
+data class PreviewImageItem(
+    @SerializedName("url") val url: String,
+    @SerializedName("preview_url") val previewUrl: String,
+    @SerializedName("tags") val tags: String = "",
+    @SerializedName("source") val source: String = "",
+    @SerializedName("width") val width: Int = 0,
+    @SerializedName("height") val height: Int = 0
+)
+
+data class PreviewImagesResponse(
+    @SerializedName("query") val query: String,
+    @SerializedName("images") val images: List<PreviewImageItem> = emptyList(),
+    @SerializedName("error") val error: String? = null
 )

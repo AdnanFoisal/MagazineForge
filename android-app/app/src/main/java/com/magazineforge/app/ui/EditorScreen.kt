@@ -89,6 +89,7 @@ fun EditorScreen(
     // retry button in the error dialog recompiles the same brief and has to send
     // the same choice the user made.
     var selectedTitleIndex by remember { mutableIntStateOf(-1) }
+    var customTitleText by remember { mutableStateOf("") }
 
     val snackbarHostState = remember { SnackbarHostState() }
     val coroutineScope = rememberCoroutineScope()
@@ -255,7 +256,6 @@ fun EditorScreen(
                                         )
                                     }
                                 }
-                                var customTitleText by remember { mutableStateOf("") }
                                 val isCustomPicked = selectedTitleIndex == 3
                                 Row(
                                     modifier = Modifier

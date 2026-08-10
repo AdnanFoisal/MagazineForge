@@ -4,7 +4,7 @@
 ![Kotlin](https://img.shields.io/badge/Language-Kotlin-7F52FF?style=for-the-badge&logo=kotlin&logoColor=white)
 ![FastAPI](https://img.shields.io/badge/Backend-FastAPI-009688?style=for-the-badge&logo=fastapi&logoColor=white)
 ![LaTeX](https://img.shields.io/badge/Engine-XeLaTeX-008080?style=for-the-badge&logo=latex&logoColor=white)
-![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)
+![License](https://img.shields.io/badge/Copyright-Adnan_Foisal--All_Rights_Reserved-gold?style=for-the-badge)
 
 > **MagazineForge** is an enterprise-grade, AI-native magazine publishing platform built for Android and Python. It combines multi-stage LLM intent expansion, dynamic layout compilation, dual-provider stock photo aggregation, and high-precision LaTeX typesetting to transform single prompts into luxury, print-ready 16-page magazine PDFs.
 

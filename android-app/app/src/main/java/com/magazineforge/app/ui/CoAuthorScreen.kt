@@ -323,18 +323,7 @@ fun CoAuthorScreen(
                                     }
                                 )
                             }
-                            TextButton(
-                                onClick = {
-                                    val newImages = page.images.toMutableList()
-                                    newImages.add(com.magazineforge.app.models.ArticleImageSchema(imageUrl = "", imageQuery = page.headline, caption = "", placement = "top"))
-                                    val newPages = schema.pages.toMutableList()
-                                    newPages[index] = page.copy(images = newImages)
-                                    schema = schema.copy(pages = newPages)
-                                },
-                                modifier = Modifier.padding(top = 4.dp)
-                            ) {
-                                Text("+ Add Image Slot", color = tokens.primaryAccent)
-                            }
+
                         }
                     }
                     is AdSchema -> {
@@ -540,18 +529,7 @@ fun CoAuthorScreen(
                                     }
                                 )
                             }
-                            TextButton(
-                                onClick = {
-                                    val newImages = page.images.toMutableList()
-                                    newImages.add(com.magazineforge.app.models.ArticleImageSchema(imageUrl = "", imageQuery = page.headline, caption = "", placement = "top"))
-                                    val newPages = schema.pages.toMutableList()
-                                    newPages[index] = page.copy(images = newImages)
-                                    schema = schema.copy(pages = newPages)
-                                },
-                                modifier = Modifier.padding(top = 4.dp)
-                            ) {
-                                Text("+ Add Image Slot", color = tokens.primaryAccent)
-                            }
+
                         }
                     }
                     else -> {
@@ -754,6 +732,25 @@ fun ImageUploadField(
                         )
                     }
                 }
+            }
+        }
+
+        if (value.isNotBlank()) {
+            Spacer(modifier = Modifier.height(4.dp))
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(130.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(tokens.surface)
+                    .border(BorderStroke(1.dp, tokens.secondaryAccent.copy(alpha = 0.3f)), RoundedCornerShape(8.dp))
+            ) {
+                coil.compose.AsyncImage(
+                    model = value,
+                    contentDescription = "Image Preview",
+                    contentScale = androidx.compose.ui.layout.ContentScale.Crop,
+                    modifier = Modifier.fillMaxSize()
+                )
             }
         }
     }

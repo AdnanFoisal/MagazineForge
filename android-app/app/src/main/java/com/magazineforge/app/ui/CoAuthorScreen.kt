@@ -279,21 +279,26 @@ fun CoAuthorScreen(
                                 modifier = Modifier.fillMaxWidth(),
                                 minLines = 5
                             )
-                            page.images.forEachIndexed { imgIndex, img ->
+                            val effectiveImages = if (page.images.isEmpty()) {
+                                listOf(com.magazineforge.app.models.ArticleImageSchema(imageUrl = "", imageQuery = page.headline, caption = "", placement = "top"))
+                            } else {
+                                page.images
+                            }
+                            effectiveImages.forEachIndexed { imgIndex, img ->
                                 ImageUploadField(
                                     label = "Article Image URL ${imgIndex + 1}",
                                     value = img.imageUrl,
-                                    onValueChange = {
-                                        val newImages = page.images.toMutableList()
-                                        newImages[imgIndex] = img.copy(imageUrl = it)
+                                    onValueChange = { newUrl ->
+                                        val newImages = if (page.images.isEmpty()) mutableListOf(img.copy(imageUrl = newUrl)) else page.images.toMutableList()
+                                        if (imgIndex < newImages.size) newImages[imgIndex] = newImages[imgIndex].copy(imageUrl = newUrl)
                                         val newPages = schema.pages.toMutableList()
                                         newPages[index] = page.copy(images = newImages)
                                         schema = schema.copy(pages = newPages)
                                     },
                                     onPickImage = {
                                         pickImage { url ->
-                                            val newImages = page.images.toMutableList()
-                                            newImages[imgIndex] = img.copy(imageUrl = url)
+                                            val newImages = if (page.images.isEmpty()) mutableListOf(img.copy(imageUrl = url)) else page.images.toMutableList()
+                                            if (imgIndex < newImages.size) newImages[imgIndex] = newImages[imgIndex].copy(imageUrl = url)
                                             val newPages = schema.pages.toMutableList()
                                             newPages[index] = page.copy(images = newImages)
                                             schema = schema.copy(pages = newPages)
@@ -302,8 +307,8 @@ fun CoAuthorScreen(
                                     onPickFromSearch = {
                                         pickerQuery = img.imageQuery.ifBlank { page.headline }.ifBlank { schema.cover.mainTitle }
                                         pickerCallback = { url ->
-                                            val newImages = page.images.toMutableList()
-                                            newImages[imgIndex] = img.copy(imageUrl = url)
+                                            val newImages = if (page.images.isEmpty()) mutableListOf(img.copy(imageUrl = url)) else page.images.toMutableList()
+                                            if (imgIndex < newImages.size) newImages[imgIndex] = newImages[imgIndex].copy(imageUrl = url)
                                             val newPages = schema.pages.toMutableList()
                                             newPages[index] = page.copy(images = newImages)
                                             schema = schema.copy(pages = newPages)
@@ -311,6 +316,18 @@ fun CoAuthorScreen(
                                         pickerOpen = true
                                     }
                                 )
+                            }
+                            TextButton(
+                                onClick = {
+                                    val newImages = page.images.toMutableList()
+                                    newImages.add(com.magazineforge.app.models.ArticleImageSchema(imageUrl = "", imageQuery = page.headline, caption = "", placement = "top"))
+                                    val newPages = schema.pages.toMutableList()
+                                    newPages[index] = page.copy(images = newImages)
+                                    schema = schema.copy(pages = newPages)
+                                },
+                                modifier = Modifier.padding(top = 4.dp)
+                            ) {
+                                Text("+ Add Image Slot", color = tokens.primaryAccent)
                             }
                         }
                     }
